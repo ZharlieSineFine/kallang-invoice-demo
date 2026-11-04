@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start">
+  <div>
+    <div class="vendor-name">{{ vendor.name }}</div>
+    <div>{{ vendor.address }}</div>
+    <div class="small muted" style="margin-top:1mm">
+      UEN: <span class="mono">{{ vendor.uen }}</span>
+      {% if not doc.omit_gst_reg and vendor.gst_reg_no %} &nbsp; GST Reg No: <span class="mono">{{ vendor.gst_reg_no }}</span>{% endif %}
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="doc-title">{{ title }}</div>
+    <div class="mono" style="font-size:10pt">{{ doc.invoice_number }}</div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<table style="width:100%; border-collapse:collapse; margin-bottom:5mm">
+  <tr>
+    <td style="width:52%; vertical-align:top">
+      <div class="label">Bill To</div>
+      <div class="value">The Kallang Group</div>
+      <div>Kallang, Singapore</div>
+    </td>
+    <td style="width:24%; vertical-align:top">
+      <div class="label">Invoice Date</div>
+      <div class="mono">{{ date_printed }}</div>
+      {% if due_printed %}<div class="label" style="margin-top:2mm">Due Date</div>
+      <div class="mono">{{ due_printed }}</div>{% endif %}
+    </td>
+    <td style="width:24%; vertical-align:top">
+      <div class="label">Currency</div><div>{{ doc.currency }}</div>
+      {% if doc.po_number %}<div class="label" style="margin-top:2mm">PO No</div>
+      <div class="mono">{{ doc.po_number }}</div>{% endif %}
+    </td>
+  </tr>
+</table>
+
+<div style="border-top:2pt solid #102a43; border-bottom:0.7pt solid #bcccdc; padding:4mm 0; margin-bottom:4mm">
+  <div class="label">Venue</div>
+  <div style="font-size:16pt; font-weight:bold; color:#102a43">{{ doc.venue }}</div>
+  <div class="small muted">Service period: {{ doc.service_period or "-" }}</div>
+</div>
+
+<table class="lines">
+  <thead>
+    <tr>
+      <th style="width:8mm">No</th>
+      <th>Description</th>
+      <th class="n" style="width:16mm">Qty</th>
+      <th style="width:14mm">Unit</th>
+      <th class="n" style="width:24mm">Unit Price</th>
+      <th class="n" style="width:26mm">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for line in lines %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ line.description }}</td>
+      <td class="n">{{ line.quantity | qty }}</td>
+      <td>{{ line.unit }}</td>
+      <td class="n">{{ line.unit_price | money }}</td>
+      <td class="n">{{ line.amount | money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal</td><td class="n">{{ totals.printed_subtotal | money }}</td></tr>
+  <tr><td>{{ gst_rate }} GST</td><td class="n">{{ totals.gst | money }}</td></tr>
+  <tr class="grand"><td>Total Payable</td><td class="n">{{ doc.currency }} {{ totals.total | money }}</td></tr>
+</table>
+
+<div class="footer">
+  Payment by bank transfer to {{ vendor.bank_name }}, Account: <span class="mono">{{ bank_printed }}</span><br>
+  Facility services reference: {{ doc.venue }} / {{ doc.invoice_number }}. All names and numbers are fictional.
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+vendor_id,sap_vendor_no,name,uen,gst_reg_no,address,bank_name,bank_account,currency,locale,is_overseas,default_gl,default_cost_center,default_tax_code,active
+V001,100014,Stagecraft AV Rentals Pte. Ltd.,209900123K,209900123K,"18 Fictional Lane #04-12, Singapore 399999",DBS Bank,0001234567,SGD,SG,false,610200,KG2100,TX,true
+V002,100015,Marina Event Logistics Pte. Ltd.,209900234M,209900234M,"3 Imaginary Road #08-01, Singapore 399998",OCBC Bank,0002345678,SGD,SG,false,630100,KG2100,TX,true
+V003,100016,Kallang Security Services Pte. Ltd.,209900345P,209900345P,"27 Placeholder Street #02-03, Singapore 399997",UOB Bank,0003456789,SGD,SG,false,620200,KG3100,TX,true
+V004,100017,CleanWave Facilities Pte. Ltd.,209900456R,209900456R,"41 Sample Avenue #11-05, Singapore 399996",DBS Bank,0004567890,SGD,SG,false,620100,KG3100,TX,true
+V005,100018,BrightLite Productions Pte. Ltd.,209900567T,209900567T,"9 Mock Crescent #03-08, Singapore 399995",OCBC Bank,0005678901,SGD,SG,false,610100,KG2100,TX,true
+V006,100019,PrimeCater Event Catering Pte. Ltd.,209900678V,209900678V,"62 Demo Drive #01-02, Singapore 399994",UOB Bank,0006789012,SGD,SG,false,640100,KG2100,TX,true
+V007,100020,PrintWorks Studio Pte. Ltd.,209900789W,209900789W,"14 Synthetic Way #06-07, Singapore 399993",DBS Bank,0007890123,SGD,SG,false,650100,KG9100,TX,true
+V008,100021,CoolAir M&E Services Pte. Ltd.,209900890X,209900890X,"88 Test Road #10-10, Singapore 399992",OCBC Bank,0008901234,SGD,SG,false,620300,KG3100,TX,true
+V009,100022,SafeHands Event Crew Pte. Ltd.,209900901Y,209900901Y,"5 Fictional Court #04-04, Singapore 399991",UOB Bank,0009012345,SGD,SG,false,610100,KG2100,TX,true
+V010,100023,VenueTech Rigging Pte. Ltd.,209900012A,209900012A,"33 Imaginary Terrace #09-01, Singapore 399990",DBS Bank,0000123456,SGD,SG,false,610200,KG1100,TX,true
+V011,100024,GreenScape Horticulture Pte. Ltd.,209900113B,209900113B,"70 Placeholder Close #05-06, Singapore 399989",OCBC Bank,0001123457,SGD,SG,false,630100,,TX,true
+V012,100025,Harbourline Audio Visual LLC,209900214C,209900214C,"1200 Fictional Avenue, Los Angeles, CA 90001, USA",Bank of America,0002123458,USD,US,true,610200,KG2100,TX,true
+V999,100026,Orchard Supplies & Trading Pte. Ltd.,209900999Z,209900999Z,"99 Unknown Street #01-01, Singapore 399988",UOB Bank,0009123456,SGD,SG,false,630100,KG2100,TX,false

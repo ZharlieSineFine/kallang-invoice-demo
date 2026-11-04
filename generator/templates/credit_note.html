@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <div class="vendor-block">
+    <div class="vendor-name">{{ vendor.name }}</div>
+    <div>{{ vendor.address }}</div>
+    <div class="small muted" style="margin-top:1.5mm">
+      UEN: <span class="mono">{{ vendor.uen }}</span>
+      {% if not doc.omit_gst_reg and vendor.gst_reg_no %}
+        &nbsp;&nbsp;GST Reg No: <span class="mono">{{ vendor.gst_reg_no }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="doc-title">Credit Note</div>
+    <div class="doc-sub">Adjustment to an earlier invoice</div>
+    <div class="doc-sub" style="margin-top:2mm"><span class="badge">Synthetic document</span></div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<div class="meta">
+  <div class="meta-col">
+    <div class="label">Bill To</div>
+    <div class="value">The Kallang Group</div>
+    <div>Kallang, Singapore</div>
+    {% if doc.original_invoice_ref %}
+      <div style="margin-top:2mm"><span class="label">Original invoice</span><br>
+        <span class="mono value">{{ doc.original_invoice_ref }}</span></div>
+    {% endif %}
+  </div>
+  <div class="meta-col">
+    <table style="width:100%; border-collapse:collapse">
+      <tr><td class="label">Credit Note No</td><td class="mono" style="text-align:right">{{ doc.invoice_number }}</td></tr>
+      <tr><td class="label">Credit Note Date</td><td class="mono" style="text-align:right">{{ date_printed }}</td></tr>
+      {% if doc.po_number %}<tr><td class="label">PO No</td><td class="mono" style="text-align:right">{{ doc.po_number }}</td></tr>{% endif %}
+      <tr><td class="label">Currency</td><td style="text-align:right">{{ doc.currency }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<table class="lines">
+  <thead>
+    <tr>
+      <th style="width:8mm">No</th>
+      <th>Description</th>
+      <th class="n" style="width:16mm">Qty</th>
+      <th style="width:14mm">Unit</th>
+      <th class="n" style="width:14mm">Days</th>
+      <th class="n" style="width:24mm">Unit Price</th>
+      <th class="n" style="width:26mm">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for line in lines %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ line.description }}</td>
+      <td class="n">{{ line.quantity | qty }}</td>
+      <td>{{ line.unit }}</td>
+      <td class="n">{% if line.days is not none %}{{ line.days | qty }}{% endif %}</td>
+      <td class="n">{{ line.unit_price | money }}</td>
+      <td class="n">{{ line.amount | money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal</td><td class="n">{{ totals.printed_subtotal | money }}</td></tr>
+  <tr><td>{{ gst_rate }} GST</td><td class="n">{{ totals.gst | money }}</td></tr>
+  <tr class="grand"><td>Credit Total</td><td class="n">{{ doc.currency }} {{ totals.total | money }}</td></tr>
+</table>
+
+<div class="notes small">
+  This credit note adjusts {{ doc.original_invoice_ref }}. Amounts are negative and reduce the
+  balance payable to {{ vendor.name }}. All names and numbers are fictional.
+</div>
+
+<div class="footer">
+  For questions contact {{ vendor.name }}, UEN <span class="mono">{{ vendor.uen }}</span>.<br>
+  Bank: {{ vendor.bank_name }}, Account: <span class="mono">{{ bank_printed }}</span>.
+</div>
+{% endblock %}
