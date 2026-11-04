@@ -1,0 +1,9 @@
+# The buyer side. Hypothetical: company code and entity names are placeholders.
+company_code: KG01
+currency: SGD
+timezone: Asia/Singapore
+# Names an invoice may be addressed to (R04 checks the buyer name against these).
+entity_names:
+  - The Kallang Group
+  - The Kallang Group Pte. Ltd.
+  - Kallang Alive Sport Management Co Pte Ltd

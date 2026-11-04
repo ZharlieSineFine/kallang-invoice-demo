@@ -1,0 +1,26 @@
+# Model settings (WS3). Decided 2026-11-04: gemma4:12b, fallback qwen3-vl:4b.
+provider: ollama
+base_url_env: OLLAMA_BASE_URL          # default below if unset
+default_base_url: http://127.0.0.1:11434
+model: gemma4:12b
+fallback_model: qwen3-vl:4b
+think: false
+keep_alive: 30m
+options:
+  temperature: 0
+  seed: 42
+  num_ctx: 8192
+  num_predict: 2048
+context_warning_ratio: 0.9
+images:
+  mode: auto          # auto: scans send page images, digital PDFs text only | always | never
+  page_dpi: 150
+mode_env: LLM_MODE    # live | replay
+cache_dir: data/llm_cache
+prompt: prompts/extract_v1.md
+
+# Later only: Azure OpenAI. Names of environment variables, never values.
+azure:
+  endpoint_env: AZURE_OPENAI_ENDPOINT
+  api_key_env: AZURE_OPENAI_API_KEY
+  deployment_env: AZURE_OPENAI_DEPLOYMENT

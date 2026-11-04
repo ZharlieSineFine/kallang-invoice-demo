@@ -1,0 +1,15 @@
+[
+  {
+    "rule_id": "R02",
+    "rule_version": "golden",
+    "severity": "FLAG",
+    "scope": "FIELD",
+    "field": "subtotal",
+    "message": "The line items add up to S$1,080.00, but the subtotal reads S$1,090.00.",
+    "evidence": {
+      "lines_sum": "1080.00",
+      "subtotal": "1090.00"
+    },
+    "stage": "INTAKE"
+  }
+]

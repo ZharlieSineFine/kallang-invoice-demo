@@ -1,0 +1,314 @@
+[
+  {
+    "field": "invoice_number",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.792694269669794,
+      "y0": 0.11286807201281052,
+      "x1": 0.9041990233016716,
+      "y1": 0.12415163003454693
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "SAV-2026-0413"
+  },
+  {
+    "field": "invoice_date",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8060033875435689,
+      "y0": 0.12415162914369393,
+      "x1": 0.8858580947862181,
+      "y1": 0.13543518716543035
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "15/10/2026"
+  },
+  {
+    "field": "due_date",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.7847151822154925,
+      "y0": 0.1354351871654305,
+      "x1": 0.8634091112554723,
+      "y1": 0.1467187451871669
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "14/11/2026"
+  },
+  {
+    "field": "supplier_name",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.09579365064206036,
+      "y0": 0.0677332326492095,
+      "x1": 0.462669940047987,
+      "y1": 0.08555029212826974
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "Stagecraft AV Rentals Pte. Ltd."
+  },
+  {
+    "field": "supplier_uen",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.13835410312330446,
+      "y0": 0.09683358795415883,
+      "x1": 0.22885291302999194,
+      "y1": 0.10811714597589525
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "209900123K"
+  },
+  {
+    "field": "supplier_gst_reg_no",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.34210807297399953,
+      "y0": 0.09683358795415883,
+      "x1": 0.43260688288068677,
+      "y1": 0.10811714597589525
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "209900123K"
+  },
+  {
+    "field": "buyer_name",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.09579365064206036,
+      "y0": 0.12415162914369393,
+      "x1": 0.22973061264996505,
+      "y1": 0.13543518716543035
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "The Kallang Group"
+  },
+  {
+    "field": "po_number",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.7651983343022711,
+      "y0": 0.15800230231805032,
+      "x1": 0.8539257867941036,
+      "y1": 0.16928586033978674
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "4500012345"
+  },
+  {
+    "field": "currency",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.7820342088308473,
+      "y0": 0.16928586033978674,
+      "x1": 0.8166155738577898,
+      "y1": 0.18056941836152315
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "SGD"
+  },
+  {
+    "field": "venue",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.3211079391564359,
+      "y0": 0.18947794810105342,
+      "x1": 0.44261348291053887,
+      "y1": 0.20076150612278984
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "National Stadium"
+  },
+  {
+    "field": "subtotal",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8370515943093659,
+      "y0": 0.33379264931887215,
+      "x1": 0.8991608110536486,
+      "y1": 0.34507620734060857
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "1,090.00"
+  },
+  {
+    "field": "gst_rate",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.5824354003446256,
+      "y0": 0.35042132518432667,
+      "x1": 0.6054949630875569,
+      "y1": 0.3617048832060631
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "9%"
+  },
+  {
+    "field": "gst_amount",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8592343176557361,
+      "y0": 0.35042132518432667,
+      "x1": 0.8991616712770607,
+      "y1": 0.3617048832060631
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "98.10"
+  },
+  {
+    "field": "total",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8370515943093659,
+      "y0": 0.36705000104978125,
+      "x1": 0.8991608110536486,
+      "y1": 0.3783335590715177
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "1,188.10"
+  },
+  {
+    "field": "supplier_address",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.09579365064206036,
+      "y0": 0.08555003082327542,
+      "x1": 0.41071227428843116,
+      "y1": 0.09683358884501184
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "18 Fictional Lane #04-12, Singapore 399999"
+  },
+  {
+    "field": "bank_account",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.4108819251351875,
+      "y0": 0.4077317501154462,
+      "x1": 0.4997810529611761,
+      "y1": 0.4178277939960795
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "000-123456-7"
+  },
+  {
+    "field": "line_items[0].description",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.15163925476662118,
+      "y0": 0.2423340643680757,
+      "x1": 0.30241209130310204,
+      "y1": 0.2536176223898121
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "LED wall panel rental"
+  },
+  {
+    "field": "line_items[0].amount",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8503595060056814,
+      "y0": 0.2423340643680757,
+      "x1": 0.8991596048761893,
+      "y1": 0.2536176223898121
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "540.00"
+  },
+  {
+    "field": "line_items[1].description",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.15163925476662118,
+      "y0": 0.26341700421244235,
+      "x1": 0.32813666925577,
+      "y1": 0.27470056223417877
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "Line array speaker rental"
+  },
+  {
+    "field": "line_items[1].amount",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8503595060056814,
+      "y0": 0.26341700421244235,
+      "x1": 0.8991596048761893,
+      "y1": 0.27470056223417877
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "300.00"
+  },
+  {
+    "field": "line_items[2].description",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.15163925476662118,
+      "y0": 0.2844999449476618,
+      "x1": 0.24803079978024162,
+      "y1": 0.2957835029693982
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "AV technician"
+  },
+  {
+    "field": "line_items[2].amount",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8503595060056814,
+      "y0": 0.2844999449476618,
+      "x1": 0.8991596048761893,
+      "y1": 0.2957835029693982
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "160.00"
+  },
+  {
+    "field": "line_items[3].description",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.15163925476662118,
+      "y0": 0.3055828856828815,
+      "x1": 0.29386311367626267,
+      "y1": 0.3168664437046179
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "Transport and setup"
+  },
+  {
+    "field": "line_items[3].amount",
+    "page_no": 1,
+    "bbox": {
+      "x0": 0.8592343176557361,
+      "y0": 0.3055828856828815,
+      "x1": 0.8991616712770607,
+      "y1": 0.3168664437046179
+    },
+    "match_type": "EXACT",
+    "score": 100.0,
+    "matched_text": "80.00"
+  }
+]

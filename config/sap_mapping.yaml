@@ -1,0 +1,24 @@
+# HYPOTHETICAL SAP upload layout (build plan section 5.5). Replace with Kallang's template.
+version: 1
+layout: hypothetical
+row_per: coding_line
+delimiter: ","
+encoding: utf-8
+date_format: "%d.%m.%Y"
+columns:
+  - {name: DocKey,       source: doc.doc_id}
+  - {name: CompanyCode,  source: "const:KG01"}
+  - {name: VendorNo,     source: vendor.sap_vendor_no,   required: true}
+  - {name: DocumentDate, source: invoice.invoice_date,   required: true, format: date}
+  - {name: PostingDate,  source: batch.export_date,      format: date}
+  - {name: Reference,    source: invoice.invoice_number, required: true, max_len: 16}
+  - {name: Currency,     source: invoice.currency,       required: true}
+  - {name: GrossAmount,  source: invoice.total,          required: true}
+  - {name: LineNo,       source: coding.line_no}
+  - {name: GLAccount,    source: coding.gl_account,      required: true}
+  - {name: CostCenter,   source: coding.cost_center,     required: true}
+  - {name: NetAmount,    source: coding.net_amount,      required: true}
+  - {name: TaxCode,      source: coding.tax_code,        required: true}
+  - {name: TaxAmount,    source: coding.tax_amount,      required: true}
+  - {name: PONumber,     source: invoice.po_number}
+  - {name: LineText,     source: coding.description,     max_len: 50, free_text: true}

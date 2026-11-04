@@ -1,0 +1,16 @@
+[
+  {
+    "fixture_id": "golden-a-clean",
+    "doc_id": "93fe9312-fe79-50bb-b5e7-d18e83dfaff2",
+    "file_id": "9c3e3184-0bf8-50ab-8c49-3689d2b51dd4",
+    "sha256": "8e994f46d45f647001d79a07f22cea21aa2b23dea5189cff9fd392a71f68d3bc",
+    "expected_status": "AUTO_PASSED"
+  },
+  {
+    "fixture_id": "golden-a-total-mismatch",
+    "doc_id": "f7d4da3b-2611-5bce-8de5-94b1c185b9ad",
+    "file_id": "6ff20b77-f73f-59a0-9a53-e957892b742a",
+    "sha256": "928881a716521c571d32e0292de354a197e5605b8b96ae83f57b12784bef3e6d",
+    "expected_status": "NEEDS_REVIEW"
+  }
+]

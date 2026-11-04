@@ -1,0 +1,190 @@
+{
+  "company": {
+    "company_code": "KG01",
+    "currency": "SGD",
+    "timezone": "Asia/Singapore",
+    "entity_names": [
+      "The Kallang Group",
+      "The Kallang Group Pte. Ltd.",
+      "Kallang Alive Sport Management Co Pte Ltd"
+    ]
+  },
+  "vendors": [
+    {
+      "vendor_id": "V001",
+      "sap_vendor_no": "100014",
+      "name": "Stagecraft AV Rentals Pte. Ltd.",
+      "uen": "209900123K",
+      "gst_reg_no": "209900123K",
+      "address": "18 Fictional Lane #04-12, Singapore 399999",
+      "bank_name": "DBS Bank",
+      "bank_account": "0001234567",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "610200",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    }
+  ],
+  "purchase_orders": [
+    {
+      "po_number": "4500012345",
+      "vendor_id": "V001",
+      "currency": "SGD",
+      "amount": "5000.00",
+      "open_amount": "5000.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    }
+  ],
+  "coding": {
+    "gl_accounts": [
+      {
+        "code": "610100",
+        "name": "Event production",
+        "active": true
+      },
+      {
+        "code": "610200",
+        "name": "Equipment rental",
+        "active": true
+      },
+      {
+        "code": "620100",
+        "name": "Cleaning services",
+        "active": true
+      },
+      {
+        "code": "620200",
+        "name": "Security services",
+        "active": true
+      },
+      {
+        "code": "620300",
+        "name": "M&E maintenance",
+        "active": true
+      },
+      {
+        "code": "630100",
+        "name": "Repairs and consumables",
+        "active": true
+      },
+      {
+        "code": "640100",
+        "name": "Catering",
+        "active": true
+      },
+      {
+        "code": "650100",
+        "name": "Printing and marketing",
+        "active": true
+      }
+    ],
+    "cost_centers": [
+      {
+        "code": "KG1100",
+        "name": "National Stadium",
+        "active": true
+      },
+      {
+        "code": "KG1200",
+        "name": "Singapore Indoor Stadium",
+        "active": true
+      },
+      {
+        "code": "KG1300",
+        "name": "OCBC Aquatic Centre",
+        "active": true
+      },
+      {
+        "code": "KG1400",
+        "name": "OCBC Arena",
+        "active": true
+      },
+      {
+        "code": "KG1500",
+        "name": "Kallang Wave Mall",
+        "active": true
+      },
+      {
+        "code": "KG2100",
+        "name": "Events",
+        "active": true
+      },
+      {
+        "code": "KG3100",
+        "name": "Facilities Management",
+        "active": true
+      },
+      {
+        "code": "KG9100",
+        "name": "Corporate",
+        "active": true
+      }
+    ],
+    "tax_codes": [
+      {
+        "code": "TX",
+        "rate_percent": "9",
+        "description": "Standard-rated purchase, 9% input tax"
+      },
+      {
+        "code": "ZP",
+        "rate_percent": "0",
+        "description": "Zero-rated purchase"
+      },
+      {
+        "code": "NR",
+        "rate_percent": "0",
+        "description": "Supplier not GST-registered"
+      },
+      {
+        "code": "OP",
+        "rate_percent": "0",
+        "description": "Out of scope, e.g. overseas services"
+      },
+      {
+        "code": "BL",
+        "rate_percent": "9",
+        "description": "Input tax not claimable"
+      },
+      {
+        "code": "EP",
+        "rate_percent": "0",
+        "description": "Exempt purchase"
+      }
+    ],
+    "venue_aliases": [
+      {
+        "alias": "National Stadium",
+        "cost_center": "KG1100"
+      },
+      {
+        "alias": "Singapore Indoor Stadium",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "Indoor Stadium",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "SIS",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "OCBC Aquatic Centre",
+        "cost_center": "KG1300"
+      },
+      {
+        "alias": "OCBC Arena",
+        "cost_center": "KG1400"
+      },
+      {
+        "alias": "Kallang Wave Mall",
+        "cost_center": "KG1500"
+      }
+    ]
+  }
+}

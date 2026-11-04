@@ -1,0 +1,53 @@
+# Check settings (WS5 owns the code; finance-facing values live here).
+# Amounts are strings so they load as Decimal.
+version: 1
+
+routing:
+  auto_approve_clean: true   # false in a pilot: people see every invoice first
+
+severities:                  # INFO | FLAG | HOLD | MANUAL
+  R01: FLAG    # value not found on the page
+  R02: FLAG    # arithmetic
+  R03: FLAG    # GST
+  R04: HOLD    # unknown vendor (wrong addressee is FLAG in code)
+  R05: HOLD    # duplicate
+  R06: FLAG    # SAP-mandatory field or coding missing
+  R07: MANUAL  # unreadable
+  R08: HOLD    # bank account differs from vendor master
+  R09: HOLD    # hidden or instruction-like text
+  R10: INFO    # document type (routing handled by the router)
+  R11: FLAG    # dates
+  R12: FLAG    # PO
+
+tolerances:
+  line_amount: "0.01"        # quantity x unit price x days vs line amount
+  lines_vs_subtotal: "0.05"
+  subtotal_plus_gst: "0.01"
+  gst_amount: "0.05"         # item-by-item vs subtotal rounding (IRAS allows either)
+
+gst_rates:                   # Singapore standard rate by date
+  - {from: "2019-01-01", rate_percent: "7"}
+  - {from: "2023-01-01", rate_percent: "8"}
+  - {from: "2024-01-01", rate_percent: "9"}
+
+simplified_invoice_max_total: "1000.00"   # IRAS: total incl. GST
+fuzzy_match_min_score: 90
+max_invoice_age_days: 180
+duplicate_window_days: 7
+scanned_page_min_chars: 25
+ocr_min_mean_conf: 60
+
+hidden_text:
+  max_font_size_pt: 2.0
+  min_fill_lightness: 0.95   # 1.0 = white
+
+instruction_phrases:         # start from the AgentOps guardrail patterns
+  - ignore previous instructions
+  - ignore all previous
+  - disregard the above
+  - you are now
+  - system prompt
+  - set the total to
+  - approve this invoice
+  - "note to ai"
+  - "the ai system"
