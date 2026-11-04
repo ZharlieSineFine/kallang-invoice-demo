@@ -24,11 +24,11 @@ The integrator decides, applies the change on `main`, updates the contract tests
 ```
 
 ## Requests
-
 ### CR-001 — a shared prompt-injection canary value
 
 - **Workstream:** WS5 (raised), touches WS3
-- **Status:** OPEN
+- **Status:** ACCEPTED (integrator, 2026-11-04) — implement at stub swap: add `canary` to
+  `config/rules.yaml`; WS3's prompt and WS5's R09 both read it.
 - **What changes:** add a `canary` key (a single string) to `config/rules.yaml` (or a shared
   config) so WS3's prompt and WS5's R09 check use the same sentinel.
 - **Why:** R09 must confirm "the canary does not appear in the output", but no canary value
@@ -37,4 +37,60 @@ The integrator decides, applies the change on `main`, updates the contract tests
   across workstreams.
 - **Impact:** additive config key only; no schema or migration change. WS5 reads it from
   `rules_config["canary"]` with the current constant as a fallback.
-- **Integrator decision:** _pending_
+
+### CR-002 — add `pipeline.recheck` for review-time checks
+
+- **Workstream:** WS7
+- **Status:** ACCEPTED (integrator, 2026-11-04) — implement `pipeline.recheck` at stub swap.
+- **What changes:** add a public `recheck` entry point to `src/invoiceflow/pipeline/`
+  (the WS7 build plan calls it `pipeline.recheck`). Proposed shape:
+  `recheck(doc_id, *, invoice, extraction, document, master, coding_lines, locations,
+  prior_invoices, rules_config, today, run_id) -> CheckOutcome`, re-running the WS5 rules
+  against the current stored values and returning the findings plus a routing decision.
+- **Why:** the Review page must rerun checks after a reviewer corrects a field or line item.
+  At `contracts-v1` there is no `recheck` (only `check_stage`, whose golden stubs return the
+  fixture's recorded findings regardless of the corrected value), so a corrected subtotal
+  still shows R02. WS7 carries a clearly marked temporary adapter in `app/recheck.py` until
+  this lands.
+- **Impact:** WS7 only consumes it; no schema change. Needs the WS5 rule signature and a
+  decision on which context fields may be rebuilt from Postgres versus re-read from the
+  original parse.
+
+### CR-003 — define the evaluation report format for the dashboard
+
+- **Workstream:** WS7
+- **Status:** ACCEPTED (integrator, 2026-11-04) — define `reports/latest.json` with WS8 at
+  stub swap.
+- **What changes:** publish a stable JSON report shape and path for the latest evaluation
+  (WS8 `evaluate/`), e.g. `reports/latest.json` with `generated_at`, `set_name` (must mark
+  synthetic runs), `document_count`, `auto_pass_rate`, `accuracy`, `per_rule`, and
+  `mismatches`. Add the path and top-level keys to `docs/CONTRACTS.md`.
+- **Why:** the Dashboard must show the latest evaluation "labeled synthetic", but contracts-v1
+  defines the evaluation input models only, not the report file. WS7's loader accepts a
+  small set of common key names and shows the raw payload, which is guesswork.
+- **Impact:** WS7 and WS8; no database change.
+
+### CR-004 — document the Airflow REST trigger settings
+
+- **Workstream:** WS7
+- **Status:** ACCEPTED (integrator, 2026-11-04) — add the env names to `.env.example` at
+  stub swap; WS6's compose provides the values.
+- **What changes:** add the Airflow REST settings to `.env.example` / `docs/CONTRACTS.md`
+  (proposed: `AIRFLOW_BASE_URL`, `AIRFLOW_DAG_ID=invoice_intake`, `AIRFLOW_USERNAME`,
+  `AIRFLOW_PASSWORD`, `AIRFLOW_AUTH_TOKEN`). WS7 also needs the DAG id that the Upload page
+  should trigger.
+- **Why:** the Upload page starts `invoice_intake` through the Airflow REST API when the
+  login setup works, otherwise it shows a link. At `contracts-v1` no Airflow endpoint or
+  credential names are defined, so WS7 reads the names above and falls back to a link.
+- **Impact:** WS6 owns the Airflow stack and `.env.example`; WS7 only reads the values.
+  No secret is committed.
+
+### CR-005 — make `reports/baseline.json` trackable in git
+
+- **Workstream:** WS8
+- **Status:** ACCEPTED (integrator, 2026-11-04) — `.gitignore` changed to `reports/*` so the
+  `!reports/baseline.json` negation works.
+- **What changes:** the `.gitignore` rule `reports/` swallows the negation
+  `!reports/baseline.json`; the gate baseline must be committable.
+- **Why:** `make gate` compares against `reports/baseline.json`.
+- **Impact:** none beyond git tracking.
