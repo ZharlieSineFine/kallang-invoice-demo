@@ -7,6 +7,6 @@ __pycache__/
 htmlcov/
 .env
 data/
-reports/
+reports/*
 !reports/baseline.json
 .DS_Store
