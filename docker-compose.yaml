@@ -1,0 +1,152 @@
+# Kallang Track 10 local demo — full stack (WS6).
+# Airflow 3.3.2 on LocalExecutor + SimpleAuthManager, one Postgres with two databases
+# (airflow, ap), and the WS7 review app placeholder. Everything binds to 127.0.0.1.
+#
+# Based on the official apache/airflow 3.3.2 docker-compose.yaml, with redis, the Celery
+# worker, and flower removed. Celery settings are gone too; the executor is LocalExecutor.
+
+x-airflow-common: &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-kallang-airflow:3.3.2}
+  build:
+    context: .
+    dockerfile: docker/airflow.Dockerfile
+  env_file:
+    - .env
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY:-YkSfei8KWJyLRFGZYW8tZXZmv7-E8SZpZvXzjgsJR80=}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Singapore
+    # Simple auth manager is Airflow 3's default; everyone is admin, so keep it local-only.
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: 'true'
+    # Tasks talk to Airflow through its API server, never the database.
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://api-server:8080/execution/'
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
+    AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # The invoiceflow app sees the repo (code, fixtures, migrations, data) at /opt/invoiceflow.
+    INVOICEFLOW_ROOT: /opt/invoiceflow
+    # Invoice data lives in the ``ap`` database, not Airflow's metadata database.
+    AP_DATABASE_URL: postgresql://${AP_DB_USER:-ap}:${AP_DB_PASSWORD:-change-me}@postgres:5432/${AP_DB_NAME:-ap}
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - airflow-logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}:/opt/invoiceflow:ro
+    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/invoiceflow/data
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+      AP_DB_USER: ${AP_DB_USER:-ap}
+      AP_DB_PASSWORD: ${AP_DB_PASSWORD:-change-me}
+      AP_DB_NAME: ${AP_DB_NAME:-ap}
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: always
+
+  api-server:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins /opt/airflow/config
+        /entrypoint airflow db migrate
+        /entrypoint airflow pools set llm 1 "single slot for Ollama extraction"
+        /entrypoint python -m invoiceflow.store.migrate
+    user: "0:0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  review-app:
+    <<: *airflow-common
+    # The airflow entrypoint only knows airflow/bash/python, so run streamlit as a module.
+    command: >
+      python -m streamlit run /opt/invoiceflow/docker/review_app.py
+      --server.address 0.0.0.0 --server.port 8501 --server.headless true
+    ports:
+      - "127.0.0.1:8501:8501"
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-db-volume:
+  airflow-logs:

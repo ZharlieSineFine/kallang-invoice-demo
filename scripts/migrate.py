@@ -7,8 +7,8 @@ import sys
 
 import psycopg
 
-from invoiceflow.devdb.connection import connect, database_url, safe_url
-from invoiceflow.devdb.migrate import apply_migrations
+from invoiceflow.store.connection import connect, database_url, safe_url
+from invoiceflow.store.migrate import apply_migrations
 
 
 def main() -> int:
