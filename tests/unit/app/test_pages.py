@@ -88,11 +88,9 @@ def test_review_page_shows_replay_badge_and_flagged_box(fake_backend, mismatch_b
     assert _titles(at) == ["Review"]
     markdown = "\n".join(item.value for item in at.markdown)
     assert ":violet-badge[Replayed response]" in markdown
-    errors = "\n".join(error.value for error in at.error)
-    assert any("R02" in error.value for error in at.error)
-    # Dollar amounts must be escaped so Streamlit does not render them as LaTeX math.
-    assert "S\\$1,080.00" in errors
-    assert "S$1,080.00" not in errors
+    # Findings render as raw HTML so the message stays verbatim (no LaTeX math mangling).
+    assert "R02" in markdown
+    assert "S$1,080.00" in markdown
     assert at.image
     at.get_by_key("review_field").set_value("subtotal").run()
     assert len(at.image) >= 2

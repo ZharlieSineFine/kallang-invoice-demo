@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
 from app import ui
 from app.backend import Backend
-from app.formatting import md_escape
 from invoiceflow.contracts import DocStatus
 
 _STATUS_ORDER = [
@@ -92,7 +93,11 @@ def render(backend: Backend | None = None) -> None:
             f"**Total:** {ui.money_metric(doc.total)}"
         )
         if doc.status_reason:
-            st.caption(md_escape(doc.status_reason))
+            st.markdown(
+                f'<div style="color:rgba(49,51,63,0.65);font-size:0.85rem;">'
+                f"{escape(doc.status_reason)}</div>",
+                unsafe_allow_html=True,
+            )
     with right:
         if st.button(
             "Open in Review",

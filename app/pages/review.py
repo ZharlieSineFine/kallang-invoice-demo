@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from html import escape
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +17,6 @@ from app.boxes import crop_region, draw_boxes, load_page_text, page_boxes
 from app.formatting import (
     confidence_label,
     format_money,
-    md_escape,
     parse_decimal,
     source_label,
     status_tone,
@@ -110,16 +110,27 @@ def _render_findings(bundle: DocumentBundle) -> None:
         return
     for finding in bundle.findings:
         field_name = finding.field or "document"
-        line = (
-            f"**{finding.rule_id}** · {finding.severity.value} · `{field_name}` — "
-            f"{md_escape(finding.message)}"
+        severity = finding.severity.value
+        accent = "#3b82f6" if severity == "INFO" else "#d94f4f"
+        background = "#eef5ff" if severity == "INFO" else "#fdecec"
+        evidence = " · ".join(f"{k}={v}" for k, v in finding.evidence.items())
+        # Raw HTML on purpose: Streamlit's markdown parser turns $...$ into LaTeX math,
+        # which mangles money amounts in finding messages. Inside a raw HTML block the
+        # message is rendered verbatim in the normal app font.
+        card = (
+            f'<div style="background:{background};border-left:4px solid {accent};'
+            f'padding:0.6rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;">'
+            f'<span style="font-weight:600;color:{accent};">{escape(finding.rule_id)}</span>'
+            f'<span style="opacity:0.7;"> · {escape(severity)} · {escape(field_name)}</span>'
+            f'<div style="margin-top:0.3rem;">{escape(finding.message)}</div>'
         )
-        if finding.severity.value == "INFO":
-            st.info(line)
-        else:
-            st.error(line)
-        if finding.evidence:
-            st.caption(" · ".join(f"{k}={v}" for k, v in finding.evidence.items()))
+        if evidence:
+            card += (
+                f'<div style="margin-top:0.3rem;font-size:0.85rem;opacity:0.75;">'
+                f"{escape(evidence)}</div>"
+            )
+        card += "</div>"
+        st.markdown(card, unsafe_allow_html=True)
 
 
 def _render_actions(
