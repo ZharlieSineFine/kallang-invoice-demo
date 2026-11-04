@@ -7,12 +7,17 @@ from invoiceflow.contracts import CheckContext, Finding, Scope
 from invoiceflow.rules.base import BaseRule, visible_text
 
 # Prompt-injection canary: WS3 embeds this in the prompt and instructs the model never to
-# echo it. If it appears in the output, the document tampered with the model.
+# echo it. If it appears in the output, the document tampered with the model. The value is
+# shared through config/rules.yaml (CR-001); this is the fallback if the key is missing.
 CANARY = "KALLANG-INTERNAL-CANARY-9f3a"
 
 
 class R09(BaseRule):
     rule_id = "R09"
+
+    @property
+    def _canary(self) -> str:
+        return str(self._config.get("canary", CANARY))
 
     def check(self, ctx: CheckContext) -> tuple[Finding, ...]:
         findings: list[Finding] = []
@@ -60,13 +65,13 @@ class R09(BaseRule):
                     evidence={"phrases": ", ".join(out_hits)},
                 )
             )
-        if CANARY.casefold() in raw:
+        if self._canary.casefold() in raw:
             findings.append(
                 self.finding(
                     severity=None,
                     scope=Scope.DOCUMENT,
                     message="The canary appeared in the model output",
-                    evidence={"canary": CANARY},
+                    evidence={"canary": self._canary},
                 )
             )
 

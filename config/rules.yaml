@@ -2,6 +2,9 @@
 # Amounts are strings so they load as Decimal.
 version: 1
 
+# Prompt-injection canary (CR-001): WS3 embeds it in the prompt; R09 flags it in output.
+canary: KALLANG-INTERNAL-CANARY-9f3a
+
 routing:
   auto_approve_clean: true   # false in a pilot: people see every invoice first
 

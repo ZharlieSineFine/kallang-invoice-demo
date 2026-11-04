@@ -59,6 +59,8 @@ def write_report(report: EvalReport, out_dir: Path) -> tuple[Path, Path]:
     md_path = out_dir / f"eval_{stamp}.md"
     json_path.write_text(report.to_json() + "\n", encoding="utf-8")
     md_path.write_text(report.to_markdown() + "\n", encoding="utf-8")
+    # CR-003: a stable path for the dashboard's "latest evaluation" card.
+    (out_dir / "latest.json").write_text(report.to_json() + "\n", encoding="utf-8")
     return json_path, md_path
 
 

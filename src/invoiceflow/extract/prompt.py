@@ -10,7 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 
 PROMPT_VERSION = "extract-v1"
-CANARY_TOKEN = "KALLANG-WS3-CANARY-7F3A91D4"
+# The single project-wide canary (CR-001): same value in config/rules.yaml and WS5's R09.
+CANARY_TOKEN = "KALLANG-INTERNAL-CANARY-9f3a"
 
 _DOCUMENT_PLACEHOLDER = "__DOCUMENT__"
 _CANARY_PLACEHOLDER = "__CANARY__"

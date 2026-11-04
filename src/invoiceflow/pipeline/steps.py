@@ -31,9 +31,8 @@ from invoiceflow.contracts import (
     NormalizedInvoice,
     ValueSource,
 )
-from invoiceflow.pipeline.golden import load_golden
+from invoiceflow.pipeline.deps import build_deps
 from invoiceflow.pipeline.stages import PipelineDeps, process_document
-from invoiceflow.pipeline.stubs import golden_deps
 from invoiceflow.settings import data_dir, load_config
 from invoiceflow.storage import LocalBlobStore
 
@@ -81,13 +80,18 @@ class ExportSummary:
     doc_ids: tuple[UUID, ...]
 
 
-def golden_pipeline() -> Pipeline:
+def build_pipeline(rules_config: dict[str, Any] | None = None) -> Pipeline:
+    """The real pipeline, backed by the Phase 1 implementations (WS2-WS8)."""
+    rules_config = rules_config or load_config("rules")
+
+    # Master data comes from the golden fixtures until WS1's seed loader fills the database.
+    from invoiceflow.pipeline.golden import load_golden
+
     golden = load_golden()
-    rules_config = load_config("rules")
-    deps = golden_deps(
-        golden, auto_approve_clean=bool(rules_config["routing"]["auto_approve_clean"])
-    )
-    return Pipeline(deps=deps, master=golden.master, rules_config=rules_config)
+    return Pipeline(deps=build_deps(rules_config), master=golden.master, rules_config=rules_config)
+
+
+golden_pipeline = build_pipeline  # backward-compatible name used by the DAGs
 
 
 def guess_mime(name: str) -> str | None:

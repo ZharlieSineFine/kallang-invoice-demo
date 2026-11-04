@@ -136,6 +136,54 @@ def check_stage(
     return CheckOutcome(context=ctx, findings=findings, decision=deps.router.route(ctx, findings))
 
 
+def recheck(
+    *,
+    doc_id: UUID,
+    invoice: NormalizedInvoice | None,
+    extraction: ExtractionResult,
+    document: ParsedDocument,
+    master: MasterData,
+    coding_lines: tuple = (),
+    locations: tuple = (),
+    prior_invoices: tuple[PriorInvoice, ...] = (),
+    rules_config: dict[str, Any],
+    today: date,
+    run_id: str,
+    file_sha256: str = "0" * 64,
+    vendor=None,
+    purchase_order: PurchaseOrder | None = None,
+    normalization_problems: tuple[str, ...] = (),
+) -> CheckOutcome:
+    """Re-run the checks on corrected, stored values (CR-002, used by the review screen).
+
+    Unlike ``check_stage`` this re-reads nothing and re-extracts nothing: every value is
+    what the caller passes, so a reviewer's correction is what the rules see. The same
+    real WS5 rules and router run, so the decision matches intake semantics.
+    """
+    ctx = CheckContext(
+        doc_id=doc_id,
+        run_id=run_id,
+        today=today,
+        file_sha256=file_sha256,
+        document=document,
+        extraction=extraction,
+        invoice=invoice,
+        normalization_problems=normalization_problems,
+        vendor=vendor,
+        purchase_order=purchase_order,
+        coding_lines=coding_lines,
+        locations=locations,
+        master=master,
+        prior_invoices=prior_invoices,
+        rules_config=rules_config,
+    )
+    from invoiceflow.pipeline.deps import build_deps
+
+    deps = build_deps(rules_config)
+    findings = run_rules(deps.rules, ctx)
+    return CheckOutcome(context=ctx, findings=findings, decision=deps.router.route(ctx, findings))
+
+
 def process_document(
     path: Path,
     *,

@@ -1,12 +1,17 @@
-"""make skeleton: run the golden fixtures through every stage and check the outcome."""
+"""make skeleton: run the golden fixtures through every stage and check the outcome.
+
+Since the Phase 1 integration this runs the REAL stages (parse -> extract -> normalize ->
+locate -> code -> rules -> route). Extraction follows ``config/models.yaml``'s mode: live
+calls Ollama (about 50-90 s per invoice); ``LLM_MODE=replay`` uses the recorded cache.
+"""
 
 from __future__ import annotations
 
 from datetime import date
 
+from invoiceflow.pipeline.deps import build_deps
 from invoiceflow.pipeline.golden import load_golden
 from invoiceflow.pipeline.stages import process_document
-from invoiceflow.pipeline.stubs import golden_deps
 from invoiceflow.settings import load_config
 
 # Golden runs use a fixed "today" so date checks give the same answer every day.
@@ -15,10 +20,8 @@ GOLDEN_TODAY = date(2026, 11, 4)
 
 def main() -> int:
     golden = load_golden()
-    deps = golden_deps(
-        golden, auto_approve_clean=load_config("rules")["routing"]["auto_approve_clean"]
-    )
     rules_config = load_config("rules")
+    deps = build_deps(rules_config)
     failures = 0
     print(f"{'fixture':<26} {'invoice':<15} {'status':<13} {'expected':<13} findings")
     for fixture in golden.fixtures:
