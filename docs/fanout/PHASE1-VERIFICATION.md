@@ -151,13 +151,15 @@ uv run pytest tests/unit/extract -m ollama -q  # live gemma4:12b: golden extract
 ```
 
 Benchmark (the bench script expects one folder per document with `invoice.pdf` inside, so
-first stage the 10 `bench-*` documents from WS1's output):
+first stage the 10 `bench-*` documents from WS1's output with a short script):
 
 ```bash
-mkdir -p data/benchmark && for d in data/generated/docs/bench-*; do mkdir -p "data/benchmark/$(basename "$d")" && cp "$d/$(basename "$d").pdf" "data/benchmark/$(basename "$d")/invoice.pdf"; done
+uv run python scripts/stage_benchmark.py
 ```
 
-Then run it (one line; `--limit 2` runs 4 model calls, ~3-5 min):
+Expect: `staged 10 benchmark document(s) into .../data/benchmark`.
+
+Then run the benchmark (one line):
 
 ```bash
 uv run python scripts/bench_models.py --docs data/benchmark --out data/bench --modes text,image --dpi 150 --limit 2
