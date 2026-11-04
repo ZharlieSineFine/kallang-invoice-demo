@@ -94,13 +94,15 @@ uv run python scripts/demo_parse.py
 Expect: 1 page, 119 words, 0 hidden, `source=PDF_TEXT`, and the first prompt lines
 (Stagecraft AV Rentals … TAX INVOICE …).
 
-Then OCR a WS1 scan (from Part 2): run the same script with a type C image PDF from
-`data/generated/` as the argument — you should get words with `ocr_mean_conf` filled in and
-`source=OCR`:
+Then OCR a WS1 scan (from Part 2) — type C documents live one folder each under
+`data/generated/docs/` as `<id>/<id>.pdf` and `<id>/<id>.jpg`:
 
 ```bash
-uv run python scripts/demo_parse.py "data/generated/<some-type-C-folder>/<file>.pdf"
+uv run python scripts/demo_parse.py "data/generated/docs/pre-c-01/pre-c-01.pdf"
 ```
+
+Expect `source=OCR`, `ocr_mean_conf` around 82–92 (e.g. 85.11), and no hidden words.
+Other type C docs: `ls data/generated/docs | grep '^pre-c'` (and `bench-c-*`).
 
 ## Part 4 — WS4: standardizing and locating values
 
