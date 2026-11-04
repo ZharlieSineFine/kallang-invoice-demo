@@ -45,11 +45,17 @@ tree is exactly the tree that passed the runs below.)
 Public entry points (from `invoiceflow.parse`):
 
 ```python
-from invoiceflow.parse import DocumentParser, ParseConfig, detect_file_kind, page_texts, parse_document
+from invoiceflow.parse import (
+    DocumentParser,
+    ParseConfig,
+    detect_file_kind,
+    page_texts,
+    parse_document,
+)
 
 parser = DocumentParser(config=ParseConfig.from_repo(), image_root=None)
 document = parser.parse(path, file_id=file_id, doc_id=doc_id)
-texts = parser.page_texts(document)          # or page_texts(document)
+texts = parser.page_texts(document)  # or page_texts(document)
 ```
 
 Defaults are read from `config/rules.yaml` (`scanned_page_min_chars`, `hidden_text.*`).
