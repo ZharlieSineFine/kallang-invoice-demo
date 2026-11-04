@@ -1,0 +1,7 @@
+code,rate_percent,description
+TX,9,"Standard-rated purchase, 9% input tax"
+ZP,0,Zero-rated purchase
+NR,0,Supplier not GST-registered
+OP,0,"Out of scope, e.g. overseas services"
+BL,9,Input tax not claimable
+EP,0,Exempt purchase

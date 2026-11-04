@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} {{ doc.invoice_number }}</title>
+<style>
+  @font-face {
+    font-family: "Invoice Sans";
+    src: url("fonts/FiraSans-Regular.ttf");
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Invoice Sans";
+    src: url("fonts/FiraSans-Bold.ttf");
+    font-weight: bold;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Invoice Mono";
+    src: url("fonts/IBMPlexMono-Regular.ttf");
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Invoice Mono";
+    src: url("fonts/IBMPlexMono-Bold.ttf");
+    font-weight: bold;
+    font-style: normal;
+  }
+  @page { size: A4; margin: 16mm 16mm 14mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Invoice Sans", sans-serif;
+    font-size: 9.4pt;
+    color: #1f2933;
+    line-height: 1.38;
+  }
+  .muted { color: #5b6770; }
+  .small { font-size: 8.2pt; }
+  .mono, .num { font-family: "Invoice Mono", monospace; }
+  .num { white-space: nowrap; }
+  .top { display: flex; justify-content: space-between; gap: 18mm; }
+  .vendor-name { font-size: 14.5pt; font-weight: bold; color: #102a43; }
+  .vendor-block { max-width: 108mm; }
+  .doc-title {
+    font-size: 19pt;
+    font-weight: bold;
+    letter-spacing: 0.4pt;
+    color: #102a43;
+    text-align: right;
+    text-transform: uppercase;
+  }
+  .doc-sub { text-align: right; font-size: 8.6pt; color: #52606d; margin-top: 2mm; }
+  .rule { border-top: 1.5pt solid #102a43; margin: 5mm 0 4mm; }
+  .meta { display: flex; justify-content: space-between; gap: 12mm; margin-bottom: 4mm; }
+  .meta-col { width: 48%; }
+  .label { color: #52606d; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.4pt; }
+  .value { font-weight: bold; }
+  table.lines { width: 100%; border-collapse: collapse; margin-top: 3mm; }
+  table.lines th {
+    background: #f0f4f8;
+    color: #243b53;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+    padding: 2.4mm 1.6mm;
+    border-bottom: 1pt solid #bcccdc;
+    text-align: left;
+  }
+  table.lines td { padding: 2.2mm 1.6mm; border-bottom: 0.5pt solid #d9e2ec; vertical-align: top; }
+  table.lines th.n, table.lines td.n { text-align: right; }
+  .totals { width: 62mm; margin-left: auto; margin-top: 4mm; border-collapse: collapse; }
+  .totals td { padding: 1.6mm 1.6mm; border-bottom: 0.5pt solid #d9e2ec; }
+  .totals td.n { text-align: right; }
+  .totals tr.grand td { border-top: 1.2pt solid #102a43; border-bottom: none; font-weight: bold; font-size: 11pt; }
+  .totals tr.grand td.n { font-family: "Invoice Mono", monospace; }
+  .notes { margin-top: 5mm; padding: 3mm 4mm; background: #f7f9fb; border-left: 2pt solid #9fb3c8; }
+  .footer { margin-top: 7mm; padding-top: 3mm; border-top: 0.6pt solid #d9e2ec; font-size: 8.2pt; color: #52606d; }
+  .hidden-text {
+    position: absolute;
+    left: 6mm;
+    top: 285mm;
+    width: 180mm;
+    font-size: 1pt;
+    line-height: 1pt;
+    color: #ffffff;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1mm 2.4mm;
+    border: 0.7pt solid #486581;
+    border-radius: 2mm;
+    font-size: 7.6pt;
+    color: #334e68;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+  }
+  .venue-box { margin-top: 3mm; border: 0.7pt solid #bcccdc; padding: 3mm 4mm; background: #f7f9fb; }
+  .venue-name { font-size: 12pt; font-weight: bold; color: #102a43; }
+  .two-col { display: flex; gap: 10mm; }
+  .two-col > div { flex: 1; }
+  .statement-table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+  .statement-table th, .statement-table td { padding: 2.2mm 1.6mm; border-bottom: 0.5pt solid #d9e2ec; text-align: left; }
+  .statement-table th { background: #f0f4f8; font-size: 8pt; text-transform: uppercase; }
+  .statement-table td.n, .statement-table th.n { text-align: right; }
+</style>
+</head>
+<body>
+{% block content %}{% endblock %}
+{% if notes %}<div class="notes">{{ notes }}</div>{% endif %}
+{% if hidden_text %}<div class="hidden-text">{{ hidden_text }}</div>{% endif %}
+</body>
+</html>

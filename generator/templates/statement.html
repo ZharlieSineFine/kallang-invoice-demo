@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <div class="vendor-block">
+    <div class="vendor-name">{{ vendor.name }}</div>
+    <div>{{ vendor.address }}</div>
+    <div class="small muted" style="margin-top:1.5mm">
+      UEN: <span class="mono">{{ vendor.uen }}</span>
+      {% if vendor.gst_reg_no %} &nbsp; GST Reg No: <span class="mono">{{ vendor.gst_reg_no }}</span>{% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="doc-title">Statement of Account</div>
+    <div class="doc-sub">Account summary, not a tax invoice</div>
+    <div class="doc-sub" style="margin-top:2mm"><span class="badge">Synthetic document</span></div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<div class="meta">
+  <div class="meta-col">
+    <div class="label">Account holder</div>
+    <div class="value">The Kallang Group</div>
+    <div>Kallang, Singapore</div>
+  </div>
+  <div class="meta-col">
+    <table style="width:100%; border-collapse:collapse">
+      <tr><td class="label">Statement No</td><td class="mono" style="text-align:right">{{ doc.invoice_number }}</td></tr>
+      <tr><td class="label">Statement Date</td><td class="mono" style="text-align:right">{{ date_printed }}</td></tr>
+      <tr><td class="label">Currency</td><td style="text-align:right">{{ doc.currency }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<table class="statement-table">
+  <thead>
+    <tr><th>Invoice No</th><th>Invoice Date</th><th>Reference</th><th class="n">Amount</th></tr>
+  </thead>
+  <tbody>
+  {% for row in doc.statement_rows %}
+    <tr>
+      <td class="mono">{{ row.invoice_number }}</td>
+      <td class="mono">{{ row.invoice_date | date_printed }}</td>
+      <td>{{ row.reference or "Event services" }}</td>
+      <td class="n">{{ row.amount | money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals" style="margin-top:7mm">
+  <tr class="grand"><td>Closing Balance</td><td class="n">{{ doc.currency }} {{ totals.total | money }}</td></tr>
+</table>
+
+<div class="notes small">
+  This statement summarises invoices already issued. It is not a request for payment and it is
+  not a tax invoice. Please quote the statement number in any correspondence.
+</div>
+
+<div class="footer">
+  {{ vendor.name }} &nbsp; UEN <span class="mono">{{ vendor.uen }}</span><br>
+  Bank: {{ vendor.bank_name }}, Account: <span class="mono">{{ bank_printed }}</span>.
+  All names and numbers are fictional.
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <div class="vendor-block">
+    <div class="vendor-name">{{ vendor.name }}</div>
+    <div>{{ vendor.address }}</div>
+    <div class="small muted" style="margin-top:1.5mm">
+      UEN: <span class="mono">{{ vendor.uen }}</span>
+      {% if not doc.omit_gst_reg and vendor.gst_reg_no %}
+        &nbsp;&nbsp;GST Reg No: <span class="mono">{{ vendor.gst_reg_no }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="doc-title">{{ title }}</div>
+    <div class="doc-sub">Kallang Track 10 demonstration</div>
+    <div class="doc-sub" style="margin-top:2mm"><span class="badge">Synthetic document</span></div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<div class="meta">
+  <div class="meta-col">
+    <div class="label">Bill To</div>
+    <div class="value">The Kallang Group</div>
+    <div>Kallang, Singapore</div>
+    {% if doc.venue %}
+      <div style="margin-top:2mm"><span class="label">Venue</span><br>
+        <span class="value">{{ doc.venue }}</span></div>
+    {% endif %}
+    {% if doc.service_period %}
+      <div style="margin-top:1.5mm"><span class="label">Service period</span><br>
+        {{ doc.service_period }}</div>
+    {% endif %}
+  </div>
+  <div class="meta-col">
+    <table style="width:100%; border-collapse:collapse">
+      <tr><td class="label">Invoice No</td><td class="mono" style="text-align:right">{{ doc.invoice_number }}</td></tr>
+      <tr><td class="label">Invoice Date</td><td class="mono" style="text-align:right">{{ date_printed }}</td></tr>
+      {% if due_printed %}
+        <tr><td class="label">Due Date</td><td class="mono" style="text-align:right">{{ due_printed }}</td></tr>
+      {% endif %}
+      {% if doc.due_date %}<tr><td class="label">Terms</td><td style="text-align:right">30 days</td></tr>{% endif %}
+      {% if doc.po_number %}<tr><td class="label">PO No</td><td class="mono" style="text-align:right">{{ doc.po_number }}</td></tr>{% endif %}
+      <tr><td class="label">Currency</td><td style="text-align:right">{{ doc.currency }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<table class="lines">
+  <thead>
+    <tr>
+      <th style="width:8mm">No</th>
+      <th>Description</th>
+      <th class="n" style="width:16mm">Qty</th>
+      <th style="width:14mm">Unit</th>
+      <th class="n" style="width:14mm">Days</th>
+      <th class="n" style="width:24mm">Unit Price</th>
+      <th class="n" style="width:26mm">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for line in lines %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ line.description }}</td>
+      <td class="n">{{ line.quantity | qty }}</td>
+      <td>{{ line.unit }}</td>
+      <td class="n">{% if line.days is not none %}{{ line.days | qty }}{% endif %}</td>
+      <td class="n">{{ line.unit_price | money }}</td>
+      <td class="n">{{ line.amount | money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal{% if doc.simplified %} (incl. GST){% endif %}</td><td class="n">{{ totals.printed_subtotal | money }}</td></tr>
+  <tr><td>{{ gst_rate }} GST</td><td class="n">{{ totals.gst | money }}</td></tr>
+  <tr class="grand"><td>Total Payable</td><td class="n">{{ doc.currency }} {{ totals.total | money }}</td></tr>
+  {% if doc.sgd_total is not none %}
+    <tr><td class="small muted">SGD equivalent</td><td class="n small muted">SGD {{ doc.sgd_total | money }}</td></tr>
+  {% endif %}
+</table>
+
+{% if doc.simplified %}
+  <div class="notes small">Price payable includes GST. This is a simplified tax invoice for a total not exceeding S$1,000.</div>
+{% endif %}
+
+<div class="footer">
+  Payment by bank transfer to {{ vendor.bank_name }}, Account: <span class="mono">{{ bank_printed }}</span><br>
+  Please quote invoice number {{ doc.invoice_number }} with your payment. All names and numbers are fictional.
+</div>
+{% endblock %}
