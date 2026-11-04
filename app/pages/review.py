@@ -116,17 +116,19 @@ def _render_findings(bundle: DocumentBundle) -> None:
         evidence = " · ".join(f"{k}={v}" for k, v in finding.evidence.items())
         # Raw HTML on purpose: Streamlit's markdown parser turns $...$ into LaTeX math,
         # which mangles money amounts in finding messages. Inside a raw HTML block the
-        # message is rendered verbatim in the normal app font.
+        # message is rendered verbatim. Text colors are set explicitly so the card stays
+        # readable in both Streamlit themes (dark theme makes inherited text white).
         card = (
             f'<div style="background:{background};border-left:4px solid {accent};'
-            f'padding:0.6rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;">'
+            f'padding:0.6rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;'
+            f'color:#1f2328;">'
             f'<span style="font-weight:600;color:{accent};">{escape(finding.rule_id)}</span>'
-            f'<span style="opacity:0.7;"> · {escape(severity)} · {escape(field_name)}</span>'
+            f'<span style="color:#5a6068;"> · {escape(severity)} · {escape(field_name)}</span>'
             f'<div style="margin-top:0.3rem;">{escape(finding.message)}</div>'
         )
         if evidence:
             card += (
-                f'<div style="margin-top:0.3rem;font-size:0.85rem;opacity:0.75;">'
+                f'<div style="margin-top:0.3rem;font-size:0.85rem;color:#5a6068;">'
                 f"{escape(evidence)}</div>"
             )
         card += "</div>"
