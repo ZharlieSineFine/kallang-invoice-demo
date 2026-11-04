@@ -1,0 +1,36 @@
+"""R12: PO exists, belongs to the vendor, and has enough open amount."""
+
+from decimal import Decimal
+
+from invoiceflow.rules.r12 import R12
+
+
+def test_r12_passes_clean(clean_ctx, rules_config):
+    assert R12(rules_config).check(clean_ctx) == ()
+
+
+def test_r12_flags_missing_po_number(clean_ctx, rules_config):
+    invoice = clean_ctx.invoice.model_copy(update={"po_number": None})
+    ctx = clean_ctx.model_copy(update={"invoice": invoice, "purchase_order": None})
+    findings = R12(rules_config).check(ctx)
+    assert any(f.field == "po_number" for f in findings)
+
+
+def test_r12_flags_po_not_found(clean_ctx, rules_config):
+    ctx = clean_ctx.model_copy(update={"purchase_order": None})
+    findings = R12(rules_config).check(ctx)
+    assert any(f.field == "po_number" and "not found" in f.message for f in findings)
+
+
+def test_r12_flags_wrong_vendor(clean_ctx, rules_config):
+    po = clean_ctx.purchase_order.model_copy(update={"vendor_id": "V999"})
+    ctx = clean_ctx.model_copy(update={"purchase_order": po})
+    findings = R12(rules_config).check(ctx)
+    assert any(f.field == "po_number" and "belongs to vendor" in f.message for f in findings)
+
+
+def test_r12_flags_insufficient_open_amount(clean_ctx, rules_config):
+    po = clean_ctx.purchase_order.model_copy(update={"open_amount": Decimal("100.00")})
+    ctx = clean_ctx.model_copy(update={"purchase_order": po})
+    findings = R12(rules_config).check(ctx)
+    assert any(f.field == "total" for f in findings)

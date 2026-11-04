@@ -25,4 +25,16 @@ The integrator decides, applies the change on `main`, updates the contract tests
 
 ## Requests
 
-_None yet._
+### CR-001 — a shared prompt-injection canary value
+
+- **Workstream:** WS5 (raised), touches WS3
+- **Status:** OPEN
+- **What changes:** add a `canary` key (a single string) to `config/rules.yaml` (or a shared
+  config) so WS3's prompt and WS5's R09 check use the same sentinel.
+- **Why:** R09 must confirm "the canary does not appear in the output", but no canary value
+  is defined in the contract. WS5 currently hard-codes `KALLANG-INTERNAL-CANARY-9f3a` in
+  `rules/r09.py`; WS3 would need to embed the same string in its prompt, which is fragile
+  across workstreams.
+- **Impact:** additive config key only; no schema or migration change. WS5 reads it from
+  `rules_config["canary"]` with the current constant as a fallback.
+- **Integrator decision:** _pending_
