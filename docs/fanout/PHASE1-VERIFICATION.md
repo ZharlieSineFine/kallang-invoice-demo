@@ -88,20 +88,19 @@ uv run pytest tests/unit/parse tests/integration/ws2 -q    # all pass (94 collec
 Manual look — parse a golden PDF and show words/hidden words:
 
 ```bash
-uv run python - <<'EOF'
-from uuid import uuid4
-from invoiceflow.parse import DocumentParser
-p = DocumentParser()
-doc = p.parse("tests/fixtures/golden/golden-a-clean/invoice.pdf",
-              file_id=uuid4(), doc_id=uuid4())
-page = doc.pages[0]
-print("words:", len(page.words), "hidden:", len(doc.hidden_words))
-print("first prompt line:", p.page_texts(doc)[0][:120])
-EOF
+uv run python scripts/demo_parse.py
 ```
 
-Then OCR a WS1 scan (from Part 2): point the snippet at one of the type C image PDFs in
-`data/generated/` — you should get words with OCR confidence, and `text_source == "OCR"`.
+Expect: 1 page, 119 words, 0 hidden, `source=PDF_TEXT`, and the first prompt lines
+(Stagecraft AV Rentals … TAX INVOICE …).
+
+Then OCR a WS1 scan (from Part 2): run the same script with a type C image PDF from
+`data/generated/` as the argument — you should get words with `ocr_mean_conf` filled in and
+`source=OCR`:
+
+```bash
+uv run python scripts/demo_parse.py "data/generated/<some-type-C-folder>/<file>.pdf"
+```
 
 ## Part 4 — WS4: standardizing and locating values
 
@@ -112,25 +111,21 @@ uv run pytest tests/unit/normalize tests/unit/locate tests/integration/ws4 -q   
 Manual look:
 
 ```bash
-uv run python - <<'EOF'
-from decimal import Decimal
-from uuid import uuid4
-from invoiceflow.normalize import normalize_amount, normalize_date
-from invoiceflow.parse import DocumentParser
-from invoiceflow.locate import Locator
-from invoiceflow.pipeline.golden import load_golden
-
-print(normalize_amount("S$1,090.00"))          # Decimal('1090.00')
-print(normalize_date("12 Oct 2026", "SG"))     # date(2026, 10, 12)
-
-g = load_golden(); fx = g.fixtures[0]
-doc = DocumentParser().parse(fx.pdf_path, file_id=uuid4(), doc_id=uuid4())
-locs = Locator().locate(doc, fx.truth.printed)
-print(len(locs), "locations; subtotal:", [l for l in locs if l.field=="subtotal"][0].match_type)
-EOF
+uv run python scripts/demo_locate.py
 ```
 
-Expect `EXACT` matches for the header fields.
+Expect:
+
+```
+S$1,090.00      -> 1090.00
+12 Oct 2026 (SG)-> 2026-10-12
+M2-1234567-8    -> M212345678
+...
+  subtotal         EXACT  score=100.0 page=1 matched_text='1,080.00'
+  total            EXACT  score=100.0 page=1 matched_text='1,177.20'
+```
+
+All four shown fields should be `EXACT` matches.
 
 ## Part 5 — WS5: checks R01–R12 and routing
 
