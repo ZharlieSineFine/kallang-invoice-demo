@@ -1,0 +1,64 @@
+{
+  "accuracy": 100.0,
+  "checks": {
+    "precision": 100.0,
+    "recall": 100.0
+  },
+  "coding": {
+    "cost_center": 100.0,
+    "gl": 100.0,
+    "overall": 100.0,
+    "tax_code": 100.0
+  },
+  "header": {
+    "all_correct_share": 100.0,
+    "by_field": {
+      "amount_due": 100.0,
+      "bank_account": 100.0,
+      "bank_name": 100.0,
+      "buyer_address": 100.0,
+      "buyer_name": 100.0,
+      "contract_number": 100.0,
+      "currency": 100.0,
+      "discount": 100.0,
+      "due_date": 100.0,
+      "gst_amount": 100.0,
+      "gst_inclusive_note": 100.0,
+      "gst_rate": 100.0,
+      "invoice_date": 100.0,
+      "invoice_number": 100.0,
+      "original_invoice_ref": 100.0,
+      "payment_terms": 100.0,
+      "po_number": 100.0,
+      "service_period": 100.0,
+      "sgd_gst_amount": 100.0,
+      "sgd_total": 100.0,
+      "subtotal": 100.0,
+      "supplier_address": 100.0,
+      "supplier_gst_reg_no": 100.0,
+      "supplier_name": 100.0,
+      "supplier_uen": 100.0,
+      "title": 100.0,
+      "total": 100.0,
+      "venue": 100.0
+    },
+    "by_type": {
+      "date": 100.0,
+      "id": 100.0,
+      "money": 100.0,
+      "text": 100.0
+    },
+    "overall": 100.0
+  },
+  "latency": {
+    "count": 2,
+    "max_ms": 0,
+    "mean_ms": 0.0
+  },
+  "line_items": {
+    "precision": 100.0,
+    "recall": 100.0
+  },
+  "samples": 2,
+  "set_name": "golden"
+}
