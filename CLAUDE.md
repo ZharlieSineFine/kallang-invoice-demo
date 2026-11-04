@@ -13,8 +13,10 @@ rehearsal prep. All data is synthetic.
 - Gates verified: `make test` = 729 passed (≈96% coverage); `make skeleton` routes
   golden-a-clean → AUTO_PASSED and golden-a-total-mismatch → NEEDS_REVIEW/R02 with the live
   gemma4:12b model; `make e2e` = `e2e OK` (export twice, second batch 0 rows).
-- The visual demo plan (the live Streamlit app as the presentation) is committed at
-  `docs/demo-plan.md` — not yet built.
+- The visual demo from `docs/demo-plan.md` is built: Demo page (`app/pages/story.py`), flow
+  strip and technical toggle (`app/flow.py`), inbox grid (`app/inbox.py`), compliance cards
+  (`app/compliance.py`), CSV trace (`app/csv_trace.py`). It needs the demo data loaded; see
+  "Next work".
 - Recent fixes: Queue "Open in Review" uses an on_click callback; finding cards render as
   raw HTML with explicit text colors (Streamlit's markdown parser otherwise turns `$…$`
   amounts into LaTeX math, and dark theme makes inherited text unreadable).
@@ -62,8 +64,10 @@ needs `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` on macOS. Dev Postgres:
 
 ## Next work (in order)
 
-1. Build the visual demo per `docs/demo-plan.md` (guided Demo page, pipeline flow strip,
-   technical toggle, inbox grid, compliance cards, CSV trace drill-down).
+1. Close the gaps the visual demo exposed: `sap_export` still writes the 8-column stub CSV, and
+   only APPROVED documents export (not AUTO_PASSED); the pipeline's master data has one vendor;
+   `documents.doc_type` is never written; R11 flags every date with day <= 12 as ambiguous;
+   R02/R03 misread GST-inclusive simplified invoices.
 2. Phase 2 gates per `docs/fanout/MERGE-RUNBOOK.md`: `make bench`/`eval-bench`, model-choice
    note, `make demo-data`, e2e in replay with Ollama stopped, reviewers, rehearsal,
    snapshot/restore.

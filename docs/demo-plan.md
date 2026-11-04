@@ -140,7 +140,7 @@ existing `ap` database and `data/` artifacts.
 
 | Demo step | Proves | Requirement |
 |---|---|---|
-| Read (OCR, hidden text) | R07, R09 | OWASP LLM01:2025 (hidden instructions), IRAS readability |
+| Read (OCR, hidden text) | R07, R09 | OWASP LLM01:2025 (hidden instructions); R07 is a PTC control (the IRAS page sets no readability rule) |
 | Extract (copies as printed) | grounding | IRAS field list; PINT SG field IDs |
 | Understand (normalize + locate) | R01 | "every value must appear on the page" |
 | Check (totals, GST, vendor, duplicates, dates, PO) | R02–R06, R10–R12 | IRAS invoicing rules; plan §6 |

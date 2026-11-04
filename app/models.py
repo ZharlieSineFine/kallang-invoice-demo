@@ -34,6 +34,7 @@ class FindingRow:
     evidence: dict[str, str] = field(default_factory=dict)
     stage: Stage = Stage.INTAKE
     run_id: str | None = None
+    rule_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,10 @@ class ExtractionInfo:
     error: str | None
     latency_ms: int | None
     created_at: datetime
+    raw_output: str | None = None
+    parsed: dict[str, Any] | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
     @property
     def replay(self) -> bool:
@@ -137,6 +142,11 @@ class DocumentSummary:
     is_replay: bool = False
     finding_count: int = 0
     highest_severity: Severity | None = None
+    open_rules: tuple[str, ...] = ()
+    first_page_image: str | None = None
+    extraction_valid: bool | None = None
+    printed_title: str | None = None
+    file_name: str | None = None
 
     @property
     def label(self) -> str:
@@ -232,6 +242,8 @@ class BatchSummary:
     layout: str
     mapping_version: str
     doc_ids: tuple[UUID, ...] = ()
+    csv_sha256: str | None = None
+    manifest: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

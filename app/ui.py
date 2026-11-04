@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from html import escape
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import streamlit as st
+from PIL import Image
 
 from app.backend import PostgresBackend
-from invoiceflow.settings import repo_root
+from app.boxes import load_page_text
+from app.models import DocumentBundle, FindingRow, PageRow
+from invoiceflow.contracts import PageText
+from invoiceflow.settings import data_dir, repo_root
 
 
 def get_backend() -> PostgresBackend:
@@ -87,7 +92,55 @@ def resolve_path(path: str | None) -> Path | None:
     candidate = Path(path)
     if candidate.is_absolute():
         return candidate
+    # The pipeline stores silver and gold paths relative to data/, fixtures relative to the repo.
+    for base in (repo_root(), data_dir()):
+        if (base / candidate).exists():
+            return base / candidate
     return repo_root() / candidate
+
+
+def load_image(path: str | None) -> Image.Image | None:
+    resolved = resolve_path(path)
+    if resolved is None or not resolved.is_file():
+        return None
+    return Image.open(resolved)
+
+
+def page_words(bundle: DocumentBundle, page_no: int) -> tuple[PageRow | None, PageText | None]:
+    page = next((p for p in bundle.pages if p.page_no == page_no), None)
+    if page is None or not page.words_path:
+        return page, None
+    try:
+        return page, load_page_text(resolve_path(page.words_path) or page.words_path)
+    except (OSError, ValueError):
+        return page, None
+
+
+def technical_view() -> bool:
+    return bool(st.session_state.get("technical_view", False))
+
+
+def finding_card_html(finding: FindingRow) -> str:
+    """Raw HTML on purpose: Streamlit's markdown parser turns $...$ into LaTeX math, which
+    mangles money amounts. Text colors are explicit so the card reads in both themes."""
+    field_name = finding.field or "document"
+    severity = finding.severity.value
+    accent = "#3b82f6" if severity == "INFO" else "#d94f4f"
+    background = "#eef5ff" if severity == "INFO" else "#fdecec"
+    evidence = " · ".join(f"{k}={v}" for k, v in finding.evidence.items())
+    card = (
+        f'<div style="background:{background};border-left:4px solid {accent};'
+        f'padding:0.6rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;color:#1f2328;">'
+        f'<span style="font-weight:600;color:{accent};">{escape(finding.rule_id)}</span>'
+        f'<span style="color:#5a6068;"> · {escape(severity)} · {escape(field_name)}</span>'
+        f'<div style="margin-top:0.3rem;">{escape(finding.message)}</div>'
+    )
+    if evidence:
+        card += (
+            f'<div style="margin-top:0.3rem;font-size:0.85rem;color:#5a6068;">'
+            f"{escape(evidence)}</div>"
+        )
+    return card + "</div>"
 
 
 def money_metric(value) -> str:

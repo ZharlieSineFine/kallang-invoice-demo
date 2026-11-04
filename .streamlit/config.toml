@@ -1,0 +1,4 @@
+# The app has its own sidebar radio; Streamlit's automatic list of app/pages/ opens blank pages.
+[client]
+showSidebarNavigation = false
+toolbarMode = "minimal"

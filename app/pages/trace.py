@@ -9,10 +9,20 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.csv_trace import render_csv_trace
 
 
 def _frame(rows: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(rows)
+
+
+def _render_export(backend: Backend, doc_id) -> None:
+    st.markdown("### CSV row")
+    batch = next((item for item in backend.batches() if doc_id in item.doc_ids), None)
+    if batch is None:
+        st.caption("This document has not been exported yet.")
+        return
+    render_csv_trace(backend, batch, key="trace_csv", preferred_doc=doc_id)
 
 
 def render(backend: Backend | None = None) -> None:
@@ -39,6 +49,8 @@ def render(backend: Backend | None = None) -> None:
     cols[1].metric("Runs", len(trace.runs))
     cols[2].metric("Reviews", len(bundle.reviews))
     cols[3].metric("Events", len(bundle.events))
+
+    _render_export(backend, doc_id)
 
     if bundle.extraction:
         ext = bundle.extraction

@@ -9,6 +9,7 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.flow import render_flow_strip
 
 
 def _findings_frame(data) -> pd.DataFrame:
@@ -29,6 +30,7 @@ def render(backend: Backend | None = None) -> None:
     st.title("Dashboard")
     ui.show_flash()
     data = backend.dashboard()
+    render_flow_strip(backend.list_documents())
 
     cols = st.columns(4)
     cols[0].metric("Documents processed", data.total_documents)

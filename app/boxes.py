@@ -218,6 +218,20 @@ def page_boxes(
     return tuple(boxes)
 
 
+def word_boxes(page: PageText, *, hidden_only: bool = False) -> tuple[BoxSpec, ...]:
+    """A box per word the reader found; text a person cannot see is red."""
+    return tuple(
+        BoxSpec(
+            field=f"word-{index}",
+            bbox=word.bbox,
+            status="flagged" if word.hidden else "passed",
+            label=word.text,
+        )
+        for index, word in enumerate(page.words)
+        if word.hidden or not hidden_only
+    )
+
+
 def draw_boxes(
     image: Image.Image,
     boxes: Iterable[BoxSpec],

@@ -170,7 +170,7 @@ def test_batches_page_lists_a_batch(fake_backend):
 
 def test_main_navigation_switches_pages(fake_backend):
     at = _run_main(fake_backend)
-    assert "Upload" in _titles(at)
+    assert "Demo" in _titles(at)  # the guided story is what opens first
     at.sidebar.radio[0].set_value("Dashboard").run(timeout=30)
     assert "Dashboard" in _titles(at)
 

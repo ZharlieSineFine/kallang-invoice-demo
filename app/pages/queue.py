@@ -9,6 +9,8 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.flow import render_flow_strip
+from app.inbox import render_grid
 from invoiceflow.contracts import DocStatus
 
 _STATUS_ORDER = [
@@ -58,6 +60,7 @@ def render(backend: Backend | None = None) -> None:
         st.info("No documents yet. Upload one, or run `make db-dev && make fixtures`.")
         return
 
+    render_flow_strip(docs)
     options = [status for status in _STATUS_ORDER if any(d.status is status for d in docs)]
     chosen = st.multiselect(
         "Statuses",
@@ -77,6 +80,7 @@ def render(backend: Backend | None = None) -> None:
     if not filtered:
         st.info("No documents match those statuses.")
         return
+    render_grid(filtered)
     st.dataframe(_frame(filtered), hide_index=True, width="stretch")
 
     chosen_doc = ui.document_picker(filtered, key="queue_document")

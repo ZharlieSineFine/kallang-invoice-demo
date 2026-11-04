@@ -77,7 +77,12 @@ SELECT d.doc_id,
        sup.value_norm AS supplier_name,
        tot.value_norm AS total,
        b.received_at,
+       b.original_name AS file_name,
+       ttl.value_raw AS printed_title,
+       pg.image_path AS first_page_image,
        ext.mode AS extraction_mode,
+       ext.valid AS extraction_valid,
+       fc.open_rules,
        COALESCE(fc.finding_count, 0) AS finding_count,
        fc.max_rank
 FROM documents d
@@ -102,13 +107,26 @@ LEFT JOIN LATERAL (
     ORDER BY f.row_id DESC LIMIT 1
 ) tot ON true
 LEFT JOIN LATERAL (
-    SELECT e.extraction_id, e.mode
+    SELECT f.value_raw
+    FROM fields f
+    WHERE f.doc_id = d.doc_id AND f.name = 'title' AND f.is_current
+    ORDER BY f.row_id DESC LIMIT 1
+) ttl ON true
+LEFT JOIN LATERAL (
+    SELECT p.image_path
+    FROM pages p
+    WHERE p.doc_id = d.doc_id
+    ORDER BY p.page_no LIMIT 1
+) pg ON true
+LEFT JOIN LATERAL (
+    SELECT e.extraction_id, e.mode, e.valid
     FROM extractions e
     WHERE e.doc_id = d.doc_id
     ORDER BY e.created_at DESC, e.extraction_id DESC LIMIT 1
 ) ext ON true
 LEFT JOIN LATERAL (
     SELECT count(*) AS finding_count,
+           array_agg(DISTINCT f.rule_id) AS open_rules,
            max(CASE f.severity
                  WHEN 'MANUAL' THEN 3
                  WHEN 'HOLD' THEN 2
@@ -147,6 +165,11 @@ def _summary(row: dict[str, Any]) -> DocumentSummary:
         is_replay=row["extraction_mode"] == LLMMode.REPLAY.value,
         finding_count=int(row["finding_count"] or 0),
         highest_severity=_SEVERITY_BY_RANK.get(row["max_rank"]),
+        open_rules=tuple(row["open_rules"] or ()),
+        first_page_image=row["first_page_image"],
+        extraction_valid=row["extraction_valid"],
+        printed_title=row["printed_title"],
+        file_name=row["file_name"],
     )
 
 
@@ -287,6 +310,7 @@ def _finding(row: dict[str, Any]) -> FindingRow:
         evidence=dict(row["evidence"] or {}),
         stage=Stage(row["stage"]),
         run_id=row["run_id"],
+        rule_version=row.get("rule_version"),
     )
 
 
@@ -297,7 +321,8 @@ def findings(conn: Connection, doc_id: UUID, run_id: str | None = None) -> tuple
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            SELECT rule_id, field, severity, scope, message, evidence, stage, run_id
+            SELECT rule_id, field, severity, scope, message, evidence, stage, run_id,
+                   rule_version
             FROM findings
             WHERE doc_id = %s AND run_id = %s
             ORDER BY finding_id
@@ -311,7 +336,8 @@ def finding_history(conn: Connection, doc_id: UUID) -> tuple[FindingRow, ...]:
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            SELECT rule_id, field, severity, scope, message, evidence, stage, run_id
+            SELECT rule_id, field, severity, scope, message, evidence, stage, run_id,
+                   rule_version
             FROM findings
             WHERE doc_id = %s
             ORDER BY finding_id
@@ -400,7 +426,8 @@ def extraction(conn: Connection, doc_id: UUID) -> ExtractionInfo | None:
         cur.execute(
             """
             SELECT extraction_id, model, model_digest, prompt_version, schema_version,
-                   mode, valid, error, latency_ms, created_at
+                   mode, valid, error, latency_ms, created_at, raw_output, parsed,
+                   prompt_tokens, completion_tokens
             FROM extractions
             WHERE doc_id = %s
             ORDER BY created_at DESC, extraction_id DESC
@@ -422,6 +449,10 @@ def extraction(conn: Connection, doc_id: UUID) -> ExtractionInfo | None:
             error=row["error"],
             latency_ms=row["latency_ms"],
             created_at=row["created_at"],
+            raw_output=row["raw_output"],
+            parsed=row["parsed"],
+            prompt_tokens=row["prompt_tokens"],
+            completion_tokens=row["completion_tokens"],
         )
 
 
@@ -644,8 +675,8 @@ def batches(conn: Connection) -> tuple[BatchSummary, ...]:
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            SELECT b.batch_id, b.created_at, b.csv_path, b.row_count, b.total, b.layout,
-                   b.mapping_version,
+            SELECT b.batch_id, b.created_at, b.csv_path, b.csv_sha256, b.row_count, b.total,
+                   b.layout, b.mapping_version, b.manifest,
                    COALESCE(array_agg(r.doc_id) FILTER (WHERE r.doc_id IS NOT NULL), '{}')
                        AS doc_ids
             FROM export_batches b
@@ -664,6 +695,8 @@ def batches(conn: Connection) -> tuple[BatchSummary, ...]:
                 layout=row["layout"],
                 mapping_version=row["mapping_version"],
                 doc_ids=tuple(row["doc_ids"] or ()),
+                csv_sha256=row["csv_sha256"],
+                manifest=dict(row["manifest"] or {}),
             )
             for row in cur.fetchall()
         )

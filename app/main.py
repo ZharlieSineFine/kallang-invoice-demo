@@ -18,9 +18,10 @@ if str(ROOT) not in sys.path:
 
 import streamlit as st  # noqa: E402
 
-from app.pages import batches, dashboard, queue, review, trace, upload  # noqa: E402
+from app.pages import batches, dashboard, queue, review, story, trace, upload  # noqa: E402
 
 PAGES = {
+    "Demo": story.render,
     "Upload": upload.render,
     "Queue": queue.render,
     "Review": review.render,
@@ -41,9 +42,10 @@ def render(backend=None) -> None:
     st.sidebar.caption("Invoice review · local demo · synthetic data")
     page = st.sidebar.radio("Page", list(PAGES), key="page")
     st.sidebar.divider()
-    st.sidebar.caption(
-        "Reads are in `app/queries.py`; writes go through the temporary `app/repo.py` adapter "
-        "until WS6 `store.repo` lands."
+    st.sidebar.toggle(
+        "Technical view",
+        key="technical_view",
+        help="Show raw artifacts next to the friendly views: JSON, rule versions, model, SQL.",
     )
     PAGES[page](backend)
 

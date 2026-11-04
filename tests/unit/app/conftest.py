@@ -151,6 +151,11 @@ def make_bundle(fixture: GoldenFixture) -> DocumentBundle:
         is_replay=True,
         finding_count=len(findings),
         highest_severity=worst,
+        open_rules=tuple(sorted({finding.rule_id for finding in findings})),
+        first_page_image=fixture.page.image_path,
+        extraction_valid=fixture.extraction.valid,
+        printed_title="Tax Invoice",
+        file_name="invoice.pdf",
     )
     page = PageRow(
         page_no=fixture.page.page_no,
@@ -290,6 +295,7 @@ class FakeBackend:
             status_reason="; ".join(result.reasons) or None,
             finding_count=len(findings),
             highest_severity=worst,
+            open_rules=tuple(sorted({finding.rule_id for finding in findings})),
         )
         event = EventRow(
             event_id=len(bundle.events) + 1,
