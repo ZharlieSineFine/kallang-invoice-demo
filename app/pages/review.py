@@ -16,6 +16,7 @@ from app.boxes import crop_region, draw_boxes, load_page_text, page_boxes
 from app.formatting import (
     confidence_label,
     format_money,
+    md_escape,
     parse_decimal,
     source_label,
     status_tone,
@@ -110,7 +111,8 @@ def _render_findings(bundle: DocumentBundle) -> None:
     for finding in bundle.findings:
         field_name = finding.field or "document"
         line = (
-            f"**{finding.rule_id}** · {finding.severity.value} · `{field_name}` — {finding.message}"
+            f"**{finding.rule_id}** · {finding.severity.value} · `{field_name}` — "
+            f"{md_escape(finding.message)}"
         )
         if finding.severity.value == "INFO":
             st.info(line)

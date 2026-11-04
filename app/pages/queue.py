@@ -7,6 +7,7 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.formatting import md_escape
 from invoiceflow.contracts import DocStatus
 
 _STATUS_ORDER = [
@@ -91,7 +92,7 @@ def render(backend: Backend | None = None) -> None:
             f"**Total:** {ui.money_metric(doc.total)}"
         )
         if doc.status_reason:
-            st.caption(doc.status_reason)
+            st.caption(md_escape(doc.status_reason))
     with right:
         if st.button(
             "Open in Review",

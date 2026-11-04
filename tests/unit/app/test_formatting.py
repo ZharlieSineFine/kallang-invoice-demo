@@ -80,3 +80,14 @@ def test_small_numbers():
     assert safe_float("x") is None
     assert percent(1, 4) == 25.0
     assert percent(1, 0) == 0.0
+
+
+def test_md_escape_keeps_dollar_signs_literal():
+    from app.formatting import md_escape
+
+    message = "The line items add up to S$1,080.00, but the subtotal reads S$1,090.00."
+    escaped = md_escape(message)
+    assert escaped == (
+        "The line items add up to S\\$1,080.00, but the subtotal reads S\\$1,090.00."
+    )
+    assert md_escape("plain text") == "plain text"

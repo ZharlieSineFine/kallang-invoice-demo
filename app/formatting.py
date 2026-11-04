@@ -28,6 +28,17 @@ _AMOUNT = re.compile(r"^[+-]?(?:\d[\d,\s]*)(?:\.\d+)?$")
 _CURRENCY_PREFIX = re.compile(r"^(?:S\$|SGD|USD|EUR|GBP|\$)\s*", re.IGNORECASE)
 
 
+def md_escape(text: str) -> str:
+    """Make plain text safe inside Streamlit markdown.
+
+    Streamlit renders ``$...$`` pairs as LaTeX math, so a finding message like
+    ``add up to S$1,080.00, but ... S$1,090.00`` would be typeset as a math span in a
+    funny italic font. Escaping the dollar signs keeps them literal (Streamlit honours
+    ``\\$``); the data itself stays unchanged.
+    """
+    return text.replace("$", "\\$")
+
+
 def parse_decimal(raw: str | None) -> Decimal | None:
     """Parse a printed amount (``S$1,080.00``) into a Decimal. Never uses float."""
     if raw is None:
