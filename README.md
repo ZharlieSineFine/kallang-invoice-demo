@@ -122,7 +122,10 @@ See `docs/CONTRACTS.md` for what each workstream owns and how to request a contr
 
 - Every name, UEN, bank account, GL account, cost center, and tax code is fictional. UENs use
   the year 2099, which cannot belong to a real company.
+- The synthetic dataset was chosen over a Kaggle CRM dataset; the comparison is in
+  [`docs/data-decision.md`](docs/data-decision.md).
 - The SAP layout is `hypothetical` in `config/sap_mapping.yaml`; it is labeled as such in the
   manifest and will be replaced when Kallang's real template arrives.
+- Tesseract 5.5.4 is installed for local OCR tests; the Docker image installs its own copy.
 - Gemma 4 12B on Ollama is the chosen model, with `qwen3-vl:4b` as the fallback. Neither is
   wired yet; WS3 owns that.
