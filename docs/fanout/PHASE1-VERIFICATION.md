@@ -150,12 +150,24 @@ uv run pytest tests/unit/extract -q            # replay/schema tests, no model n
 uv run pytest tests/unit/extract -m ollama -q  # live gemma4:12b: golden extraction == truth
 ```
 
-Benchmark (uses WS1's benchmark set; check the exact folder name first):
+Benchmark (the bench script expects one folder per document with `invoice.pdf` inside, so
+first stage the 10 `bench-*` documents from WS1's output):
 
 ```bash
-ls data/generated/                      # find the benchmark subfolder
-uv run python scripts/bench_models.py --docs data/generated/<benchmark-folder> \
-    --out data/bench --modes text,image --dpi 150 --limit 2
+mkdir -p data/benchmark && for d in data/generated/docs/bench-*; do mkdir -p "data/benchmark/$(basename "$d")" && cp "$d/$(basename "$d").pdf" "data/benchmark/$(basename "$d")/invoice.pdf"; done
+```
+
+Then run it (one line; `--limit 2` runs 4 model calls, ~3-5 min):
+
+```bash
+uv run python scripts/bench_models.py --docs data/benchmark --out data/bench --modes text,image --dpi 150 --limit 2
+```
+
+Expect: `benchmark: 4 calls, 4 succeeded`, then `latency csv`, `memory`, `raw outputs` lines.
+(The script also prints "fallback model 'qwen3-vl:4b' is not pulled; skipping" — that is
+correct: we run gemma4:12b only.)
+
+```bash
 ls data/bench/                          # latency.csv, memory.json, raw/ outputs
 ```
 
