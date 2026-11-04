@@ -97,9 +97,34 @@ the invoice tables and reloads the golden set in one transaction; it is safe to 
 | `make fixtures` | load the golden set into the database |
 | `make golden` | rebuild the fixture PDFs, words, and truth files |
 
-Phase 1 targets (`up`, `data`, `warm`, `demo-data`, `drop`, `export`, `eval`, `bench`,
-`snapshot`, `restore`, `reset`, `e2e`) are present but exit with the workstream that owns
-them.
+Phase 1 targets owned by WS6 (`up`, `down`, `logs`, `drop`, `export`, `snapshot`, `restore`,
+`reset`, `e2e`) are wired; the others (`data`, `warm`, `demo-data`, `eval`, `eval-bench`,
+`gate`, `bench`) still print the workstream that owns them and stop.
+
+## Full stack (WS6)
+
+`make up` builds and starts the Airflow 3.3.2 stack and is healthy in under 2 minutes. It runs
+one Postgres with two databases (`airflow`, `ap`), the Airflow API server / scheduler /
+dag-processor / triggerer on `LocalExecutor` with the SimpleAuthManager (everyone is admin, so
+it is local-only), and the review-app placeholder. Everything binds to 127.0.0.1 (Airflow
+8080, review app 8501).
+
+```bash
+make setup && make up    # build + start, wait until healthy
+make drop                # copy golden-a-clean into data/inbox
+make export              # trigger the sap_export DAG
+make e2e                 # inbox -> silver -> export, in replay mode, no Airflow
+```
+
+Three DAGs live in `dags/`: `invoice_intake` (every 5 minutes and on demand, one task per
+document in the one-slot `llm` pool), `sap_export` (18:00 Singapore time and on demand), and
+`evaluate` (on demand). With the Phase 1 stubs the golden fixtures move inbox → bronze →
+silver, and running `sap_export` twice leaves the second batch with zero rows (export-once is
+enforced by `export_rows.doc_id`).
+
+Idle memory from `docker stats` after `make up` (six containers): **≈1.4 GiB** —
+scheduler ~543 MiB, api-server ~277 MiB, triggerer ~263 MiB, dag-processor ~174 MiB, postgres
+~77 MiB, review-app ~55 MiB.
 
 ## Next
 

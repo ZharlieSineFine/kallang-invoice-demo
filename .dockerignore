@@ -1,0 +1,17 @@
+# Docker build context exclusions (WS6). The image only needs pyproject.toml,
+# README.md, src/ and the prompts the package ships; everything else stays local.
+.git
+.venv
+.uv-cache
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+.env
+data
+logs
+snapshots
+reports
+.DS_Store

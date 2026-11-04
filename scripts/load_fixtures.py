@@ -7,16 +7,18 @@ import sys
 
 import psycopg
 
-from invoiceflow.devdb.connection import connect, database_url, safe_url
-from invoiceflow.devdb.fixtures import load_fixtures
-from invoiceflow.devdb.migrate import apply_migrations
+from invoiceflow.settings import data_dir
+from invoiceflow.storage import LocalBlobStore
+from invoiceflow.store.connection import connect, database_url, safe_url
+from invoiceflow.store.fixtures import load_fixtures
+from invoiceflow.store.migrate import apply_migrations
 
 
 def main() -> int:
     try:
         with connect() as conn, conn.transaction():
             apply_migrations(conn)
-            report = load_fixtures(conn)
+            report = load_fixtures(conn, LocalBlobStore(data_dir()))
     except psycopg.OperationalError as exc:
         print(f"cannot reach Postgres at {safe_url(database_url())}:", file=sys.stderr)
         print(f"  {exc}", file=sys.stderr)
