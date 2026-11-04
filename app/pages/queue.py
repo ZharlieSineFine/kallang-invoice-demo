@@ -41,6 +41,12 @@ def _frame(docs) -> pd.DataFrame:
     )
 
 
+def _open_in_review(doc_id) -> None:
+    """Runs before widgets are instantiated, so it may legally flip the page key."""
+    st.session_state["selected_doc_id"] = doc_id
+    st.session_state["page"] = "Review"
+
+
 def render(backend: Backend | None = None) -> None:
     backend = backend or ui.get_backend()
     st.title("Queue")
@@ -87,7 +93,11 @@ def render(backend: Backend | None = None) -> None:
         if doc.status_reason:
             st.caption(doc.status_reason)
     with right:
-        if st.button("Open in Review", key="queue_open", type="primary"):
-            st.session_state["selected_doc_id"] = doc.doc_id
-            st.session_state["page"] = "Review"
+        if st.button(
+            "Open in Review",
+            key="queue_open",
+            type="primary",
+            on_click=_open_in_review,
+            args=(doc.doc_id,),
+        ):
             st.rerun()
