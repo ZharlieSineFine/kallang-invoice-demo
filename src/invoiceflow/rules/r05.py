@@ -1,0 +1,87 @@
+"""R05: duplicate detection — file hash, vendor + invoice number, or vendor + amount
+within the duplicate window."""
+
+from __future__ import annotations
+
+from invoiceflow.contracts import CheckContext, Finding, Scope, Severity
+from invoiceflow.rules.base import BaseRule, fmt2
+
+
+class R05(BaseRule):
+    rule_id = "R05"
+
+    def check(self, ctx: CheckContext) -> tuple[Finding, ...]:
+        invoice = ctx.invoice
+        if invoice is None:
+            return ()
+        window = int(self._config["duplicate_window_days"])
+        findings: list[Finding] = []
+
+        # Same file hash — the exact same bytes were already processed.
+        for prior in ctx.prior_invoices:
+            if prior.file_sha256 == ctx.file_sha256:
+                findings.append(
+                    self.finding(
+                        severity=Severity.HOLD,
+                        scope=Scope.DOCUMENT,
+                        message="The same file was already processed",
+                        evidence={"file_sha256": ctx.file_sha256},
+                    )
+                )
+                break
+
+        # Same vendor + same invoice number.
+        if ctx.vendor is not None and invoice.invoice_number:
+            for prior in ctx.prior_invoices:
+                if (
+                    prior.vendor_id == ctx.vendor.vendor_id
+                    and prior.invoice_number == invoice.invoice_number
+                ):
+                    findings.append(
+                        self.finding(
+                            severity=Severity.HOLD,
+                            scope=Scope.DOCUMENT,
+                            field="invoice_number",
+                            message=(
+                                f"Vendor {ctx.vendor.vendor_id} already has invoice "
+                                f"{invoice.invoice_number}"
+                            ),
+                            evidence={
+                                "vendor_id": ctx.vendor.vendor_id,
+                                "invoice_number": invoice.invoice_number,
+                            },
+                        )
+                    )
+                    break
+
+        # Same vendor + same amount within the duplicate window.
+        if (
+            ctx.vendor is not None
+            and invoice.total is not None
+            and invoice.invoice_date is not None
+        ):
+            for prior in ctx.prior_invoices:
+                if prior.vendor_id != ctx.vendor.vendor_id or prior.total != invoice.total:
+                    continue
+                if prior.invoice_date is None:
+                    continue
+                if abs((invoice.invoice_date - prior.invoice_date).days) <= window:
+                    findings.append(
+                        self.finding(
+                            severity=Severity.HOLD,
+                            scope=Scope.DOCUMENT,
+                            field="total",
+                            message=(
+                                f"Vendor {ctx.vendor.vendor_id} already has a "
+                                f"{invoice.total:.2f} invoice within {window} days"
+                            ),
+                            evidence={
+                                "vendor_id": ctx.vendor.vendor_id,
+                                "total": fmt2(invoice.total),
+                                "window_days": str(window),
+                            },
+                        )
+                    )
+                    break
+
+        return tuple(findings)
