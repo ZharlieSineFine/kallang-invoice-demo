@@ -33,4 +33,11 @@ def test_r12_flags_insufficient_open_amount(clean_ctx, rules_config):
     po = clean_ctx.purchase_order.model_copy(update={"open_amount": Decimal("100.00")})
     ctx = clean_ctx.model_copy(update={"purchase_order": po})
     findings = R12(rules_config).check(ctx)
-    assert any(f.field == "total" for f in findings)
+    flagged = [f for f in findings if f.field == "total"]
+    assert flagged
+    finding = flagged[0]
+    # The card must show the whole arithmetic so the audience can see where "open" came from.
+    assert "already invoiced" in finding.message
+    assert finding.evidence["po_amount"] == "5000.00"
+    assert finding.evidence["po_invoiced"] == "4900.00"
+    assert finding.evidence["po_open_amount"] == "100.00"

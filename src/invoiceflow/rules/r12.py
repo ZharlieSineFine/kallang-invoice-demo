@@ -54,6 +54,7 @@ class R12(BaseRule):
                     )
                 )
             if invoice.total is not None and po.open_amount < invoice.total:
+                already_invoiced = po.amount - po.open_amount
                 findings.append(
                     self.finding(
                         severity=None,
@@ -61,11 +62,15 @@ class R12(BaseRule):
                         field="total",
                         message=(
                             f"Purchase order {po.po_number} has {money_sgd(po.open_amount)} "
-                            f"open, less than the invoice total {money_sgd(invoice.total)}"
+                            f"open (PO total {money_sgd(po.amount)} minus "
+                            f"{money_sgd(already_invoiced)} already invoiced), less than the "
+                            f"invoice total {money_sgd(invoice.total)}"
                         ),
                         evidence={
                             "po_number": po.po_number,
-                            "open_amount": fmt2(po.open_amount),
+                            "po_amount": fmt2(po.amount),
+                            "po_invoiced": fmt2(already_invoiced),
+                            "po_open_amount": fmt2(po.open_amount),
                             "invoice_total": fmt2(invoice.total),
                         },
                     )

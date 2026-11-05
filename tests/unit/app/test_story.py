@@ -20,8 +20,8 @@ def _with_batch(backend, tmp_path):
     doc = next(bundle.document for bundle in backend.bundles.values() if not bundle.findings)
     path = tmp_path / "B-001.csv"
     path.write_text(
-        "doc_id,line_no,gl_account,cost_center,tax_code,net_amount,tax_amount,description\n"
-        f"{doc.doc_id},1,610200,KG1100,TX,1080.00,97.20,Equipment rental\n",
+        "DocKey,CompanyCode,VendorNo,GrossAmount,LineNo,GLAccount,NetAmount,LineText\n"
+        f"{doc.doc_id},KG01,100014,1177.20,1,610200,1080.00,Equipment rental\n",
         encoding="utf-8",
     )
     batch = BatchSummary(
@@ -122,7 +122,8 @@ def test_check_step_shows_finding_evidence_and_compliance(fake_backend):
     _advance(at, 4)
     text = _text(at)
     assert "R02" in text
-    assert "lines_sum" in text
+    # Evidence keys render with human labels ("lines sum", not "lines_sum").
+    assert "lines sum" in text
     assert "IRAS" in text
 
 
@@ -167,7 +168,7 @@ def test_export_step_traces_a_row_and_shows_the_empty_second_batch(fake_backend,
     assert "610200" in frames
     assert "B-002" in frames
     assert "hypothetical" in _text(at).lower()
-    at.selectbox(key="story_csv_column").set_value("description")
+    at.selectbox(key="story_csv_column").set_value("LineText")
     at.run(timeout=30)
     assert not at.exception
 

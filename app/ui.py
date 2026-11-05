@@ -120,6 +120,37 @@ def technical_view() -> bool:
     return bool(st.session_state.get("technical_view", False))
 
 
+_EVIDENCE_LABELS = {
+    "po_number": "PO",
+    "po_amount": "PO total",
+    "po_invoiced": "already invoiced",
+    "po_open_amount": "PO open",
+    "po_vendor_id": "PO vendor",
+    "invoice_vendor_id": "invoice vendor",
+    "invoice_total": "invoice total",
+    "invoice_bank_account": "bank on invoice",
+    "vendor_bank_account": "bank in vendor master",
+    "lines_sum": "lines sum",
+    "subtotal": "subtotal",
+    "pages": "pages",
+    "count": "count",
+    "phrases": "phrases",
+    "canary": "canary",
+}
+
+_MASTER_SOURCES = (
+    ("po_amount", "purchase-order master data (from SAP; synthetic seeds in this demo)"),
+    ("po_open_amount", "purchase-order master data (from SAP; synthetic seeds in this demo)"),
+    ("vendor_bank_account", "vendor master data (from SAP; synthetic seeds in this demo)"),
+)
+
+
+def _evidence_line(finding: FindingRow) -> str:
+    return " · ".join(
+        f"{_EVIDENCE_LABELS.get(key, key)}={value}" for key, value in finding.evidence.items()
+    )
+
+
 def finding_card_html(finding: FindingRow) -> str:
     """Raw HTML on purpose: Streamlit's markdown parser turns $...$ into LaTeX math, which
     mangles money amounts. Text colors are explicit so the card reads in both themes."""
@@ -127,7 +158,6 @@ def finding_card_html(finding: FindingRow) -> str:
     severity = finding.severity.value
     accent = "#3b82f6" if severity == "INFO" else "#d94f4f"
     background = "#eef5ff" if severity == "INFO" else "#fdecec"
-    evidence = " · ".join(f"{k}={v}" for k, v in finding.evidence.items())
     card = (
         f'<div style="background:{background};border-left:4px solid {accent};'
         f'padding:0.6rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;color:#1f2328;">'
@@ -135,11 +165,19 @@ def finding_card_html(finding: FindingRow) -> str:
         f'<span style="color:#5a6068;"> · {escape(severity)} · {escape(field_name)}</span>'
         f'<div style="margin-top:0.3rem;">{escape(finding.message)}</div>'
     )
-    if evidence:
+    if finding.evidence:
         card += (
             f'<div style="margin-top:0.3rem;font-size:0.85rem;color:#5a6068;">'
-            f"{escape(evidence)}</div>"
+            f"{escape(_evidence_line(finding))}</div>"
         )
+        source = next(
+            (label for key, label in _MASTER_SOURCES if key in finding.evidence), None
+        )
+        if source is not None:
+            card += (
+                f'<div style="margin-top:0.15rem;font-size:0.8rem;color:#5a6068;">'
+                f"📚 Source: {escape(source)}</div>"
+            )
     return card + "</div>"
 
 
