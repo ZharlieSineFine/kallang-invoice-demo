@@ -35,11 +35,11 @@ evaluation report (build plan §8). No slide decks; the live app is the deck.
 3. **Technical toggle** (one switch in the sidebar): reveals raw artifacts — extraction
    JSON, findings, rule versions, model digest, prompt version, SQL — next to the friendly
    views.
-4. **Inbox batch view.** A thumbnail grid of the 20-invoice "yesterday" batch: page-1 image,
+4. **Inbox batch view.** A thumbnail grid of the 36-document "yesterday" batch (build plan §5.4): page-1 image,
    type badge (A/B/C, credit note, statement), vendor, amount, and outcome color once
    processed. Clicking a card jumps to that document's review/trace.
    *Optional flourish (stretch):* WS1 renders a display-only `batch-overview.pdf`
-   (20 invoices, mixed types, multi-page) purely as a visual "here is the pile of invoices
+   (36 documents, mixed types, multi-page) purely as a visual "here is the pile of invoices
    we received" artifact. The pipeline still processes one file per invoice — multi-invoice
    splitting is explicitly out of scope (build plan §13) — and the overview PDF is shown,
    not ingested.

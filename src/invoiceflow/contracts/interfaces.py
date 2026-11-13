@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
-from invoiceflow.contracts.enums import DocStatus
+from invoiceflow.contracts.enums import DocStatus, DocType
 from invoiceflow.contracts.models import (
     BronzeFile,
     CheckContext,
@@ -139,6 +139,12 @@ class Repository(Protocol):
 
     def create_document(self, record: DocumentRecord) -> None: ...
 
+    def set_document_meta(
+        self, doc_id: UUID, doc_type: DocType | None, vendor_id: str | None
+    ) -> None: ...
+
+    def stored_invoice(self, doc_id: UUID) -> NormalizedInvoice | None: ...
+
     def get_document(self, doc_id: UUID) -> DocumentRecord | None: ...
 
     def set_status(self, doc_id: UUID, status: DocStatus, reason: str | None) -> None: ...
@@ -168,7 +174,12 @@ class Repository(Protocol):
 
     def approved_not_exported(self) -> tuple[UUID, ...]: ...
 
-    def record_export(self, batch: ExportBatch, doc_ids: tuple[UUID, ...]) -> None:
+    def record_export(
+        self,
+        batch: ExportBatch,
+        doc_ids: tuple[UUID, ...],
+        manifest: Mapping[str, Any] | None = None,
+    ) -> None:
         """One transaction. Raises if any doc_id was exported before."""
         ...
 

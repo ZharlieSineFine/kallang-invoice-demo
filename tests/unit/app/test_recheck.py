@@ -6,8 +6,9 @@ from decimal import Decimal
 
 import pytest
 
-from app.recheck import RecheckInput, recheck, recompute_findings, route
-from invoiceflow.contracts import DocStatus, DocType, Severity
+from app.models import FindingRow
+from app.recheck import RecheckInput, carried_findings, recheck, recompute_findings, route
+from invoiceflow.contracts import DocStatus, DocType, Scope, Severity
 
 
 def test_mismatch_subtotal_fires_r02(mismatch_bundle, rules_config):
@@ -116,3 +117,79 @@ def test_tolerance_and_missing_values(rules_config, subtotal, amounts, expected)
         RecheckInput(subtotal=subtotal, line_amounts=amounts, rules_config=rules_config)
     )
     assert tuple(finding.rule_id for finding in findings) == expected
+
+
+def _row(rule_id, severity, field):
+    return FindingRow(
+        rule_id=rule_id,
+        field=field,
+        severity=severity,
+        scope=Scope.DOCUMENT,
+        message=f"{rule_id} open",
+        evidence={"seen": "yes"},
+        rule_version="v9",
+    )
+
+
+def test_carried_findings_keeps_what_a_recheck_cannot_recompute():
+    previous = (
+        _row("R02", Severity.FLAG, "subtotal"),
+        _row("R02", Severity.FLAG, "total"),
+        _row("R03", Severity.FLAG, "total"),
+        _row("R08", Severity.HOLD, "bank_account"),
+        _row("R11", Severity.FLAG, "invoice_date"),
+    )
+    carried = carried_findings(previous)
+    assert [(finding.rule_id, finding.field) for finding in carried] == [
+        ("R08", "bank_account"),
+        ("R11", "invoice_date"),
+    ]
+    assert carried[0].rule_version == "v9"
+    assert carried[0].evidence == {"seen": "yes"}
+
+
+def test_correcting_a_field_clears_its_flag_but_never_a_hold():
+    previous = (
+        _row("R11", Severity.FLAG, "invoice_date"),
+        _row("R02", Severity.FLAG, "line_items[2].amount"),
+        _row("R06", Severity.FLAG, "coding_lines[0].gl_account"),
+        _row("R08", Severity.HOLD, "bank_account"),
+    )
+    kept = carried_findings(
+        previous, resolved_fields=frozenset({"invoice_date", "line_items", "bank_account"})
+    )
+    assert [finding.rule_id for finding in kept] == ["R06", "R08"]
+
+
+def test_releasing_a_hold_keeps_the_flags():
+    previous = (_row("R08", Severity.HOLD, "bank_account"), _row("R11", Severity.FLAG, "due_date"))
+    kept = carried_findings(previous, release_holds=True)
+    assert [finding.rule_id for finding in kept] == ["R11"]
+
+
+def test_recheck_routes_on_carried_findings(clean_bundle, rules_config):
+    state = RecheckInput.from_bundle(clean_bundle, rules_config)
+    carried = carried_findings((_row("R08", Severity.HOLD, "bank_account"),))
+    assert recheck(state, carried=carried).status is DocStatus.ON_HOLD
+
+
+def _inclusive_state(rules_config, *, note, subtotal="950.00"):
+    return RecheckInput(
+        invoice_number="S-1",
+        document_type=DocType.SIMPLIFIED_TAX_INVOICE,
+        subtotal=Decimal(subtotal),
+        gst_amount=Decimal("78.44"),
+        total=Decimal("950.00"),
+        line_amounts=(Decimal(subtotal),),
+        rules_config=rules_config,
+        gst_inclusive=note,
+    )
+
+
+def test_inclusive_subtotal_is_not_a_total_mismatch(rules_config):
+    assert recompute_findings(_inclusive_state(rules_config, note=True)) == ()
+
+
+def test_exclusive_invoice_still_compares_subtotal_plus_gst(rules_config):
+    found = recompute_findings(_inclusive_state(rules_config, note=False))
+    assert [(finding.rule_id, finding.field) for finding in found] == [("R03", "total")]

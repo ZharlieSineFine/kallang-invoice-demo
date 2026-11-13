@@ -37,6 +37,7 @@ simplified_invoice_max_total: "1000.00"   # IRAS: total incl. GST
 fuzzy_match_min_score: 90
 max_invoice_age_days: 180
 duplicate_window_days: 7
+purchase_order_required: false   # true: R12 also flags an invoice that quotes no PO number
 scanned_page_min_chars: 25
 ocr_min_mean_conf: 60
 

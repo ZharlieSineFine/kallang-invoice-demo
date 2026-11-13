@@ -1,4 +1,5 @@
-"""R12: the PO exists, belongs to the same vendor, and has enough open amount left."""
+"""R12: the PO an invoice quotes exists, belongs to the same vendor, and has enough open
+amount left. An invoice without a PO number is flagged only if the policy requires one."""
 
 from __future__ import annotations
 
@@ -17,14 +18,16 @@ class R12(BaseRule):
         po = ctx.purchase_order
 
         if not invoice.po_number:
-            findings.append(
-                self.finding(
-                    severity=None,
-                    scope=Scope.FIELD,
-                    field="po_number",
-                    message="No purchase order number on the invoice",
+            # Whether every invoice must quote a PO is Kallang's policy, set in rules.yaml.
+            if self._config.get("purchase_order_required", False):
+                findings.append(
+                    self.finding(
+                        severity=None,
+                        scope=Scope.FIELD,
+                        field="po_number",
+                        message="No purchase order number on the invoice",
+                    )
                 )
-            )
         elif po is None:
             findings.append(
                 self.finding(

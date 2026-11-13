@@ -84,17 +84,15 @@ check-dags: ## DAG import test (needs make up)
 	@bash scripts/check_dags.sh
 
 # ---- Phase 1 targets owned by other workstreams: message and stop -------------
-data: ## generate the synthetic invoice set (WS1)
-	@echo "make data: WS1 builds the generator (SEED defaults to 42)."
-	@exit 1
+data: ## generate the synthetic invoice set (SEED defaults to 42)
+	@$(GOLDEN_ENV) $(UV) run python generator/build.py --seed $(SEED)
 
 warm: ## load the model and keep it loaded (WS3)
 	@echo "make warm: WS3 wires Ollama (MODEL=$(MODEL))."
 	@exit 1
 
-demo-data: ## process the yesterday batch and record the replay cache (WS3, WS6)
-	@echo "make demo-data: WS3 records the replay cache; WS6 feeds the DAGs."
-	@exit 1
+demo-data: ## run the yesterday batch through the real pipeline, score it, record the replay cache (RESET=1 wipes existing documents, STACK=1 targets the full stack)
+	@$(UV) run python scripts/demo_data.py $(if $(RESET),--reset) $(if $(STACK),--stack)
 
 drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@mkdir -p data/inbox

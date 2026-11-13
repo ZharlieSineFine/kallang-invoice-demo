@@ -109,3 +109,15 @@ The integrator decides, applies the change on `main`, updates the contract tests
   No migration, no `SCHEMA_VERSION` bump.
 - **Integrator decision:** —
 
+
+### CR-007 — `Repository` reads and writes the export needs
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (integrator, 2026-11-04)
+- **What changes:** `Repository` gains `set_document_meta(doc_id, doc_type, vendor_id)` and
+  `stored_invoice(doc_id)`; `record_export` gains an optional `manifest`; `prior_invoices(None)`
+  returns earlier invoices for every known vendor.
+- **Why:** `documents.doc_type` and `documents.vendor_id` were never written, the export DAG
+  wrote a stub CSV because nothing could read back a `NormalizedInvoice`, and R05 never saw
+  earlier invoices because intake passed none.
+- **Impact:** no migration and no `SCHEMA_VERSION` bump. Existing callers keep working.

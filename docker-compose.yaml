@@ -29,6 +29,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     # The invoiceflow app sees the repo (code, fixtures, migrations, data) at /opt/invoiceflow.
     INVOICEFLOW_ROOT: /opt/invoiceflow
+    # Ollama runs on the Mac, outside Docker, so the model gets the memory it needs.
+    OLLAMA_BASE_URL: http://host.docker.internal:11434
     # Invoice data lives in the ``ap`` database, not Airflow's metadata database.
     AP_DATABASE_URL: postgresql://${AP_DB_USER:-ap}:${AP_DB_PASSWORD:-change-me}@postgres:5432/${AP_DB_NAME:-ap}
   volumes:
@@ -36,6 +38,7 @@ x-airflow-common: &airflow-common
     - airflow-logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}:/opt/invoiceflow:ro
     - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/invoiceflow/data
+    - ${AIRFLOW_PROJ_DIR:-.}/reports:/opt/invoiceflow/reports
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     postgres:
@@ -54,6 +57,9 @@ services:
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
+    # `make demo-data STACK=1` loads the batch from the Mac, where Ollama runs.
+    ports:
+      - "127.0.0.1:${AP_STACK_DB_PORT:-5434}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
       interval: 5s
@@ -137,8 +143,10 @@ services:
   review-app:
     <<: *airflow-common
     # The airflow entrypoint only knows airflow/bash/python, so run streamlit as a module.
+    # From the repo root, so `import app` resolves and .streamlit/config.toml applies.
+    working_dir: /opt/invoiceflow
     command: >
-      python -m streamlit run /opt/invoiceflow/docker/review_app.py
+      python -m streamlit run app/main.py
       --server.address 0.0.0.0 --server.port 8501 --server.headless true
     ports:
       - "127.0.0.1:8501:8501"

@@ -68,7 +68,7 @@ def test_to_normalized_converts_all_supported_values():
     assert invoice.supplier_gst_reg_no == "M212345678"
     assert invoice.po_number == "PO45000123"
     assert invoice.bank_account == "0001234567"
-    assert invoice.ambiguous_dates == ("invoice_date",)
+    assert invoice.ambiguous_dates == ()
 
 
 def test_subtotal_equal_to_total_stays_equal():
@@ -201,6 +201,25 @@ def test_bad_line_item_numbers_are_reported_but_the_line_is_kept():
     assert any(problem.startswith("line_items[0].quantity:") for problem in result.problems)
     assert any(problem.startswith("line_items[0].amount:") for problem in result.problems)
     assert any(problem.startswith("line_items[1].line_no:") for problem in result.problems)
+
+
+def test_repeated_line_numbers_are_renumbered_by_position():
+    # A noisy scan: the model split "1 lot" off the first line and printed number 1 twice.
+    extraction = _extraction(
+        line_items=(
+            ExtractedLineItem(line_no="1", description="Cleaning services", amount="2,160.00"),
+            ExtractedLineItem(line_no="1", description="lot"),
+            ExtractedLineItem(line_no="2", description="Consumables", amount="135.00"),
+        )
+    )
+    result = to_normalized(extraction, VENDOR)
+    assert [line.line_no for line in result.invoice.line_items] == [1, 2, 3]
+    assert [line.description for line in result.invoice.line_items] == [
+        "Cleaning services",
+        "lot",
+        "Consumables",
+    ]
+    assert any("line numbers repeat" in problem for problem in result.problems)
 
 
 def test_golden_truth_normalizes_exactly():

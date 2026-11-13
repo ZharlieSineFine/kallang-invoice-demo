@@ -72,6 +72,52 @@ class TestOllamaClient:
         assert result.params["num_ctx"] == 8192
         assert list(config.cache_dir.glob("*.json"))
 
+    def _keep_alive_sent(self, config, prompt_template, loaded_bytes):
+        """Run one extraction per reported size; return each keep_alive sent and the paths hit."""
+        sizes = list(loaded_bytes)
+        sent, paths = [], []
+
+        def handler(request):
+            paths.append(request.url.path)
+            if request.url.path == "/api/tags":
+                return httpx.Response(200, json={"models": []})
+            if request.url.path == "/api/ps":
+                size = sizes.pop(0)
+                if size is None:
+                    return httpx.Response(500)
+                return httpx.Response(200, json={"models": [{"name": config.model, "size": size}]})
+            sent.append(json.loads(request.content)["keep_alive"])
+            return httpx.Response(200, json=_ollama_response(VALID_RAW))
+
+        client = OllamaClient(
+            config,
+            http=httpx.Client(transport=httpx.MockTransport(handler)),
+            prompt_template=prompt_template,
+        )
+        for _ in loaded_bytes:
+            client.extract(_request())
+        return sent, paths
+
+    def test_a_model_grown_past_the_limit_is_unloaded_after_the_request(
+        self, make_config, prompt_template
+    ):
+        config = make_config(keep_alive="30m", unload_above_gb=11.0)
+        sent, _ = self._keep_alive_sent(
+            config, prompt_template, [8_000_000_000, 11_500_000_000, 7_700_000_000]
+        )
+        assert sent == ["30m", 0, "30m"]
+
+    def test_unknown_model_size_never_blocks_an_extraction(self, make_config, prompt_template):
+        config = make_config(keep_alive="30m", unload_above_gb=11.0)
+        sent, _ = self._keep_alive_sent(config, prompt_template, [None])
+        assert sent == ["30m"]
+
+    def test_model_size_is_not_checked_when_the_limit_is_off(self, make_config, prompt_template):
+        config = make_config(keep_alive="30m")
+        sent, paths = self._keep_alive_sent(config, prompt_template, [20_000_000_000])
+        assert sent == ["30m"]
+        assert "/api/ps" not in paths
+
     def test_request_payload_sets_format_think_and_num_ctx(self, config, prompt_template):
         captured = {}
 

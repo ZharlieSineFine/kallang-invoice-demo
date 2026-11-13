@@ -18,12 +18,19 @@ from rapidfuzz import fuzz
 
 from invoiceflow.contracts import (
     CheckContext,
+    DocType,
     Finding,
+    NormalizedInvoice,
     ParsedDocument,
     Scope,
     Severity,
 )
 from invoiceflow.rules.version import rule_version
+
+# Documents that are filed, never paid: the router sends them to NOT_INVOICE (build plan).
+NOT_INVOICE_TYPES = frozenset(
+    {DocType.STATEMENT, DocType.QUOTATION, DocType.DELIVERY_ORDER, DocType.OTHER}
+)
 
 
 def cfg_decimal(mapping: Mapping[str, Any], key: str) -> Decimal:
@@ -57,6 +64,16 @@ def fuzzy_score(a: str | None, b: str | None) -> float:
 def visible_text(document: ParsedDocument) -> str:
     """All visible words joined, for the instruction-text scan (R09)."""
     return " ".join(w.text for page in document.pages for w in page.visible_words)
+
+
+def subtotal_includes_gst(invoice: NormalizedInvoice, tolerance: Decimal) -> bool:
+    """A GST-inclusive invoice may print a subtotal equal to the total, with GST inside it."""
+    return (
+        invoice.gst_inclusive
+        and invoice.subtotal is not None
+        and invoice.total is not None
+        and abs(invoice.subtotal - invoice.total) <= tolerance
+    )
 
 
 def gst_rate_for_date(config: Mapping[str, Any], on: date) -> Decimal | None:

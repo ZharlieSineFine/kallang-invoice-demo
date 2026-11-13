@@ -5,7 +5,13 @@ from __future__ import annotations
 from decimal import Decimal
 
 from invoiceflow.contracts import CheckContext, Finding, Scope, money, money_sum
-from invoiceflow.rules.base import BaseRule, cfg_decimal, fmt2, money_sgd
+from invoiceflow.rules.base import (
+    BaseRule,
+    cfg_decimal,
+    fmt2,
+    money_sgd,
+    subtotal_includes_gst,
+)
 
 
 class R02(BaseRule):
@@ -72,6 +78,7 @@ class R02(BaseRule):
             invoice.subtotal is not None
             and invoice.gst_amount is not None
             and invoice.total is not None
+            and not subtotal_includes_gst(invoice, total_tol)
         ):
             expected_total = money(invoice.subtotal + invoice.gst_amount)
             if abs(expected_total - invoice.total) > total_tol:

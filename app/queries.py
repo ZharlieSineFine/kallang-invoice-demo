@@ -706,9 +706,15 @@ def export_status(conn: Connection) -> dict[str, int]:
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM export_rows")
         exported = int(cur.fetchone()[0])
-        cur.execute("SELECT count(*) FROM documents WHERE status = 'APPROVED'")
-        approved = int(cur.fetchone()[0])
-    return {"exported": exported, "approved_not_exported": max(0, approved - exported)}
+        cur.execute(
+            """
+            SELECT count(*) FROM documents d
+            LEFT JOIN export_rows e ON e.doc_id = d.doc_id
+            WHERE d.status IN ('APPROVED', 'AUTO_PASSED') AND e.doc_id IS NULL
+            """
+        )
+        ready = int(cur.fetchone()[0])
+    return {"exported": exported, "approved_not_exported": ready}
 
 
 def latest_document_time(conn: Connection) -> datetime | None:

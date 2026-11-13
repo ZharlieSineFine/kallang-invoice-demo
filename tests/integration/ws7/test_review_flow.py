@@ -10,13 +10,57 @@ from app import queries, repo
 from app.backend import CodingUpdate
 from app.boxes import load_page_text, page_boxes, text_in_bbox
 from app.ui import resolve_path
-from invoiceflow.contracts import DocStatus, NormalizedLineItem
+from invoiceflow.contracts import DocStatus, Finding, NormalizedLineItem, Scope, Severity
 
 pytestmark = pytest.mark.db
 
 
 def _mismatch(docs):
     return docs["SAV-2026-0413"]
+
+
+def _hold_on_bank_account(conn, doc_id):
+    hold = Finding(
+        rule_id="R08",
+        rule_version="test",
+        severity=Severity.HOLD,
+        scope=Scope.DOCUMENT,
+        field="bank_account",
+        message="The bank account differs from the vendor master.",
+    )
+    run_id = queries.latest_run_id(conn, doc_id) or "integration-hold"
+    repo.save_findings(conn, doc_id, run_id, (hold,))
+    repo.set_status(conn, doc_id, DocStatus.ON_HOLD, "bank account differs")
+
+
+def test_a_correction_never_clears_a_hold(conn, backend, docs):
+    doc = _mismatch(docs)
+    _hold_on_bank_account(conn, doc.doc_id)
+
+    fixed = backend.correct(doc.doc_id, "subtotal", "1,080.00", "integration.reviewer")
+    assert fixed.status is DocStatus.ON_HOLD
+    assert {finding.rule_id for finding in fixed.findings} >= {"R08"}
+    assert "R02" not in {finding.rule_id for finding in fixed.findings}
+
+    typed_over = backend.correct(doc.doc_id, "bank_account", "000-1", "integration.reviewer")
+    assert typed_over.status is DocStatus.ON_HOLD
+
+    with pytest.raises(ValueError, match="release the hold"):
+        backend.approve(doc.doc_id, "integration.reviewer", "looks fine")
+
+    released = backend.release_hold(doc.doc_id, "integration.reviewer", "Called the vendor.")
+    assert released.status is DocStatus.NEEDS_REVIEW
+    assert "R08" not in {finding.rule_id for finding in released.findings}
+    approved = backend.approve(doc.doc_id, "integration.reviewer", "checked")
+    assert approved.status is DocStatus.APPROVED
+
+
+def test_released_hold_on_a_clean_invoice_still_waits_for_a_person(conn, backend, docs):
+    doc = docs["SAV-2026-0412"]
+    _hold_on_bank_account(conn, doc.doc_id)
+    outcome = backend.release_hold(doc.doc_id, "integration.reviewer", "Called the vendor.")
+    assert outcome.status is DocStatus.NEEDS_REVIEW
+    assert backend.document(doc.doc_id).document.status is DocStatus.NEEDS_REVIEW
 
 
 def test_correct_subtotal_clears_r02_and_approve_sets_approved(conn, backend, docs):
@@ -77,7 +121,10 @@ def test_edit_line_items_is_versioned_and_reruns_checks(conn, backend, docs):
     outcome = backend.edit_line_items(doc.doc_id, items, "integration.reviewer")
     # 540 + 300 + 160 + 90 == the printed 1,090 subtotal, so R02 clears.
     assert outcome.findings == ()
-    assert outcome.status is DocStatus.AUTO_PASSED
+    # A person changed the invoice, so it waits for their approval instead of passing itself.
+    assert outcome.status is DocStatus.NEEDS_REVIEW
+    assert "Approve" in outcome.message
+    assert queries.export_status(conn)["approved_not_exported"] == 1  # only the clean twin
 
     with conn.cursor() as cur:
         cur.execute(
@@ -178,7 +225,7 @@ def test_queries_match_the_pages(conn, backend, docs):
     assert queries.extraction(conn, doc.doc_id) == bundle.extraction
     assert queries.master_data(conn).vendor("V001") is not None
     assert backend.batches() == ()
-    assert backend.export_status() == {"exported": 0, "approved_not_exported": 0}
+    assert backend.export_status() == {"exported": 0, "approved_not_exported": 1}
 
 
 def test_boxes_line_up_with_stored_words(backend, docs):

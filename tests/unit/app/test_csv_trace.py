@@ -5,7 +5,6 @@ from __future__ import annotations
 from app import ui
 from app.boxes import load_page_text
 from app.csv_trace import (
-    STUB_SOURCES,
     column_sources,
     origin_boxes,
     read_csv,
@@ -18,10 +17,6 @@ SAP_CSV = (
     '"PONumber","LineText"\n'
     '"{doc}","KG01","100014","15.10.2026","04.11.2026","SAV-2026-0412","SGD","1177.20","1",'
     '"610200","KG1100","1080.00","TX","97.20","4500012345","Equipment rental"\n'
-)
-STUB_CSV = (
-    "doc_id,line_no,gl_account,cost_center,tax_code,net_amount,tax_amount,description\n"
-    "{doc},1,610200,KG1100,TX,1080.00,97.20,Equipment rental\n"
 )
 
 
@@ -43,19 +38,9 @@ def test_read_csv_numbers_rows_and_finds_the_document(tmp_path, clean_bundle):
     assert row.cells["GrossAmount"] == "1177.20"
 
 
-def test_read_csv_supports_the_dag_layout(tmp_path, clean_bundle):
-    path = tmp_path / "stub.csv"
-    path.write_text(STUB_CSV.format(doc=clean_bundle.document.doc_id), encoding="utf-8")
-    row = read_csv(path)[0]
-    assert row.doc_id == clean_bundle.document.doc_id
-    assert row.line_no == 1
-    sources = column_sources(tuple(row.cells))
-    assert sources["net_amount"] == STUB_SOURCES["net_amount"]
-
-
 def test_read_csv_tolerates_an_unknown_document_key(tmp_path):
     path = tmp_path / "bad.csv"
-    path.write_text(STUB_CSV.format(doc="not-a-uuid"), encoding="utf-8")
+    path.write_text(SAP_CSV.format(doc="not-a-uuid"), encoding="utf-8")
     assert read_csv(path)[0].doc_id is None
 
 

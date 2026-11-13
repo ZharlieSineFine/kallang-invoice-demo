@@ -8,16 +8,13 @@ from typing import Any
 from invoiceflow.contracts import (
     CheckContext,
     DocStatus,
-    DocType,
     Finding,
     RoutingDecision,
     Severity,
     max_severity,
 )
+from invoiceflow.rules.base import NOT_INVOICE_TYPES
 from invoiceflow.rules.confidence import field_confidences
-
-# Document types that are not an invoice (R10; the router also sends OTHER here).
-_NOT_INVOICE = {DocType.STATEMENT, DocType.QUOTATION, DocType.DELIVERY_ORDER, DocType.OTHER}
 
 _STATUS_BY_SEVERITY = {
     Severity.FLAG: DocStatus.NEEDS_REVIEW,
@@ -47,7 +44,7 @@ class Router:
         invoice = ctx.invoice
         if invoice is None:
             return DocStatus.MANUAL_ENTRY
-        if invoice.document_type in _NOT_INVOICE:
+        if invoice.document_type in NOT_INVOICE_TYPES:
             return DocStatus.NOT_INVOICE
         worst = max_severity(tuple(f.severity for f in findings))
         if worst is None or worst is Severity.INFO:

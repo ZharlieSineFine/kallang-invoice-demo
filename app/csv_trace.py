@@ -1,8 +1,7 @@
 """CSV row -> invoice -> page -> the exact box the value came from, with its versions.
 
-The DAG currently writes an eight-column layout and ``invoiceflow.export`` the sixteen-column
-SAP layout, so column sources cover both. Values SAP needs but the invoice does not print
-(GL account, cost center, tax code) are labeled as assigned, never given a made-up box.
+Column sources come from ``config/sap_mapping.yaml``. Values SAP needs but the invoice does not
+print (GL account, cost center, tax code) are labeled as assigned, never given a made-up box.
 """
 
 from __future__ import annotations
@@ -26,19 +25,7 @@ from app.models import BatchSummary, CodingRow, DocumentBundle
 from invoiceflow.contracts import PageText
 from invoiceflow.settings import load_config
 
-STUB_SOURCES = {
-    "doc_id": "doc.doc_id",
-    "line_no": "coding.line_no",
-    "gl_account": "coding.gl_account",
-    "cost_center": "coding.cost_center",
-    "tax_code": "coding.tax_code",
-    "net_amount": "coding.net_amount",
-    "tax_amount": "coding.tax_amount",
-    "description": "coding.description",
-}
-_DOC_COLUMNS = ("DocKey", "doc_id")
-_LINE_COLUMNS = ("LineNo", "line_no")
-_DEFAULT_COLUMNS = ("GrossAmount", "net_amount")
+_DEFAULT_COLUMN = "GrossAmount"
 LINEAGE_SQL = """SELECT b.batch_id, b.csv_sha256, r.first_row_no, f.name, f.value_raw, f.page_no,
        f.bbox, e.model, e.prompt_version
 FROM export_rows r
@@ -66,10 +53,6 @@ class CellOrigin:
     line_fields: tuple[str, ...] = ()
 
 
-def _first(cells: Mapping[str, str], names: tuple[str, ...]) -> str | None:
-    return next((cells[name] for name in names if cells.get(name)), None)
-
-
 def _as_uuid(value: str | None) -> UUID | None:
     try:
         return UUID(value) if value else None
@@ -86,8 +69,8 @@ def read_csv(path: Path) -> tuple[CsvRow, ...]:
         return tuple(
             CsvRow(
                 row_no=number,
-                doc_id=_as_uuid(_first(cells, _DOC_COLUMNS)),
-                line_no=_as_int(_first(cells, _LINE_COLUMNS)),
+                doc_id=_as_uuid(cells.get("DocKey")),
+                line_no=_as_int(cells.get("LineNo")),
                 cells=cells,
             )
             for number, cells in enumerate(csv.DictReader(handle), start=1)
@@ -96,7 +79,7 @@ def read_csv(path: Path) -> tuple[CsvRow, ...]:
 
 def column_sources(headers: tuple[str, ...]) -> dict[str, str]:
     columns = load_config("sap_mapping")["columns"]
-    known = {**STUB_SOURCES, **{column["name"]: column["source"] for column in columns}}
+    known = {column["name"]: column["source"] for column in columns}
     return {header: known[header] for header in headers if header in known}
 
 
@@ -267,7 +250,7 @@ def render_csv_trace(
     )
     row = _selected_row(rows, event, preferred_doc)
     headers = list(row.cells)
-    default = next((name for name in _DEFAULT_COLUMNS if name in headers), headers[0])
+    default = _DEFAULT_COLUMN if _DEFAULT_COLUMN in headers else headers[0]
     column = st.selectbox("CSV column", headers, index=headers.index(default), key=f"{key}_column")
     bundle = backend.document(row.doc_id) if row.doc_id is not None else None
     if bundle is None:

@@ -169,13 +169,26 @@ A2_VARIANTS = (
 
 SECURITY_2280 = (_line("Security services", "120", "hr", "19.00"),)
 SECURITY_3520 = (_line("Security services", "160", "hr", "22.00"),)
+SECURITY_2640 = (_line("Security services", "120", "hr", "22.00"),)
 CLEANING_2280 = (
     _line("Cleaning services", "120", "hr", "18.00"),
     _line("Consumables", "1", "lot", "120.00"),
 )
 CLEANING_650 = (_line("Cleaning services", "1", "lot", "650.00"),)
+CLEANING_1450 = (
+    _line("Cleaning services", "60", "hr", "18.00"),
+    _line("Floor scrubbing", "1", "lot", "370.00"),
+)
 MAINT_1800 = (_line("M&E maintenance", "1", "lot", "1800.00"),)
+MAINT_2350 = (
+    _line("M&E maintenance", "1", "lot", "1800.00"),
+    _line("Chiller servicing", "1", "lot", "550.00"),
+)
 HORT_880 = (_line("Horticulture maintenance", "1", "lot", "880.00"),)
+HORT_1240 = (
+    _line("Horticulture maintenance", "1", "lot", "880.00"),
+    _line("Plant replacement", "12", "pcs", "30.00"),
+)
 CREW_2000 = (_line("Event crew", "80", "hr", "25.00"),)
 CREW_880 = (_line("Event crew", "1", "lot", "880.00"),)
 B_VARIANTS = (
@@ -306,7 +319,7 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
             "SAV-2026-1007",
             _date(2026, 10, 20),
             _date(2026, 11, 19),
-            AV_1080,
+            RIGGING_970,
             "4500012355",
             "National Stadium",
             "20-22 Oct 2026",
@@ -435,7 +448,7 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
             "CWF-2026-2004",
             _date(2026, 10, 22),
             _date(2026, 11, 21),
-            _pick(seed, "pre-b-04", B_VARIANTS),
+            CLEANING_1450,  # V004 also invoices pre-b-07 and pre-c-08 that week
             venue="National Stadium",
             service_period="22 Oct 2026",
         ),
@@ -517,7 +530,7 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
             "GSH-2026-2010",
             _date(2026, 10, 28),
             _date(2026, 11, 27),
-            HORT_880,
+            HORT_1240,
             venue="OCBC Arena",
             service_period="28 Oct 2026",
             anomalies=("visible_instructions",),
@@ -545,7 +558,7 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
             "CAM-2026-2012",
             _date(2026, 10, 30),
             _date(2026, 11, 29),
-            MAINT_1800,
+            MAINT_2350,
             venue="SIS",
             service_period="30 Oct 2026",
         ),
@@ -563,7 +576,7 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
             "SAV-2026-3001",
             _date(2026, 10, 15),
             _date(2026, 11, 14),
-            _pick(seed, "pre-c-01", CLEAN_A_VARIANTS),
+            SCAFFOLD_1010,  # V001 invoices four other line sets between 15 and 22 Oct
             "4500012345",
             "National Stadium",
             "15-17 Oct 2026",
@@ -584,7 +597,7 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
             "KSS-2026-3003",
             _date(2026, 10, 18),
             _date(2026, 11, 17),
-            _pick(seed, "pre-c-03", B_VARIANTS),
+            SECURITY_2640,  # V003 also invoices 2,280 (pre-b-01) and 3,520 (pre-b-06) that week
             venue="SIS",
             service_period="18 Oct 2026",
         ),

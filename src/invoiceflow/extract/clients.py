@@ -75,6 +75,9 @@ def request_params(config: ModelConfig, image_paths: tuple[str, ...]) -> dict[st
     }
 
 
+_BYTES_PER_GB = 1_000_000_000
+
+
 class _BaseClient:
     """Shared orchestration: build the request, call, validate, retry once, record."""
 
@@ -228,13 +231,39 @@ class OllamaClient(_BaseClient):
             message["images"] = [encode_image_base64(path) for path in image_paths]
         return [message]
 
+    def _loaded_gb(self) -> float:
+        """The memory Ollama reports for this model right now; 0.0 when it cannot be read."""
+        try:
+            response = self._http_client().get(f"{self.config.base_url}/api/ps")
+            response.raise_for_status()
+            models = response.json().get("models", [])
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("could not read the loaded model size from /api/ps: %s", exc)
+            return 0.0
+        sizes = (model.get("size", 0) for model in models if model.get("name") == self.config.model)
+        return next(sizes, 0) / _BYTES_PER_GB
+
+    def _keep_alive(self) -> str | int:
+        """The configured keep-alive, or 0 to unload the model once this request is answered.
+
+        Ollama's runner for this model grows by about 1 GB with every request it serves, and
+        a long batch pushes a 16 GB Mac into swap until requests stop returning. A model that
+        is unloaded and loaded again starts from its base size. The size comes from Ollama on
+        every call because Airflow runs each invoice in its own process, so a counter kept
+        here would never reach its limit.
+        """
+        limit = self.config.unload_above_gb
+        if limit > 0 and self._loaded_gb() >= limit:
+            return 0
+        return self.config.keep_alive
+
     def _call(self, messages: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
         payload = {
             "model": self.config.model,
             "stream": False,
             "format": inline_schema(output_schema()),
             "think": self.config.think,
-            "keep_alive": self.config.keep_alive,
+            "keep_alive": self._keep_alive(),
             "options": self.config.options_for_call(),
             "messages": messages,
         }

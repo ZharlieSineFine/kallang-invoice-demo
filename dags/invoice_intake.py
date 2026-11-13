@@ -7,7 +7,7 @@ thing that talks to the model), with 2 retries. The pipeline stages are still st
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from airflow.sdk import dag, task
@@ -19,13 +19,10 @@ from invoiceflow.pipeline.steps import (
     list_inbox,
     move_processed,
 )
-from invoiceflow.settings import data_dir
+from invoiceflow.settings import data_dir, singapore_today
 from invoiceflow.storage import LocalBlobStore
 from invoiceflow.store.connection import connect
 from invoiceflow.store.repo import Repo
-
-# Stub pipeline replays the golden fixtures, whose date checks use this fixed "today".
-GOLDEN_TODAY = date(2026, 11, 4)
 
 
 @dag(
@@ -51,7 +48,7 @@ def invoice_intake():
                 repo=Repo(conn),
                 store=store,
                 pipeline=pipeline,
-                today=GOLDEN_TODAY,
+                today=singapore_today(),
                 run_id="airflow-intake",
             )
         move_processed(Path(path))

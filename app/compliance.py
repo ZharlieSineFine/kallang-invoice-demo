@@ -129,7 +129,8 @@ CARDS: dict[str, ComplianceCard] = {
         _internal(
             "R12",
             "The purchase order covers it",
-            "The PO exists, belongs to the same vendor, and has enough open amount left.",
+            "The PO an invoice quotes exists, belongs to the same vendor, and has enough open "
+            "amount left.",
             "PTC control, for Kallang to confirm",
         ),
     )

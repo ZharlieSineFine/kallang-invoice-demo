@@ -76,28 +76,32 @@ def _center_y(box: BBox) -> float:
     return (box.y0 + box.y1) / 2
 
 
-def _build_tokens(page: PageText) -> tuple[_Token, ...]:
-    visible = sorted(page.visible_words, key=lambda w: (_center_y(w.bbox), w.bbox.x0))
-    tokens: list[_Token] = []
-    line_centers: list[float] = []
-    line_counts: list[int] = []
-    for word in visible:
+def _group_lines(words) -> tuple[tuple, ...]:
+    """Words grouped into visual lines, top to bottom, each line read left to right.
+
+    Lines are grouped first and sorted by x second: on a tilted scan the words of one line
+    sit at slightly different heights, so sorting the whole page by height mixes the words
+    of a line with those of the column beside it.
+    """
+    lines: list[list] = []
+    centers: list[float] = []
+    for word in sorted(words, key=lambda w: (_center_y(w.bbox), w.bbox.x0)):
         center = _center_y(word.bbox)
-        if line_centers and abs(center - line_centers[-1]) <= _LINE_TOLERANCE:
-            count = line_counts[-1] + 1
-            line_centers[-1] = (line_centers[-1] * line_counts[-1] + center) / count
-            line_counts[-1] = count
+        if lines and abs(center - centers[-1]) <= _LINE_TOLERANCE:
+            count = len(lines[-1])
+            centers[-1] = (centers[-1] * count + center) / (count + 1)
+            lines[-1].append(word)
         else:
-            line_centers.append(center)
-            line_counts.append(1)
-        tokens.append(
-            _Token(
-                word=word,
-                line=len(line_centers) - 1,
-                order=len(tokens),
-                page_no=page.page_no,
-            )
-        )
+            centers.append(center)
+            lines.append([word])
+    return tuple(tuple(sorted(line, key=lambda w: w.bbox.x0)) for line in lines)
+
+
+def _build_tokens(page: PageText) -> tuple[_Token, ...]:
+    tokens: list[_Token] = []
+    for line_no, line in enumerate(_group_lines(page.visible_words)):
+        for word in line:
+            tokens.append(_Token(word=word, line=line_no, order=len(tokens), page_no=page.page_no))
     return tuple(tokens)
 
 

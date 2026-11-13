@@ -14,9 +14,9 @@ def test_day_month_name_formats_are_not_ambiguous(raw):
 
 
 def test_day_first_is_the_default_and_marks_ambiguity():
-    assert normalize_date("12/10/2026") == (date(2026, 10, 12), True)
-    assert normalize_date("12-10-2026") == (date(2026, 10, 12), True)
-    assert normalize_date("12.10.2026") == (date(2026, 10, 12), True)
+    assert normalize_date("12/10/2026") == (date(2026, 10, 12), False)
+    assert normalize_date("12-10-2026") == (date(2026, 10, 12), False)
+    assert normalize_date("12.10.2026") == (date(2026, 10, 12), False)
 
 
 def test_us_locale_reads_month_first():
@@ -48,3 +48,23 @@ def test_empty_and_invalid_dates():
 
 def test_weekday_prefix_is_ignored():
     assert normalize_date("Monday, 12 Oct 2026") == (date(2026, 10, 12), False)
+
+
+def test_a_day_first_vendor_is_not_ambiguous_even_when_both_parts_could_be_months():
+    # A Singapore vendor prints day first, so 04/11/2026 means 4 November.
+    assert normalize_date("04/11/2026", locale="SG") == (date(2026, 11, 4), False)
+
+
+def test_a_month_first_vendor_is_ambiguous_only_if_swapping_changes_the_date():
+    assert normalize_date("03/04/2026", locale="US") == (date(2026, 3, 4), True)
+    assert normalize_date("03/03/2026", locale="US") == (date(2026, 3, 3), False)
+
+
+def test_an_impossible_month_first_date_reads_day_first():
+    # pre-usd-01: a US vendor printed 26/10/2026. Month 26 does not exist, so only one
+    # reading is possible, and it is not ambiguous.
+    assert normalize_date("26/10/2026", locale="US") == (date(2026, 10, 26), False)
+
+
+def test_an_impossible_day_first_date_reads_month_first():
+    assert normalize_date("10/26/2026", locale="SG") == (date(2026, 10, 26), False)

@@ -18,6 +18,7 @@ from invoiceflow.export.csvio import to_csv
 from invoiceflow.export.manifest import Manifest, sha256_bytes
 from invoiceflow.export.mapping import RowContext, SapMapping, map_row
 from invoiceflow.export.models import ExportDocument, ExportRowPlan
+from invoiceflow.settings import load_config
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,17 @@ class ExportResult:
     manifest_path: Path
     manifest: Manifest
     row_plans: tuple[ExportRowPlan, ...]
+
+
+def export_versions() -> tuple[str, str, str]:
+    """The model, prompt, and rules a batch's manifest records."""
+    models = load_config("models")
+    rules = load_config("rules")
+    return (
+        str(models.get("model", "")),
+        str(models.get("prompt", "")),
+        str(rules.get("version", "1")),
+    )
 
 
 def build_rows(

@@ -44,3 +44,30 @@ def test_r02_ignores_lines_with_missing_amount(clean_ctx, rules_config):
     ctx = clean_ctx.model_copy(update={"invoice": invoice})
     findings = R02(rules_config).check(ctx)
     assert not any(f.field == "line_items[0].amount" for f in findings)
+
+
+def _inclusive(ctx, **values):
+    defaults = {
+        "gst_inclusive": True,
+        "subtotal": Decimal("950.00"),
+        "gst_amount": Decimal("78.44"),
+        "gst_rate_percent": Decimal("9"),
+        "total": Decimal("950.00"),
+    }
+    invoice = ctx.invoice.model_copy(update={**defaults, **values})
+    return ctx.model_copy(update={"invoice": invoice})
+
+
+def test_r02_accepts_a_printed_subtotal_that_already_includes_gst(clean_ctx, rules_config):
+    findings = R02(rules_config).check(_inclusive(clean_ctx))
+    assert "total" not in [finding.field for finding in findings]
+
+
+def test_r02_still_flags_a_gst_exclusive_invoice_with_the_same_numbers(clean_ctx, rules_config):
+    findings = R02(rules_config).check(_inclusive(clean_ctx, gst_inclusive=False))
+    assert "total" in [finding.field for finding in findings]
+
+
+def test_r02_still_flags_an_inclusive_invoice_whose_total_differs(clean_ctx, rules_config):
+    findings = R02(rules_config).check(_inclusive(clean_ctx, total=Decimal("1200.00")))
+    assert "total" in [finding.field for finding in findings]

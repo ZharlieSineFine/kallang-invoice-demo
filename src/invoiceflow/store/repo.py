@@ -11,6 +11,7 @@ Rules that hold here:
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -35,6 +36,7 @@ from invoiceflow.contracts import (
     Finding,
     GLAccount,
     MasterData,
+    NormalizedInvoice,
     NormalizedLineItem,
     ParsedDocument,
     PriorInvoice,
@@ -45,10 +47,26 @@ from invoiceflow.contracts import (
     Vendor,
     VenueAlias,
 )
-from invoiceflow.settings import load_config
+from invoiceflow.normalize.normalizer import gst_inclusive_from_note
+from invoiceflow.settings import data_relative, load_config
 from invoiceflow.storage import words_rel_path
 
 _EXPORTED = DocStatus.EXPORTED.value
+# Header field names that differ on NormalizedInvoice.
+_INVOICE_FIELD = {"gst_rate": "gst_rate_percent"}
+
+
+def _line_item_from_row(row) -> NormalizedLineItem:
+    line_no, description, quantity, unit, days, unit_price, amount = row
+    return NormalizedLineItem(
+        line_no=line_no,
+        description=description,
+        quantity=quantity,
+        unit=unit,
+        days=days,
+        unit_price=unit_price,
+        amount=amount,
+    )
 
 
 def _row_count(value: int) -> int:
@@ -125,6 +143,49 @@ class Repo:
                 (status.value, reason, doc_id),
             )
 
+    def set_document_meta(
+        self, doc_id: UUID, doc_type: DocType | None, vendor_id: str | None
+    ) -> None:
+        """What intake learned about the document: its type and its matched vendor."""
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE documents SET doc_type = %s, vendor_id = %s, updated_at = now()
+                WHERE doc_id = %s
+                """,
+                (doc_type.value if doc_type else None, vendor_id, doc_id),
+            )
+
+    def stored_invoice(self, doc_id: UUID) -> NormalizedInvoice | None:
+        """The current values, including reviewer corrections, as a NormalizedInvoice.
+
+        Raises ``ValueError`` if a stored value cannot be read as its type.
+        """
+        record = self.get_document(doc_id)
+        if record is None:
+            return None
+        rows = self._all(
+            "SELECT name, value_norm FROM fields WHERE doc_id = %s AND is_current", (doc_id,)
+        )
+        items = self._all(
+            """
+            SELECT line_no, description, quantity, unit, days, unit_price, amount
+            FROM line_items WHERE doc_id = %s AND is_current ORDER BY line_no
+            """,
+            (doc_id,),
+        )
+        known = NormalizedInvoice.model_fields
+        values = {_INVOICE_FIELD.get(name, name): value for name, value in rows}
+        printed = {name: value for name, value in values.items() if name in known}
+        return NormalizedInvoice(
+            **{
+                **printed,
+                "document_type": record.doc_type,
+                "gst_inclusive": gst_inclusive_from_note(values.get("gst_inclusive_note")),
+                "line_items": tuple(_line_item_from_row(row) for row in items),
+            }
+        )
+
     def list_documents(self, statuses: tuple[DocStatus, ...]) -> tuple[DocumentRecord, ...]:
         values = [s.value for s in statuses]
         rows = self._all(
@@ -152,7 +213,7 @@ class Repo:
                         page.source.value,
                         page.width_pt,
                         page.height_pt,
-                        page.image_path,
+                        data_relative(page.image_path),
                         words_rel_path(document.doc_id, page.page_no),
                         page.ocr_mean_conf,
                     ),
@@ -436,6 +497,10 @@ class Repo:
     _ALIASES_SQL = "SELECT alias, cost_center FROM venue_cost_centers ORDER BY alias"
 
     def prior_invoices(self, vendor_id: str | None) -> tuple[PriorInvoice, ...]:
+        """Earlier invoices for one vendor, or for every known vendor when ``vendor_id`` is None.
+
+        Intake needs them before the vendor is matched, and R05 compares vendors itself.
+        """
         with self._conn.cursor() as cur:
             cur.execute(
                 """
@@ -448,10 +513,12 @@ class Repo:
                           AND name = 'invoice_date' AND is_current LIMIT 1) AS invoice_date,
                        b.sha256
                 FROM documents d JOIN bronze_files b USING (file_id)
-                WHERE d.vendor_id = %s AND d.status <> 'NOT_INVOICE'
+                WHERE d.vendor_id IS NOT NULL
+                  AND (%s::text IS NULL OR d.vendor_id = %s)
+                  AND d.status <> 'NOT_INVOICE'
                 ORDER BY d.created_at
                 """,
-                (vendor_id,),
+                (vendor_id, vendor_id),
             )
             rows = cur.fetchall()
         return tuple(self._prior_from_row(r) for r in rows)
@@ -462,13 +529,18 @@ class Repo:
             """
             SELECT d.doc_id FROM documents d
             LEFT JOIN export_rows e ON e.doc_id = d.doc_id
-            WHERE d.status = 'APPROVED' AND e.doc_id IS NULL
+            WHERE d.status IN ('APPROVED', 'AUTO_PASSED') AND e.doc_id IS NULL
             ORDER BY d.created_at
             """
         )
         return tuple(row[0] for row in rows)
 
-    def record_export(self, batch: ExportBatch, doc_ids: tuple[UUID, ...]) -> None:
+    def record_export(
+        self,
+        batch: ExportBatch,
+        doc_ids: tuple[UUID, ...],
+        manifest: Mapping[str, Any] | None = None,
+    ) -> None:
         """One transaction. Raises if any doc_id was exported before (unique doc_id)."""
         with self._conn.transaction(), self._conn.cursor() as cur:
             cur.execute(
@@ -486,7 +558,7 @@ class Repo:
                     batch.total,
                     batch.layout,
                     batch.mapping_version,
-                    Jsonb({}),
+                    Jsonb(dict(manifest or {})),
                 ),
             )
             first_row = 1

@@ -95,12 +95,22 @@ def normalize_date(value: str | None, *, locale: str = "SG") -> tuple[date | Non
     match = _NUMERIC.fullmatch(text)
     if match:
         first, second, raw_year = match.groups()
-        ambiguous = int(first) <= 12 and int(second) <= 12
+        # A day-first vendor always prints day first. Only a month-first vendor's date can
+        # be misread by a Singapore reader, and only if swapping the parts changes it.
+        ambiguous = (
+            month_first(locale) and first != second and int(first) <= 12 and int(second) <= 12
+        )
+        year = _year(raw_year)
         if month_first(locale):
             month, day = int(first), int(second)
         else:
             day, month = int(first), int(second)
-        return _make_date(_year(raw_year), month, day), ambiguous
+        parsed = _make_date(year, month, day)
+        if parsed is None:
+            # The vendor's usual order gives no real date (month 26), so the other order is
+            # the only possible reading, and it is not ambiguous.
+            return _make_date(year, day, month), False
+        return parsed, ambiguous
 
     match = _DAY_MONTH.fullmatch(text)
     if match:

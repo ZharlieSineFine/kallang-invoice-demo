@@ -28,7 +28,7 @@ from app.models import (
     ReviewOutcome,
     TraceData,
 )
-from app.recheck import RecheckInput, recheck
+from app.recheck import RecheckInput, carried_findings, recheck
 from invoiceflow.contracts import (
     CodingLine,
     CodingSource,
@@ -88,6 +88,8 @@ class CodingUpdate:
     cost_center: str | None
     tax_code: str | None
 
+
+_AWAITING_APPROVAL = "checks clear after a reviewer's change; waiting for approval"
 
 _APPROVABLE = frozenset(
     {
@@ -205,16 +207,31 @@ class PostgresBackend:
             ),
         )
 
-    def _rerun(self, conn: Connection, doc_id: UUID, reviewer: str) -> ReviewOutcome:
+    def _rerun(
+        self,
+        conn: Connection,
+        doc_id: UUID,
+        reviewer: str,
+        *,
+        resolved_fields: frozenset[str] = frozenset(),
+        release_holds: bool = False,
+    ) -> ReviewOutcome:
         bundle = queries.document_bundle(conn, doc_id)
         if bundle is None:
             raise LookupError(f"document {doc_id} not found")
         state = RecheckInput.from_bundle(bundle, self._rules_config)
-        result = recheck(state)
+        carried = carried_findings(
+            bundle.findings, resolved_fields=resolved_fields, release_holds=release_holds
+        )
+        result = recheck(state, carried=carried)
+        # A person changed this invoice, so a clean recheck waits for their approval. Only an
+        # invoice nobody touched may pass, and reach the export, on its own.
+        is_clean = result.status is DocStatus.AUTO_PASSED
+        status = DocStatus.NEEDS_REVIEW if is_clean else result.status
         run_id = f"review-{uuid4().hex[:12]}"
         repo.save_findings(conn, doc_id, run_id, result.findings)
-        reason = "; ".join(result.reasons) or None
-        repo.set_status(conn, doc_id, result.status, reason)
+        reason = "; ".join(result.reasons) or (_AWAITING_APPROVAL if is_clean else None)
+        repo.set_status(conn, doc_id, status, reason)
         repo.log_event(
             conn,
             reviewer,
@@ -222,17 +239,19 @@ class PostgresBackend:
             doc_id,
             {
                 "run_id": run_id,
-                "status": result.status.value,
+                "status": status.value,
                 "findings": [f.rule_id for f in result.findings],
             },
         )
         findings = tuple(_finding_row(f, run_id) for f in result.findings)
+        open_rules = ", ".join(f.rule_id for f in result.findings)
         return ReviewOutcome(
             doc_id=doc_id,
-            status=result.status,
+            status=status,
             message=(
-                f"Checks rerun: {result.status.value}"
-                + (f" ({', '.join(f.rule_id for f in result.findings)})" if result.findings else "")
+                "Checks rerun: nothing open. Approve the invoice to send it to export."
+                if is_clean
+                else f"Checks rerun: {status.value}" + (f" ({open_rules})" if open_rules else "")
             ),
             findings=findings,
             run_id=run_id,
@@ -312,7 +331,7 @@ class PostgresBackend:
                 doc_id,
                 {"field": field, "old": row.value_raw, "new": raw_value},
             )
-            outcome = self._rerun(conn, doc_id, reviewer)
+            outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({field}))
             return ReviewOutcome(
                 doc_id=outcome.doc_id,
                 status=outcome.status,
@@ -348,7 +367,7 @@ class PostgresBackend:
                 doc_id,
                 {"count": len(items)},
             )
-            outcome = self._rerun(conn, doc_id, reviewer)
+            outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({"line_items"}))
             return ReviewOutcome(
                 doc_id=outcome.doc_id,
                 status=outcome.status,
@@ -405,7 +424,9 @@ class PostgresBackend:
                 doc_id,
                 {"lines": [line.line_no for line in changed]},
             )
-            outcome = self._rerun(conn, doc_id, reviewer)
+            outcome = self._rerun(
+                conn, doc_id, reviewer, resolved_fields=frozenset({"coding_lines"})
+            )
             return ReviewOutcome(
                 doc_id=outcome.doc_id,
                 status=outcome.status,
@@ -419,6 +440,8 @@ class PostgresBackend:
             bundle = self._bundle_or_raise(conn, doc_id)
             if bundle.document.status not in _APPROVABLE:
                 raise ValueError(f"cannot approve a document in {bundle.document.status.value}")
+            if bundle.document.status is DocStatus.ON_HOLD:
+                raise ValueError("release the hold, with a comment, before approving")
             self._review(
                 conn,
                 doc_id=doc_id,
@@ -469,7 +492,7 @@ class PostgresBackend:
                 comment=comment,
             )
             repo.log_event(conn, reviewer, "review.hold_released", doc_id, {"comment": comment})
-            outcome = self._rerun(conn, doc_id, reviewer)
+            outcome = self._rerun(conn, doc_id, reviewer, release_holds=True)
             if outcome.status is DocStatus.ON_HOLD:
                 repo.set_status(conn, doc_id, DocStatus.NEEDS_REVIEW, "hold released")
                 outcome = ReviewOutcome(

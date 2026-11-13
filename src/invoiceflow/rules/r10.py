@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from invoiceflow.contracts import CheckContext, DocType, Finding, Scope
+import re
+
+from invoiceflow.contracts import CheckContext, DocType, Finding, Scope, Severity
 from invoiceflow.rules.base import BaseRule
 
 # Types the router must send to NOT_INVOICE (mirrors the routing table in the build plan).
@@ -35,6 +37,8 @@ class R10(BaseRule):
                     evidence={"document_type": doc_type.value},
                 ),
             )
+        if doc_type is DocType.CREDIT_NOTE:
+            return (self._credit_note(ctx),)
         if doc_type is DocType.OTHER:
             return (
                 self.finding(
@@ -45,3 +49,49 @@ class R10(BaseRule):
                 ),
             )
         return ()
+
+    def _credit_note(self, ctx: CheckContext) -> Finding:
+        """IRAS: a credit note quotes the invoice it corrects. It must be on file for the vendor."""
+        quoted = ctx.invoice.original_invoice_ref
+        if not quoted:
+            return self.finding(
+                severity=Severity.FLAG,
+                scope=Scope.FIELD,
+                field="original_invoice_ref",
+                message="This credit note does not quote the invoice it corrects",
+            )
+        vendor_id = ctx.vendor.vendor_id if ctx.vendor is not None else None
+        original = next(
+            (
+                prior
+                for prior in ctx.prior_invoices
+                if prior.vendor_id == vendor_id
+                and _reference_key(prior.invoice_number) == _reference_key(quoted)
+            ),
+            None,
+        )
+        if original is None:
+            return self.finding(
+                severity=Severity.FLAG,
+                scope=Scope.FIELD,
+                field="original_invoice_ref",
+                message=(
+                    f"This credit note quotes invoice {quoted}, which is not on file "
+                    "for this vendor"
+                ),
+                evidence={"original_invoice_ref": quoted},
+            )
+        return self.finding(
+            severity=None,
+            scope=Scope.DOCUMENT,
+            message=f"This document is a credit note for invoice {original.invoice_number}",
+            evidence={
+                "document_type": DocType.CREDIT_NOTE.value,
+                "original_invoice_ref": original.invoice_number or quoted,
+            },
+        )
+
+
+def _reference_key(value: str | None) -> str:
+    """Invoice numbers compared on letters and digits only: SAV-2026-1001 == SAV20261001."""
+    return re.sub(r"[^0-9A-Z]", "", (value or "").upper())

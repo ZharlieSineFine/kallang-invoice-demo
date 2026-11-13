@@ -34,6 +34,7 @@ def sap_export():
         return {
             "batch_id": summary.batch.batch_id,
             "row_count": summary.batch.row_count,
+            "held_back": len(summary.problems),
         }
 
     export()

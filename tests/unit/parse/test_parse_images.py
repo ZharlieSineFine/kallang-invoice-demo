@@ -18,7 +18,7 @@ from helpers import (
 from PIL import Image
 
 from invoiceflow.contracts import TextSource
-from invoiceflow.parse import ParseConfig
+from invoiceflow.parse import ParseConfig, images
 from invoiceflow.parse.images import correct_orientation, render_pdf_page
 from invoiceflow.pipeline.golden import load_golden
 
@@ -183,3 +183,23 @@ def test_bad_orientation_output_is_ignored(monkeypatch):
         lambda *args, **kwargs: {"rotate": "nonsense", "orientation_conf": "nonsense"},
     )
     assert correct_orientation(text_image(size=(300, 100))).size == (300, 100)
+
+
+def test_ocr_reads_a_contrast_stretched_grayscale_page(monkeypatch):
+    # Scans print the UEN and GST number in light gray; Tesseract skips that text unless
+    # the page's contrast is stretched first (pre-c-05 read 83 words plain, 119 stretched).
+    seen = {}
+
+    def fake_image_to_data(image, output_type=None):
+        seen["mode"] = image.mode
+        seen["extrema"] = image.getextrema()
+        return {"text": [], "conf": [], "left": [], "top": [], "width": [], "height": []}
+
+    monkeypatch.setattr(pytesseract, "image_to_data", fake_image_to_data)
+    faint = Image.new("RGB", (40, 20), (250, 250, 250))
+    faint.paste((170, 170, 170), (5, 5, 30, 12))
+
+    images.ocr_words(faint)
+
+    assert seen["mode"] == "L"
+    assert seen["extrema"] == (0, 255)

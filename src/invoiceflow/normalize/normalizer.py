@@ -79,7 +79,8 @@ def _bank_account(value: str | None, problems: list[str]) -> str | None:
     return digits
 
 
-def _gst_inclusive(note: str | None) -> bool:
+def gst_inclusive_from_note(note: str | None) -> bool:
+    """Whether a printed GST note says the amounts already include GST."""
     text = normalize_text(note)
     if not text:
         return False
@@ -137,7 +138,24 @@ def _line_items(
                 amount=_money(item.amount, f"{prefix}.amount", problems),
             )
         )
-    return tuple(items)
+    return _unique_line_numbers(tuple(items), problems)
+
+
+def _unique_line_numbers(
+    items: tuple[NormalizedLineItem, ...], problems: list[str]
+) -> tuple[NormalizedLineItem, ...]:
+    """Line numbers identify lines in review and export, so a repeat is renumbered by position.
+
+    A noisy scan can make the model split one printed line in two, both carrying its number.
+    """
+    numbers = [item.line_no for item in items]
+    if len(set(numbers)) == len(numbers):
+        return items
+    problems.append(f"line_items: line numbers repeat ({numbers}); numbered by position instead")
+    return tuple(
+        item.model_copy(update={"line_no": position})
+        for position, item in enumerate(items, start=1)
+    )
 
 
 def to_normalized(extraction: InvoiceExtraction, vendor: Vendor | None) -> NormalizationResult:
@@ -171,7 +189,7 @@ def to_normalized(extraction: InvoiceExtraction, vendor: Vendor | None) -> Norma
         gst_amount=_money(extraction.gst_amount, "gst_amount", problems),
         total=_money(extraction.total, "total", problems),
         amount_due=_money(extraction.amount_due, "amount_due", problems),
-        gst_inclusive=_gst_inclusive(extraction.gst_inclusive_note),
+        gst_inclusive=gst_inclusive_from_note(extraction.gst_inclusive_note),
         sgd_total=_money(extraction.sgd_total, "sgd_total", problems),
         sgd_gst_amount=_money(extraction.sgd_gst_amount, "sgd_gst_amount", problems),
         bank_account=_bank_account(extraction.bank_account, problems),

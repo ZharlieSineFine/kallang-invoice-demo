@@ -151,3 +151,36 @@ def test_plan_lookup_matches(plans):
     lookup = plan_by_id(42)
     assert len(lookup) == 50
     assert lookup["live-02"].anomalies == ("total_edited",)
+
+
+def _total(plan):
+    from generator.money import compute_totals
+
+    if plan.total_override is not None:
+        return plan.total_override
+    totals = compute_totals(
+        tuple(line.amount for line in plan.lines),
+        gst_rate_percent=plan.gst_rate_percent,
+        simplified=plan.simplified,
+    )
+    return totals.total
+
+
+def test_only_planted_duplicates_share_a_vendor_and_total_within_a_week(plans):
+    # R05 holds a vendor's second invoice for the same total within 7 days. Any such pair in
+    # the batch must be a planted duplicate, or the answer key contradicts the check.
+    invoices = [
+        p
+        for p in plans
+        if p.set_name == "pre" and p.doc_type in {DocType.TAX_INVOICE, DocType.INVOICE}
+    ]
+    clashes = [
+        (a.document_id, b.document_id)
+        for i, a in enumerate(invoices)
+        for b in invoices[i + 1 :]
+        if a.vendor_id == b.vendor_id
+        and _total(a) == _total(b)
+        and abs((a.invoice_date - b.invoice_date).days) <= 7
+        and not ({"resend", "duplicate_file"} & set(a.anomalies + b.anomalies))
+    ]
+    assert clashes == []

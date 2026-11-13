@@ -42,3 +42,29 @@ def test_r01_accepts_fuzzy_at_or_above_threshold(clean_ctx, rules_config):
     )
     ctx = clean_ctx.model_copy(update={"locations": locations})
     assert R01(rules_config).check(ctx) == ()
+
+
+def _without_value(ctx, field):
+    """The model left ``field`` empty, so the locator has nothing to place on the page."""
+    locations = tuple(
+        loc.model_copy(update={"match_type": MatchType.NONE, "score": 0.0})
+        if loc.field == field
+        else loc
+        for loc in ctx.locations
+    )
+    extraction = ctx.extraction.extraction
+    if field.startswith("line_items[0]."):
+        first = extraction.line_items[0].model_copy(update={field.split(".", 1)[1]: None})
+        printed = extraction.model_copy(update={"line_items": (first, *extraction.line_items[1:])})
+    else:
+        printed = extraction.model_copy(update={field: None})
+    result = ctx.extraction.model_copy(update={"extraction": printed})
+    return ctx.model_copy(update={"locations": locations, "extraction": result})
+
+
+def test_r01_ignores_a_header_value_the_model_left_empty(clean_ctx, rules_config):
+    assert R01(rules_config).check(_without_value(clean_ctx, "po_number")) == ()
+
+
+def test_r01_ignores_a_line_value_the_model_left_empty(clean_ctx, rules_config):
+    assert R01(rules_config).check(_without_value(clean_ctx, "line_items[0].amount")) == ()

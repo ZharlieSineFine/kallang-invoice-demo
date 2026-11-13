@@ -13,6 +13,8 @@ from pytesseract import Output
 from invoiceflow.contracts import BBox, Word
 
 _MIN_ORIENTATION_CONFIDENCE = 1.0
+# Share of the darkest and lightest pixels clipped when stretching contrast before OCR.
+_CONTRAST_CUTOFF_PERCENT = 1
 _ROTATIONS = {0, 90, 180, 270}
 
 
@@ -68,8 +70,14 @@ def save_page_image(image: Image.Image, path: Path, *, dpi: int) -> Path:
 
 
 def ocr_words(image: Image.Image) -> tuple[tuple[Word, ...], float | None]:
-    """Run Tesseract ``image_to_data``; return words with page-fraction boxes."""
-    data = pytesseract.image_to_data(image, output_type=Output.DICT)
+    """Run Tesseract ``image_to_data``; return words with page-fraction boxes.
+
+    Tesseract reads a contrast-stretched grayscale copy: on the demo scans it then also reads
+    the light-gray UEN and GST line, and 30-50% more words overall. Boxes are unaffected,
+    because the copy has the same size.
+    """
+    readable = ImageOps.autocontrast(image.convert("L"), cutoff=_CONTRAST_CUTOFF_PERCENT)
+    data = pytesseract.image_to_data(readable, output_type=Output.DICT)
     width, height = image.size
     words: list[Word] = []
     confidences: list[float] = []

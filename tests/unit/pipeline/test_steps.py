@@ -4,9 +4,17 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from invoiceflow.contracts import CodingLine, CodingSource, DocStatus, DocumentRecord
+from invoiceflow.contracts import (
+    CodingLine,
+    CodingSource,
+    DocStatus,
+    DocumentRecord,
+    NormalizedInvoice,
+)
+from invoiceflow.pipeline.golden import load_golden
 from invoiceflow.pipeline.steps import (
     Pipeline,
+    build_pipeline,
     export_approved,
     guess_mime,
     intake_document,
@@ -33,6 +41,10 @@ class FakeRepo:
         self.events: list[tuple] = []
         self.saved: dict[str, list] = {"parsed": [], "extraction": [], "fields": [], "findings": []}
         self._master = False
+        self.prior_requests: list = []
+        self.manifests: list = []
+        self.meta: dict[UUID, tuple] = {}
+        self.invoices: dict[UUID, NormalizedInvoice] = {}
 
     def register_file(self, file) -> bool:
         if file.sha256 in self.shas:
@@ -78,22 +90,30 @@ class FakeRepo:
         self._master = True
 
     def load_master(self):
-        raise NotImplementedError
+        return load_golden().master
 
     def prior_invoices(self, vendor_id):
+        self.prior_requests.append(vendor_id)
         return ()
+
+    def set_document_meta(self, doc_id, doc_type, vendor_id) -> None:
+        self.meta[doc_id] = (doc_type, vendor_id)
+
+    def stored_invoice(self, doc_id):
+        return self.invoices.get(doc_id)
 
     def approved_not_exported(self):
         return tuple(
             doc_id
             for doc_id, status in self.statuses.items()
-            if status is DocStatus.APPROVED and doc_id not in self.exported
+            if status in {DocStatus.APPROVED, DocStatus.AUTO_PASSED} and doc_id not in self.exported
         )
 
     def coding_lines(self, doc_id):
         return self.coding.get(doc_id, ())
 
-    def record_export(self, batch, doc_ids) -> None:
+    def record_export(self, batch, doc_ids, manifest=None) -> None:
+        self.manifests.append(manifest)
         for doc_id in doc_ids:
             if doc_id in self.exported:
                 raise ValueError(f"{doc_id} already exported")
@@ -168,25 +188,36 @@ def test_intake_inbox_moves_processed_files(golden, clean, tmp_path):
     assert (tmp_path / "processed" / "invoice.pdf").is_file()
 
 
-def test_export_twice_leaves_second_batch_empty(tmp_path):
-    repo = FakeRepo()
-    store = LocalBlobStore(tmp_path)
+def _approved_doc(repo, *, net="1080.00", tax="97.20", total="1177.20", vendor_id="V001"):
     doc_id = uuid4()
     repo.documents[doc_id] = DocumentRecord(
-        doc_id=doc_id, file_id=uuid4(), status=DocStatus.APPROVED
+        doc_id=doc_id, file_id=uuid4(), status=DocStatus.APPROVED, vendor_id=vendor_id
     )
     repo.statuses[doc_id] = DocStatus.APPROVED
+    repo.invoices[doc_id] = NormalizedInvoice(
+        invoice_number=f"INV-{doc_id.hex[:6]}",
+        invoice_date=date(2026, 10, 15),
+        currency="SGD",
+        total=Decimal(total),
+    )
     repo.coding[doc_id] = (
         CodingLine(
             line_no=1,
             gl_account="610200",
             cost_center="KG1100",
             tax_code="TX",
-            net_amount=Decimal("1080.00"),
-            tax_amount=Decimal("97.20"),
+            net_amount=Decimal(net),
+            tax_amount=Decimal(tax),
             coding_source=CodingSource.PO,
         ),
     )
+    return doc_id
+
+
+def test_export_twice_leaves_second_batch_empty(tmp_path):
+    repo = FakeRepo()
+    store = LocalBlobStore(tmp_path)
+    doc_id = _approved_doc(repo)
 
     first = export_approved(repo=repo, store=store)
     second = export_approved(repo=repo, store=store)
@@ -196,7 +227,105 @@ def test_export_twice_leaves_second_batch_empty(tmp_path):
     assert second.batch.row_count == 0
     assert second.doc_ids == ()
     assert repo.exported == {doc_id}
-    assert store.read(first.batch.csv_path).startswith(b"doc_id,line_no")
+
+
+def test_export_writes_the_sap_layout_from_the_mapping(tmp_path):
+    repo = FakeRepo()
+    store = LocalBlobStore(tmp_path)
+    doc_id = _approved_doc(repo)
+
+    summary = export_approved(repo=repo, store=store)
+
+    text = store.read(summary.batch.csv_path).decode("utf-8")
+    header = text.splitlines()[0]
+    assert header.startswith('"DocKey","CompanyCode","VendorNo"')
+    assert '"GrossAmount"' in header
+    assert str(doc_id) in text
+    assert '"100014"' in text  # the vendor's SAP number from the master
+
+
+def test_export_records_the_manifest_with_versions(tmp_path):
+    repo = FakeRepo()
+    store = LocalBlobStore(tmp_path)
+    _approved_doc(repo)
+
+    summary = export_approved(repo=repo, store=store)
+
+    manifest = repo.manifests[0]
+    assert manifest["csv_sha256"] == summary.batch.csv_sha256
+    assert manifest["model"]
+    assert store.read(f"gold/{summary.batch.batch_id}/{summary.batch.batch_id}.manifest.json")
+
+
+def test_export_holds_back_only_the_document_that_fails_a_batch_check(tmp_path):
+    repo = FakeRepo()
+    store = LocalBlobStore(tmp_path)
+    good = _approved_doc(repo)
+    bad = _approved_doc(repo, total="1188.10")
+
+    summary = export_approved(repo=repo, store=store)
+
+    assert summary.doc_ids == (good,)
+    assert any("expected gross" in problem for problem in summary.problems)
+    assert repo.statuses[bad] is DocStatus.APPROVED
+
+
+def test_export_holds_back_a_document_with_no_vendor(tmp_path):
+    repo = FakeRepo()
+    store = LocalBlobStore(tmp_path)
+    _approved_doc(repo, vendor_id=None)
+
+    summary = export_approved(repo=repo, store=store)
+
+    assert summary.doc_ids == ()
+    assert any("vendor" in problem for problem in summary.problems)
+
+
+def test_intake_saves_type_and_vendor_and_passes_prior_invoices(golden, tmp_path):
+    fixture = golden.fixtures[0]
+    repo = FakeRepo()
+    result = intake_document(
+        fixture.pdf_path,
+        repo=repo,
+        store=LocalBlobStore(tmp_path),
+        pipeline=_pipeline(golden),
+        today=TODAY,
+        run_id="r",
+    )
+    assert repo.prior_requests == [None]
+    doc_type, vendor_id = repo.meta[result.doc_id]
+    assert vendor_id == "V001"
+    assert doc_type is not None
+    assert result.process is not None
+
+
+def test_a_byte_identical_file_is_logged_when_skipped(golden, tmp_path):
+    fixture = golden.fixtures[0]
+    repo = FakeRepo()
+    kwargs = {
+        "repo": repo,
+        "store": LocalBlobStore(tmp_path),
+        "pipeline": _pipeline(golden),
+        "today": TODAY,
+        "run_id": "r",
+    }
+    intake_document(fixture.pdf_path, **kwargs)
+    second = intake_document(fixture.pdf_path, **kwargs)
+    assert second.skipped
+    assert any(event[1] == "intake.duplicate_file" for event in repo.events)
+
+
+def test_build_pipeline_prefers_the_generated_master(tmp_path, monkeypatch, golden):
+    monkeypatch.setenv("INVOICEFLOW_DATA", str(tmp_path))
+    assert len(build_pipeline().master.vendors) == len(golden.master.vendors)
+
+    generated = golden.master.model_copy(
+        update={"vendors": (*golden.master.vendors, golden.master.vendors[0])}
+    )
+    target = tmp_path / "generated" / "master.json"
+    target.parent.mkdir()
+    target.write_text(generated.model_dump_json(), encoding="utf-8")
+    assert len(build_pipeline().master.vendors) == len(golden.master.vendors) + 1
 
 
 def test_guess_mime():

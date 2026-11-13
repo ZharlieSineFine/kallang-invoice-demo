@@ -37,6 +37,9 @@ class ModelConfig:
     cache_dir: Path = field(default_factory=Path)
     prompt_path: Path = field(default_factory=Path)
     azure: Mapping[str, str] = field(default_factory=dict)
+    # Unload the model after a request once Ollama reports it above this size, so the next
+    # request starts a fresh runner. 0 keeps it loaded for as long as keep_alive allows.
+    unload_above_gb: float = 0.0
 
     @property
     def num_ctx(self) -> int:
@@ -109,4 +112,5 @@ def load_model_config(root: Path | None = None) -> ModelConfig:
         cache_dir=root / str(raw.get("cache_dir", "data/llm_cache")),
         prompt_path=root / str(raw.get("prompt", "prompts/extract_v1.md")),
         azure=_frozen({str(k): str(v) for k, v in azure.items()}),
+        unload_above_gb=float(raw.get("unload_above_gb", 0)),
     )

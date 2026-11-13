@@ -1,9 +1,11 @@
 """Where things live. Paths come from INVOICEFLOW_ROOT, or the folder holding pyproject.toml."""
 
 import os
+from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -74,3 +76,18 @@ def data_dir() -> Path:
 
 def golden_dir() -> Path:
     return repo_root() / "tests" / "fixtures" / "golden"
+
+
+def singapore_today() -> date:
+    """Today in Kallang's timezone, so date checks do not depend on the host or container."""
+    return datetime.now(ZoneInfo("Asia/Singapore")).date()
+
+
+def data_relative(path: str | None) -> str | None:
+    """A path under data/ as stored in Postgres: relative, so host and containers both find it."""
+    if path is None:
+        return None
+    try:
+        return str(Path(path).resolve().relative_to(data_dir().resolve()))
+    except ValueError:
+        return path

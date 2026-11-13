@@ -1,4 +1,9 @@
-"""Evaluation CLI: score the golden set against its own truth, write reports, run the gate."""
+"""Evaluation CLI: a self-check of the golden set, written reports, and the gate.
+
+The golden run scores the truth files against themselves, so its 100% proves the scoring code
+works and says nothing about the model. Only a real pipeline run (``make demo-data``) may write
+the ``latest.json`` the demo shows.
+"""
 
 from __future__ import annotations
 
@@ -52,15 +57,18 @@ def _stamp() -> str:
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
-def write_report(report: EvalReport, out_dir: Path) -> tuple[Path, Path]:
+def write_report(
+    report: EvalReport, out_dir: Path, *, for_dashboard: bool = False
+) -> tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = _stamp()
     json_path = out_dir / f"eval_{stamp}.json"
     md_path = out_dir / f"eval_{stamp}.md"
     json_path.write_text(report.to_json() + "\n", encoding="utf-8")
     md_path.write_text(report.to_markdown() + "\n", encoding="utf-8")
-    # CR-003: a stable path for the dashboard's "latest evaluation" card.
-    (out_dir / "latest.json").write_text(report.to_json() + "\n", encoding="utf-8")
+    if for_dashboard:
+        # CR-003: a stable path for the dashboard's "latest evaluation" card.
+        (out_dir / "latest.json").write_text(report.to_json() + "\n", encoding="utf-8")
     return json_path, md_path
 
 

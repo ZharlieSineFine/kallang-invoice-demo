@@ -15,23 +15,13 @@ from pathlib import Path
 
 from invoiceflow.coding.assign import assign
 from invoiceflow.export.checks import check_batch
-from invoiceflow.export.exporter import build_rows, export_documents
+from invoiceflow.export.exporter import build_rows, export_documents, export_versions
 from invoiceflow.export.mapping import load_sap_mapping
 from invoiceflow.export.models import ExportDocument
 from invoiceflow.pipeline.golden import load_golden
 from invoiceflow.settings import load_config, repo_root
 
 GOLDEN_TODAY = date(2026, 11, 4)
-
-
-def _versions() -> tuple[str, str, str]:
-    models = load_config("models")
-    rules = load_config("rules")
-    return (
-        str(models.get("model", "")),
-        str(models.get("prompt", "")),
-        str(rules.get("version", "1")),
-    )
 
 
 def _documents() -> tuple[ExportDocument, ...]:
@@ -56,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     mapping = load_sap_mapping(load_config("sap_mapping"))
-    model, prompt_version, rule_version = _versions()
+    model, prompt_version, rule_version = export_versions()
     golden = load_golden()
     master = golden.master.coding
     out_dir = Path(args.out)

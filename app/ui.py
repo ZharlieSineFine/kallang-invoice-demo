@@ -178,9 +178,7 @@ def finding_card_html(finding: FindingRow) -> str:
             f'<div style="margin-top:0.3rem;font-size:0.85rem;color:#5a6068;">'
             f"{escape(_evidence_line(finding))}</div>"
         )
-        source = next(
-            (label for key, label in _MASTER_SOURCES if key in finding.evidence), None
-        )
+        source = next((label for key, label in _MASTER_SOURCES if key in finding.evidence), None)
         if source is not None:
             card += (
                 f'<div style="margin-top:0.15rem;font-size:0.8rem;color:#5a6068;">'

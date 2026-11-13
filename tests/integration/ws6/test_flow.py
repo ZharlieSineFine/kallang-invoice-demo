@@ -42,22 +42,27 @@ def test_export_twice_leaves_second_batch_empty(migrated, tmp_path):
     load_fixtures(migrated, store)
     repo = Repo(migrated)
 
-    for doc_id in (CLEAN_DOC, MISMATCH_DOC):
-        repo.set_status(doc_id, DocStatus.APPROVED, "approved for export test")
+    # The clean invoice is AUTO_PASSED and joins the export without a person. The twin is
+    # approved here without its correction, so the batch checks must keep it out of the CSV.
+    repo.set_status(MISMATCH_DOC, DocStatus.APPROVED, "approved for export test")
 
     first = export_approved(repo=repo, store=store)
     second = export_approved(repo=repo, store=store)
 
-    assert first.batch.row_count == 2
-    assert set(first.doc_ids) == {CLEAN_DOC, MISMATCH_DOC}
+    assert first.batch.row_count == 1
+    assert first.doc_ids == (CLEAN_DOC,)
+    assert any("expected gross" in problem for problem in first.problems)
+    header = store.read(first.batch.csv_path).decode("utf-8").splitlines()[0]
+    assert header.startswith('"DocKey"')
     assert second.batch.row_count == 0
     assert second.doc_ids == ()
-    assert repo.approved_not_exported() == ()
+    assert repo.approved_not_exported() == (MISMATCH_DOC,)  # held back, not lost
+    assert any("expected gross" in problem for problem in second.problems)
 
     with migrated.cursor() as cur:
         cur.execute("SELECT count(*) FROM export_batches")
         assert cur.fetchone()[0] == 2
         cur.execute("SELECT count(*) FROM export_rows")
-        assert cur.fetchone()[0] == 2
+        assert cur.fetchone()[0] == 1
         cur.execute("SELECT status FROM documents WHERE doc_id = %s", (CLEAN_DOC,))
         assert cur.fetchone()[0] == "EXPORTED"

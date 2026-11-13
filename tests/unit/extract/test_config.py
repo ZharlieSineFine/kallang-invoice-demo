@@ -51,3 +51,12 @@ def test_config_is_frozen(make_config):
     c = make_config()
     with pytest.raises(AttributeError):
         c.model = "other"  # type: ignore[misc]
+
+
+def test_unload_limit_comes_from_yaml():
+    # The Ollama runner grows with every request on the demo Mac, so the limit must stay on.
+    assert load_model_config().unload_above_gb > 0
+
+
+def test_unload_limit_defaults_to_off(make_config):
+    assert make_config().unload_above_gb == 0

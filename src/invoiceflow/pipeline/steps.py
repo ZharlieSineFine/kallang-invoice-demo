@@ -7,13 +7,10 @@ nothing from Airflow, so they can be called from scripts, tests, or an Azure Fun
 
 from __future__ import annotations
 
-import hashlib
 import json
-from csv import writer
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
-from io import StringIO
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -31,9 +28,13 @@ from invoiceflow.contracts import (
     NormalizedInvoice,
     ValueSource,
 )
+from invoiceflow.export.checks import check_batch
+from invoiceflow.export.exporter import build_batch, build_rows, export_versions
+from invoiceflow.export.mapping import SapMapping, load_sap_mapping
+from invoiceflow.export.models import ExportDocument
 from invoiceflow.pipeline.deps import build_deps
-from invoiceflow.pipeline.stages import PipelineDeps, process_document
-from invoiceflow.settings import data_dir, load_config
+from invoiceflow.pipeline.stages import PipelineDeps, ProcessResult, process_document
+from invoiceflow.settings import data_dir, load_config, singapore_today
 from invoiceflow.storage import LocalBlobStore
 
 INBOX_DIR = "inbox"
@@ -57,7 +58,7 @@ _MIME_BY_EXT = {
 
 @dataclass(frozen=True)
 class Pipeline:
-    """Stub pipeline dependencies, rebuilt from the golden fixtures and the config files."""
+    """Pipeline dependencies, master data, and the rules config."""
 
     deps: PipelineDeps
     master: MasterData
@@ -72,23 +73,33 @@ class IntakeResult:
     status: DocStatus
     skipped: bool = False
     reason: str | None = None
+    process: ProcessResult | None = None
 
 
 @dataclass(frozen=True)
 class ExportSummary:
     batch: ExportBatch
     doc_ids: tuple[UUID, ...]
+    problems: tuple[str, ...] = ()  # documents held back, and why; they stay exportable
+
+
+def load_demo_master() -> MasterData:
+    """The full vendor master once ``make data`` has run, else the golden one-vendor master."""
+    generated = data_dir() / "generated" / "master.json"
+    if generated.is_file():
+        return MasterData.model_validate_json(generated.read_text(encoding="utf-8"))
+
+    from invoiceflow.pipeline.golden import load_golden
+
+    return load_golden().master
 
 
 def build_pipeline(rules_config: dict[str, Any] | None = None) -> Pipeline:
     """The real pipeline, backed by the Phase 1 implementations (WS2-WS8)."""
     rules_config = rules_config or load_config("rules")
-
-    # Master data comes from the golden fixtures until WS1's seed loader fills the database.
-    from invoiceflow.pipeline.golden import load_golden
-
-    golden = load_golden()
-    return Pipeline(deps=build_deps(rules_config), master=golden.master, rules_config=rules_config)
+    return Pipeline(
+        deps=build_deps(rules_config), master=load_demo_master(), rules_config=rules_config
+    )
 
 
 golden_pipeline = build_pipeline  # backward-compatible name used by the DAGs
@@ -153,7 +164,10 @@ def intake_document(
         mime_type=guess_mime(path.name),
         path=bronze_path,
     )
+    prior_invoices = repo.prior_invoices(None)
     if not repo.register_file(bronze):
+        duplicate = {"sha256": sha256, "name": path.name}
+        repo.log_event(ACTOR, "intake.duplicate_file", None, duplicate)
         return IntakeResult(
             doc_id=doc_id,
             file_id=file_id,
@@ -175,12 +189,21 @@ def intake_document(
         today=today,
         run_id=run_id,
         rules_config=pipeline.rules_config,
+        prior_invoices=prior_invoices,
     )
     _persist_silver(repo, store, result, run_id)
+    invoice = result.context.invoice
+    repo.set_document_meta(
+        doc_id,
+        invoice.document_type if invoice else None,
+        result.context.vendor.vendor_id if result.context.vendor else None,
+    )
     status = result.decision.status
     repo.set_status(doc_id, status, "; ".join(result.decision.reasons) or None)
     repo.log_event(ACTOR, "intake.completed", doc_id, {"status": status.value, "run_id": run_id})
-    return IntakeResult(doc_id=doc_id, file_id=file_id, sha256=sha256, status=status)
+    return IntakeResult(
+        doc_id=doc_id, file_id=file_id, sha256=sha256, status=status, process=result
+    )
 
 
 def intake_inbox(
@@ -206,37 +229,93 @@ def intake_inbox(
     return tuple(results)
 
 
+def _export_document(repo, doc_id: UUID, master: MasterData) -> ExportDocument:
+    """One document's current values. Raises ``ValueError`` if it cannot be exported."""
+    record = repo.get_document(doc_id)
+    vendor = master.vendor(record.vendor_id) if record and record.vendor_id else None
+    if vendor is None:
+        raise ValueError(f"document {doc_id} has no vendor from the vendor master")
+    invoice = repo.stored_invoice(doc_id)
+    if invoice is None:
+        raise ValueError(f"document {doc_id} has no stored values")
+    return ExportDocument(doc_id, invoice, vendor, repo.coding_lines(doc_id))
+
+
+def _exportable(
+    repo, master: MasterData, mapping: SapMapping, export_date: date
+) -> tuple[tuple[ExportDocument, ...], tuple[str, ...]]:
+    """Keep every document that passes the batch checks; one bad invoice never blocks the rest."""
+    accepted: tuple[ExportDocument, ...] = ()
+    problems: list[str] = []
+    for doc_id in repo.approved_not_exported():
+        try:
+            candidate = (*accepted, _export_document(repo, doc_id, master))
+        except ValueError as error:
+            problems.append(str(error))
+            continue
+        rows = build_rows(mapping, candidate, export_date)
+        found = check_batch(mapping, rows, candidate, master.coding)
+        if found:
+            problems.extend(found)
+        else:
+            accepted = candidate
+    return accepted, tuple(problems)
+
+
 def export_approved(
     *,
     repo,
     store: LocalBlobStore,
-    mapping_version: str = "1",
     batch_id: str | None = None,
+    export_date: date | None = None,
 ) -> ExportSummary:
-    """Build a (stub) SAP CSV for every APPROVED-not-exported document and record the batch.
+    """Write the SAP CSV and manifest for everything ready, and record the batch.
 
-    The real 16-column layout is WS8's job; this stub writes one row per coding line so the
-    export-once behaviour can be demonstrated today. Running it twice leaves a second batch
-    with zero rows, because the first run flips every document to EXPORTED.
+    Running it twice leaves a second batch with zero rows, because the first run flips every
+    exported document to EXPORTED. Documents that fail a batch check stay where they are, and
+    ``ExportSummary.problems`` says why.
     """
-    doc_ids = repo.approved_not_exported()
-    rows = _export_rows(repo, doc_ids)
-    csv_text = _render_csv(rows)
+    mapping = load_sap_mapping(load_config("sap_mapping"))
+    master = repo.load_master()
+    export_date = export_date or singapore_today()
+    documents, problems = _exportable(repo, master, mapping, export_date)
     batch_id = batch_id or _batch_id()
-    csv_path = store.put_gold(batch_id, f"{batch_id}.csv", csv_text.encode("utf-8"))
+    model, prompt_version, rule_version = export_versions()
+    prepared = build_batch(
+        mapping,
+        documents,
+        master.coding,
+        export_date=export_date,
+        batch_id=batch_id,
+        model=model,
+        prompt_version=prompt_version,
+        rule_version=rule_version,
+    )
+    csv_path = store.put_gold(
+        batch_id, f"{batch_id}.csv", prepared.csv_text.encode(mapping.encoding)
+    )
+    store.put_gold(
+        batch_id, f"{batch_id}.manifest.json", prepared.manifest.to_json().encode("utf-8")
+    )
     batch = ExportBatch(
         batch_id=batch_id,
         created_at=datetime.now(UTC),
         csv_path=csv_path,
-        csv_sha256=hashlib.sha256(csv_text.encode("utf-8")).hexdigest(),
-        row_count=len(rows),
-        total=_sum_totals(rows),
-        layout="hypothetical",
-        mapping_version=mapping_version,
+        csv_sha256=prepared.csv_sha256,
+        row_count=len(prepared.rows),
+        total=prepared.total,
+        layout=mapping.layout,
+        mapping_version=mapping.version,
     )
-    repo.record_export(batch, doc_ids)
-    repo.log_event(ACTOR, "export.completed", None, {"batch_id": batch_id, "row_count": len(rows)})
-    return ExportSummary(batch=batch, doc_ids=doc_ids)
+    doc_ids = tuple(document.doc_id for document in documents)
+    repo.record_export(batch, doc_ids, manifest=prepared.manifest.to_dict())
+    repo.log_event(
+        ACTOR,
+        "export.completed",
+        None,
+        {"batch_id": batch_id, "row_count": batch.row_count, "problems": list(problems)},
+    )
+    return ExportSummary(batch=batch, doc_ids=doc_ids, problems=problems)
 
 
 def evaluate(*, repo) -> dict[str, int]:
@@ -308,52 +387,6 @@ def _normalized_value(invoice: NormalizedInvoice | None, name: str, raw: Any) ->
     if isinstance(value, Decimal):
         return format(value, "f")
     return str(value)
-
-
-def _export_rows(repo, doc_ids: tuple[UUID, ...]) -> tuple[tuple[Any, ...], ...]:
-    rows: list[tuple[Any, ...]] = []
-    for doc_id in doc_ids:
-        for line in repo.coding_lines(doc_id):
-            rows.append(
-                (
-                    doc_id,
-                    line.line_no,
-                    line.gl_account,
-                    line.cost_center,
-                    line.tax_code,
-                    format(line.net_amount, "f"),
-                    format(line.tax_amount, "f"),
-                    line.description,
-                )
-            )
-    return tuple(rows)
-
-
-def _render_csv(rows: tuple[tuple[Any, ...], ...]) -> str:
-    buffer = StringIO()
-    out = writer(buffer)
-    out.writerow(
-        (
-            "doc_id",
-            "line_no",
-            "gl_account",
-            "cost_center",
-            "tax_code",
-            "net_amount",
-            "tax_amount",
-            "description",
-        )
-    )
-    for row in rows:
-        out.writerow(row)
-    return buffer.getvalue()
-
-
-def _sum_totals(rows: tuple[tuple[Any, ...], ...]) -> Decimal:
-    total = Decimal("0.00")
-    for row in rows:
-        total += Decimal(row[5]) + Decimal(row[6])
-    return total
 
 
 def _batch_id() -> str:

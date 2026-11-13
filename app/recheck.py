@@ -12,14 +12,14 @@ It is deliberately small: WS5 owns the full R01-R12 rule set. Every caller goes 
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any
 
 from app.formatting import parse_decimal
-from app.models import DocumentBundle
+from app.models import DocumentBundle, FindingRow
 from invoiceflow.contracts import (
     DocStatus,
     DocType,
@@ -28,6 +28,10 @@ from invoiceflow.contracts import (
     Severity,
     money,
 )
+from invoiceflow.normalize.normalizer import gst_inclusive_from_note
+
+# The (rule, field) pairs recompute_findings() decides afresh on every recheck.
+_RECOMPUTED = {("R02", "subtotal"), ("R02", "total"), ("R03", "total")}
 
 _SEVERITY_ORDER = {
     Severity.INFO: 0,
@@ -57,6 +61,7 @@ class RecheckInput:
     total: Decimal | None = None
     line_amounts: tuple[Decimal, ...] = ()
     rules_config: Mapping[str, Any] = field(default_factory=dict)
+    gst_inclusive: bool = False
 
     @classmethod
     def from_bundle(cls, bundle: DocumentBundle, rules_config: Mapping[str, Any]) -> RecheckInput:
@@ -73,6 +78,7 @@ class RecheckInput:
             total=value("total"),
             line_amounts=amounts,
             rules_config=rules_config,
+            gst_inclusive=gst_inclusive_from_note(_field_text(bundle, "gst_inclusive_note")),
         )
 
 
@@ -133,7 +139,9 @@ def recompute_findings(state: RecheckInput) -> tuple[Finding, ...]:
     if state.subtotal is not None and state.gst_amount is not None and state.total is not None:
         expected = money(state.subtotal + state.gst_amount)
         tolerance = _tolerance(config, "subtotal_plus_gst", "0.01")
-        if abs(expected - state.total) > tolerance:
+        # A GST-inclusive invoice may print a subtotal equal to the total, with GST inside it.
+        includes_gst = state.gst_inclusive and abs(state.subtotal - state.total) <= tolerance
+        if abs(expected - state.total) > tolerance and not includes_gst:
             findings.append(
                 _finding(
                     "R03",
@@ -150,6 +158,52 @@ def recompute_findings(state: RecheckInput) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
+def _field_text(bundle: DocumentBundle, name: str) -> str | None:
+    row = bundle.field(name)
+    return (row.value_norm or row.value_raw) if row else None
+
+
+def _resolved(finding: FindingRow, resolved_fields: frozenset[str]) -> bool:
+    """Whether the reviewer corrected this finding's field. A hold always needs a release."""
+    if finding.severity is Severity.HOLD:
+        return False
+    field_name = finding.field or ""
+    return any(
+        field_name == name or field_name.startswith((f"{name}[", f"{name}."))
+        for name in resolved_fields
+    )
+
+
+def carried_findings(
+    previous: Sequence[FindingRow],
+    *,
+    resolved_fields: frozenset[str] = frozenset(),
+    release_holds: bool = False,
+) -> tuple[Finding, ...]:
+    """The open findings a recheck must keep, because it cannot recompute them.
+
+    A recheck only recomputes the arithmetic. A flag stays open until a person corrects its
+    field. A hold stays open until a person releases it with a comment, so typing over a value
+    can never clear a bank account or hidden-text hold.
+    """
+    return tuple(
+        Finding(
+            rule_id=row.rule_id,
+            rule_version=row.rule_version or RULE_VERSION,
+            severity=row.severity,
+            scope=row.scope,
+            field=row.field,
+            message=row.message,
+            evidence=dict(row.evidence),
+            stage=row.stage,
+        )
+        for row in previous
+        if (row.rule_id, row.field) not in _RECOMPUTED
+        and not _resolved(row, resolved_fields)
+        and not (release_holds and row.severity is Severity.HOLD)
+    )
+
+
 def route(findings: tuple[Finding, ...], *, rules_config: Mapping[str, Any]) -> DocStatus:
     auto_approve = bool((rules_config.get("routing") or {}).get("auto_approve_clean", True))
     worst = max((f.severity for f in findings), key=lambda s: _SEVERITY_ORDER[s], default=None)
@@ -158,7 +212,12 @@ def route(findings: tuple[Finding, ...], *, rules_config: Mapping[str, Any]) -> 
     return _STATUS_BY_SEVERITY[worst]
 
 
-def recheck(state: RecheckInput, *, today: date | None = None) -> RecheckResult:
+def recheck(
+    state: RecheckInput,
+    *,
+    today: date | None = None,
+    carried: tuple[Finding, ...] = (),
+) -> RecheckResult:
     """Return findings for the current values and the status the router would choose.
 
     ``today`` is accepted so the future ``pipeline.recheck`` signature (which needs it for
@@ -167,7 +226,7 @@ def recheck(state: RecheckInput, *, today: date | None = None) -> RecheckResult:
     del today  # only R02/R03 here; the real recheck uses it
     if state.document_type in _NOT_INVOICES:
         return RecheckResult((), DocStatus.NOT_INVOICE, ())
-    findings = recompute_findings(state)
+    findings = (*recompute_findings(state), *carried)
     reasons = tuple(
         f"{f.rule_id}: {f.message}"
         for f in findings

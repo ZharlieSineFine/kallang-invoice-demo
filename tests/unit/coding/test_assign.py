@@ -281,6 +281,20 @@ class TestGstSpread:
         assert tax_code_for(invoice, _vendor(gst_reg_no="209900123K")) == "TX"
 
 
+def test_gst_inclusive_lines_are_split_into_net_and_tax():
+    # pre-a-10: a simplified invoice whose S$570.00 line already includes S$47.06 GST.
+    invoice = _invoice(
+        line_items=(_line(1, "Site support (price includes GST)", "570.00"),),
+        subtotal=Decimal("570.00"),
+        gst_amount=Decimal("47.06"),
+        total=Decimal("570.00"),
+        gst_inclusive=True,
+    )
+    (line,) = assign(invoice, _vendor(), None, _master())
+    assert (line.net_amount, line.tax_amount) == (Decimal("522.94"), Decimal("47.06"))
+    assert line.net_amount + line.tax_amount == invoice.total
+
+
 def test_sap_coder_satisfies_the_coder_protocol():
     assert isinstance(SapCoder(), Coder)
     result = SapCoder().assign(_invoice(), _vendor(), _po(), _master())

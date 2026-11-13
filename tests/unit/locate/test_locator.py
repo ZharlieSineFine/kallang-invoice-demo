@@ -242,3 +242,19 @@ def test_a_longer_run_does_not_beat_the_exact_word():
     found = locate_words(words, total="1,090.00")["total"]
 
     assert found.bbox == BBox(x0=0.50, y0=0.10, x1=0.60, y1=0.11)
+
+
+def test_words_on_a_tilted_scan_line_are_read_left_to_right():
+    # From pre-c-05: on a slightly tilted scan, words on one line sit at slightly different
+    # heights, and the right-hand column's words fall between them.
+    words = (
+        word("The", 0.079, 0.1890, 0.105, 0.1975),
+        word("INVOICE", 0.560, 0.1880, 0.620, 0.1965),
+        word("Kallang", 0.110, 0.1895, 0.162, 0.1980),
+        word("DATE", 0.625, 0.1885, 0.660, 0.1970),
+        word("Group", 0.168, 0.1885, 0.212, 0.1970),
+        word("20/10/2026", 0.700, 0.1890, 0.790, 0.1975),
+    )
+    location = locate_words(words, buyer_name="The Kallang Group")["buyer_name"]
+    assert location.match_type is MatchType.EXACT
+    assert location.matched_text == "The Kallang Group"

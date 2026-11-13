@@ -97,3 +97,27 @@ def test_r03_flags_foreign_currency_without_sgd(clean_ctx, rules_config):
     ctx = clean_ctx.model_copy(update={"invoice": invoice})
     findings = R03(rules_config).check(ctx)
     assert any(f.field == "sgd_total" for f in findings)
+
+
+def _inclusive(ctx, **values):
+    defaults = {
+        "gst_inclusive": True,
+        "subtotal": Decimal("950.00"),
+        "gst_amount": Decimal("78.44"),
+        "gst_rate_percent": Decimal("9"),
+        "total": Decimal("950.00"),
+    }
+    invoice = ctx.invoice.model_copy(update={**defaults, **values})
+    return ctx.model_copy(update={"invoice": invoice})
+
+
+def test_r03_extracts_gst_from_an_inclusive_total(clean_ctx, rules_config):
+    findings = R03(rules_config).check(_inclusive(clean_ctx))
+    assert "gst_amount" not in [finding.field for finding in findings]
+
+
+def test_r03_flags_wrong_gst_inside_an_inclusive_total(clean_ctx, rules_config):
+    findings = R03(rules_config).check(_inclusive(clean_ctx, gst_amount=Decimal("50.00")))
+    flagged = [finding for finding in findings if finding.field == "gst_amount"]
+    assert flagged
+    assert flagged[0].evidence["expected_gst"] == "78.44"

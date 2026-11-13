@@ -7,7 +7,13 @@ import re
 from decimal import Decimal
 
 from invoiceflow.contracts import CheckContext, DocType, Finding, Scope, money
-from invoiceflow.rules.base import BaseRule, cfg_decimal, fmt2, gst_rate_for_date
+from invoiceflow.rules.base import (
+    BaseRule,
+    cfg_decimal,
+    fmt2,
+    gst_rate_for_date,
+    subtotal_includes_gst,
+)
 
 # Singapore GST registration numbers are the business UEN: nine digits + checksum letter.
 _GST_REG = re.compile(r"^\d{9}[A-Z]$")
@@ -85,7 +91,11 @@ class R03(BaseRule):
             and invoice.gst_rate_percent is not None
         ):
             tol = cfg_decimal(self._config["tolerances"], "gst_amount")
-            expected_gst = money(invoice.subtotal * invoice.gst_rate_percent / Decimal("100"))
+            rate = invoice.gst_rate_percent
+            if subtotal_includes_gst(invoice, tol):
+                expected_gst = money(invoice.total * rate / (Decimal("100") + rate))
+            else:
+                expected_gst = money(invoice.subtotal * rate / Decimal("100"))
             if abs(invoice.gst_amount - expected_gst) > tol:
                 findings.append(
                     self.finding(

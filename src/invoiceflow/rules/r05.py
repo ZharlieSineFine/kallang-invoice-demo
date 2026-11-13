@@ -4,7 +4,7 @@ within the duplicate window."""
 from __future__ import annotations
 
 from invoiceflow.contracts import CheckContext, Finding, Scope, Severity
-from invoiceflow.rules.base import BaseRule, fmt2, money_sgd
+from invoiceflow.rules.base import NOT_INVOICE_TYPES, BaseRule, fmt2, money_sgd
 
 
 class R05(BaseRule):
@@ -12,7 +12,8 @@ class R05(BaseRule):
 
     def check(self, ctx: CheckContext) -> tuple[Finding, ...]:
         invoice = ctx.invoice
-        if invoice is None:
+        # A statement lists invoices already on file and is never paid, so it is no duplicate.
+        if invoice is None or invoice.document_type in NOT_INVOICE_TYPES:
             return ()
         window = int(self._config["duplicate_window_days"])
         findings: list[Finding] = []

@@ -198,8 +198,11 @@ def assign(
     else:
         taxes = (_ZERO,) * len(lines)
 
+    # On a GST-inclusive invoice the line amounts already contain the GST, so take it out.
+    included = taxes if invoice.gst_inclusive else (_ZERO,) * len(lines)
     return tuple(
-        line.model_copy(update={"tax_amount": tax}) for line, tax in zip(lines, taxes, strict=True)
+        line.model_copy(update={"net_amount": money(line.net_amount - inside), "tax_amount": tax})
+        for line, tax, inside in zip(lines, taxes, included, strict=True)
     )
 
 

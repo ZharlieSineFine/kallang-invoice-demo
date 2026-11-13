@@ -9,11 +9,19 @@ def test_r12_passes_clean(clean_ctx, rules_config):
     assert R12(rules_config).check(clean_ctx) == ()
 
 
-def test_r12_flags_missing_po_number(clean_ctx, rules_config):
-    invoice = clean_ctx.invoice.model_copy(update={"po_number": None})
-    ctx = clean_ctx.model_copy(update={"invoice": invoice, "purchase_order": None})
-    findings = R12(rules_config).check(ctx)
-    assert any(f.field == "po_number" for f in findings)
+def _without_po(ctx):
+    invoice = ctx.invoice.model_copy(update={"po_number": None})
+    return ctx.model_copy(update={"invoice": invoice, "purchase_order": None})
+
+
+def test_r12_has_nothing_to_check_without_a_po_number(clean_ctx, rules_config):
+    assert R12(rules_config).check(_without_po(clean_ctx)) == ()
+
+
+def test_r12_flags_missing_po_number_when_policy_requires_one(clean_ctx, rules_config):
+    strict = {**rules_config, "purchase_order_required": True}
+    findings = R12(strict).check(_without_po(clean_ctx))
+    assert [f.field for f in findings] == ["po_number"]
 
 
 def test_r12_flags_po_not_found(clean_ctx, rules_config):

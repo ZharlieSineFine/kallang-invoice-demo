@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import uuid4
 
-from invoiceflow.contracts import PriorInvoice, Severity
+from invoiceflow.contracts import DocType, PriorInvoice, Severity
 from invoiceflow.rules.r05 import R05
 
 _SHA = "a" * 64
@@ -65,4 +65,19 @@ def test_r05_ignores_amount_outside_window(clean_ctx, rules_config):
 def test_r05_ignores_prior_without_date(clean_ctx, rules_config):
     prior = _prior(invoice_number="SAV-2026-9999", invoice_date=None)
     ctx = clean_ctx.model_copy(update={"prior_invoices": (prior,)})
+    assert R05(rules_config).check(ctx) == ()
+
+
+def test_r05_ignores_a_statement_that_lists_earlier_invoices(clean_ctx, rules_config):
+    # A statement quotes invoices already on file; it is never paid, so it is no duplicate.
+    invoice = clean_ctx.invoice.model_copy(update={"document_type": DocType.STATEMENT})
+    prior = PriorInvoice(
+        doc_id=uuid4(),
+        vendor_id=clean_ctx.vendor.vendor_id,
+        invoice_number=invoice.invoice_number,
+        total=invoice.total,
+        invoice_date=invoice.invoice_date,
+        file_sha256="0" * 64,
+    )
+    ctx = clean_ctx.model_copy(update={"invoice": invoice, "prior_invoices": (prior,)})
     assert R05(rules_config).check(ctx) == ()

@@ -19,6 +19,11 @@ def test_default_writes_json_and_markdown(tmp_path, capsys):
     assert "accuracy 100.00%" in capsys.readouterr().out
 
 
+def test_self_check_never_becomes_the_dashboard_report(tmp_path):
+    assert main(["--out", str(tmp_path)]) == 0
+    assert not (tmp_path / "latest.json").exists()
+
+
 def test_gate_passes_against_baseline(tmp_path):
     main(["--baseline", "--out", str(tmp_path)])
     assert main(["--gate", "--out", str(tmp_path)]) == 0

@@ -6,6 +6,10 @@ model: gemma4:12b
 fallback_model: qwen3-vl:4b
 think: false
 keep_alive: 30m
+# Ollama's runner grows about 1 GB per request with this model (measured 2026-11-12, Ollama
+# 0.40.15, 16 GB Mac: 7.7 GB fresh, 15.9 GB after 8 invoices). Once Ollama reports it above
+# this size, the request in hand also unloads it and the next one loads it fresh. 0 = never.
+unload_above_gb: 11
 options:
   temperature: 0
   seed: 42
