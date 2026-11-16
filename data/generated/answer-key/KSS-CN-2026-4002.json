@@ -1,0 +1,107 @@
+{
+  "document_id": "pre-cn-02",
+  "doc_type": "CREDIT_NOTE",
+  "template_id": "CN",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "CREDIT_NOTE",
+    "title": "CREDIT NOTE",
+    "invoice_number": "KSS-CN-2026-4002",
+    "invoice_date": "25/10/2026",
+    "due_date": null,
+    "payment_terms": null,
+    "currency": "SGD",
+    "supplier_name": "Kallang Security Services Pte. Ltd.",
+    "supplier_address": "27 Placeholder Street #02-03, Singapore 399997",
+    "supplier_uen": "209900345P",
+    "supplier_gst_reg_no": "209900345P",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "SIS",
+    "service_period": "20 Oct 2026",
+    "subtotal": "-1,000.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "-90.00",
+    "total": "-1,090.00",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "UOB Bank",
+    "bank_account": "000-345678-9",
+    "original_invoice_ref": "KSS-2026-2001",
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Security services (credit)",
+        "quantity": "-1000",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "1.00",
+        "amount": "-1,000.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "CREDIT_NOTE",
+    "invoice_number": "KSS-CN-2026-4002",
+    "invoice_date": "2026-10-25",
+    "due_date": null,
+    "currency": "SGD",
+    "supplier_name": "Kallang Security Services Pte. Ltd.",
+    "supplier_uen": "209900345P",
+    "supplier_gst_reg_no": "209900345P",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "SIS",
+    "subtotal": "-1000.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "-90.00",
+    "total": "-1090.00",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0003456789",
+    "original_invoice_ref": "KSS-2026-2001",
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Security services (credit)",
+        "quantity": "-1000",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "1.00",
+        "amount": "-1000.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V003",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "620200",
+      "cost_center": "KG1200",
+      "tax_code": "TX",
+      "net_amount": "-1000.00",
+      "tax_amount": "-90.00",
+      "description": "Security services, SIS",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [
+    "credit_note"
+  ],
+  "expected_rules": [
+    "R10"
+  ]
+}

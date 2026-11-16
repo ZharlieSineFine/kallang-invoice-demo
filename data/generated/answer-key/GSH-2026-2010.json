@@ -1,0 +1,126 @@
+{
+  "document_id": "pre-b-10",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B2",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "GSH-2026-2010",
+    "invoice_date": "28/10/2026",
+    "due_date": "27/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+    "supplier_address": "70 Placeholder Close #05-06, Singapore 399989",
+    "supplier_uen": "209900113B",
+    "supplier_gst_reg_no": "209900113B",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "service_period": "28 Oct 2026",
+    "subtotal": "1,240.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "111.60",
+    "total": "1,351.60",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-112345-7",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Horticulture maintenance",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "880.00",
+        "amount": "880.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Plant replacement",
+        "quantity": "12",
+        "unit": "pcs",
+        "days": null,
+        "unit_price": "30.00",
+        "amount": "360.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "GSH-2026-2010",
+    "invoice_date": "2026-10-28",
+    "due_date": "2026-11-27",
+    "currency": "SGD",
+    "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+    "supplier_uen": "209900113B",
+    "supplier_gst_reg_no": "209900113B",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "subtotal": "1240.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "111.60",
+    "total": "1351.60",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0001123457",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Horticulture maintenance",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "880.00",
+        "amount": "880.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Plant replacement",
+        "quantity": "12",
+        "unit": "pcs",
+        "days": null,
+        "unit_price": "30.00",
+        "amount": "360.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V011",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "630100",
+      "cost_center": "KG1400",
+      "tax_code": "TX",
+      "net_amount": "1240.00",
+      "tax_amount": "111.60",
+      "description": "Repairs and consumables, OCBC Arena",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [
+    "visible_instructions"
+  ],
+  "expected_rules": [
+    "R09"
+  ]
+}

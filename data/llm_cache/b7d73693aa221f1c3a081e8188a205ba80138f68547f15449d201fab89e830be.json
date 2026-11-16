@@ -1,0 +1,79 @@
+{
+  "key": "b7d73693aa221f1c3a081e8188a205ba80138f68547f15449d201fab89e830be",
+  "result": {
+    "extraction_id": "15868d8e-f2c0-446c-abd7-602c899d1d40",
+    "doc_id": "f5b50d57-a971-5142-bb4c-f8f55ce31a73",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"SIMPLIFIED_TAX_INVOICE\",\n  \"title\": \"SIMPLIFIED TAX INVOICE\",\n  \"invoice_number\": \"MEL-2026-1010\",\n  \"invoice_date\": \"23/10/2026\",\n  \"due_date\": \"22/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Marina Event Logistics Pte. Ltd.\",\n  \"supplier_address\": \"3 Imaginary Road #08-01, Singapore 399998\",\n  \"supplier_uen\": \"209900234M\",\n  \"supplier_gst_reg_no\": \"209900234M\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": null,\n  \"service_period\": \"23 Oct 2026\",\n  \"subtotal\": \"570.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"47.06\",\n  \"total\": \"570.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": \"Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.\",\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-234567-8\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Site support (price includes GST)\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"570.00\",\n      \"amount\": \"570.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "SIMPLIFIED_TAX_INVOICE",
+      "title": "SIMPLIFIED TAX INVOICE",
+      "invoice_number": "MEL-2026-1010",
+      "invoice_date": "23/10/2026",
+      "due_date": "22/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "Marina Event Logistics Pte. Ltd.",
+      "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+      "supplier_uen": "209900234M",
+      "supplier_gst_reg_no": "209900234M",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": null,
+      "service_period": "23 Oct 2026",
+      "subtotal": "570.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "47.06",
+      "total": "570.00",
+      "amount_due": null,
+      "gst_inclusive_note": "Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.",
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-234567-8",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Site support (price includes GST)",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "570.00",
+          "amount": "570.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1247,
+    "completion_tokens": 532,
+    "latency_ms": 34207,
+    "created_at": "2026-11-13T09:08:21.150066Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 14458639875,
+    "eval_duration_ns": 19706850833,
+    "total_duration_ns": 34193637084,
+    "load_duration_ns": 10822125,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

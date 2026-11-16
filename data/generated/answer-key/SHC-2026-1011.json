@@ -1,0 +1,103 @@
+{
+  "document_id": "pre-a-11",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "A1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "SHC-2026-1011",
+    "invoice_date": "24/10/2026",
+    "due_date": "23/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "SafeHands Event Crew Pte. Ltd.",
+    "supplier_address": "5 Fictional Court #04-04, Singapore 399991",
+    "supplier_uen": "209900901Y",
+    "supplier_gst_reg_no": "209900901Y",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": "4500012350",
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "service_period": "24-27 Oct 2026",
+    "subtotal": "2,160.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "194.40",
+    "total": "2,354.40",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "UOB Bank",
+    "bank_account": "000-901234-5",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Event crew",
+        "quantity": "3",
+        "unit": "crew",
+        "days": "4",
+        "unit_price": "180.00",
+        "amount": "2,160.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "SHC-2026-1011",
+    "invoice_date": "2026-10-24",
+    "due_date": "2026-11-23",
+    "currency": "SGD",
+    "supplier_name": "SafeHands Event Crew Pte. Ltd.",
+    "supplier_uen": "209900901Y",
+    "supplier_gst_reg_no": "209900901Y",
+    "buyer_name": "The Kallang Group",
+    "po_number": "4500012350",
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "subtotal": "2160.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "194.40",
+    "total": "2354.40",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0009012345",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Event crew",
+        "quantity": "3",
+        "unit": "crew",
+        "days": "4",
+        "unit_price": "180.00",
+        "amount": "2160.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V009",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610100",
+      "cost_center": "KG1200",
+      "tax_code": "TX",
+      "net_amount": "2160.00",
+      "tax_amount": "194.40",
+      "description": "Event production, PO 4500012350",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "PO"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

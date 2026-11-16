@@ -10,7 +10,10 @@ the answer key with itself.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -119,3 +122,25 @@ def render_scoreboard(scores: tuple[Score, ...]) -> str:
         for folder in folders
         for line in _folder_board(folder, tuple(s for s in scores if s.folder == folder))
     )
+
+
+def drop_folder(root: Path, folder: str, inbox: Path) -> int:
+    """Copy one generated folder into the inbox and give each file its arrival time.
+
+    The times come from the manifest, not the files: git does not keep file times, so a fresh
+    clone would otherwise lose the order intake reads the inbox in. Returns the count.
+    """
+    manifest = root / "manifest.json"
+    rows = (
+        json.loads(manifest.read_text(encoding="utf-8"))["documents"] if manifest.is_file() else []
+    )
+    chosen = [row for row in rows if Path(row["file"]).parent.name == folder]
+    if not chosen:
+        raise SystemExit(f"no documents in {root / folder}: run `make data` first")
+    inbox.mkdir(parents=True, exist_ok=True)
+    for row in chosen:
+        target = inbox / Path(row["file"]).name
+        shutil.copyfile(root / row["file"], target)
+        arrived = datetime.fromisoformat(row["received_at"].replace("Z", "+00:00")).timestamp()
+        os.utime(target, (arrived, arrived))
+    return len(chosen)

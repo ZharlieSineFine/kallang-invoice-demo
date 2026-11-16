@@ -1,0 +1,97 @@
+{
+  "key": "3400d9b5a7411dc72a653eebcb935d23fcec6d9c091849527fcf9f9dce8a9cd6",
+  "result": {
+    "extraction_id": "d05ae0b9-d9c0-49c9-bfab-1cb328174e0d",
+    "doc_id": "aa58577d-7a5c-5a72-af9d-70e43521c511",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"BLP-2026-7003\",\n  \"invoice_date\": \"04/11/2026\",\n  \"due_date\": \"04/12/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"BrightLite Productions Pte. Ltd.\",\n  \"supplier_address\": \"9 Mock Crescent #03-08, Singapore 399995\",\n  \"supplier_uen\": \"209900567T\",\n  \"supplier_gst_reg_no\": \"209900567T\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012346\",\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"4-5 Nov 2026\",\n  \"subtotal\": \"1,040.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"93.60\",\n  \"total\": \"1,133.60\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"999-666555-4\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Stage lighting package\",\n      \"quantity\": \"6\",\n      \"unit\": \"pcs\",\n      \"days\": \"2\",\n      \"unit_price\": \"65.00\",\n      \"amount\": \"780.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Rigging crew\",\n      \"quantity\": \"3\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"55.00\",\n      \"amount\": \"165.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"Transport and setup\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"95.00\",\n      \"amount\": \"95.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "BLP-2026-7003",
+      "invoice_date": "04/11/2026",
+      "due_date": "04/12/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "BrightLite Productions Pte. Ltd.",
+      "supplier_address": "9 Mock Crescent #03-08, Singapore 399995",
+      "supplier_uen": "209900567T",
+      "supplier_gst_reg_no": "209900567T",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012346",
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "4-5 Nov 2026",
+      "subtotal": "1,040.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "93.60",
+      "total": "1,133.60",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "999-666555-4",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Stage lighting package",
+          "quantity": "6",
+          "unit": "pcs",
+          "days": "2",
+          "unit_price": "65.00",
+          "amount": "780.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Rigging crew",
+          "quantity": "3",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "55.00",
+          "amount": "165.00"
+        },
+        {
+          "line_no": "3",
+          "description": "Transport and setup",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "95.00",
+          "amount": "95.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1280,
+    "completion_tokens": 661,
+    "latency_ms": 42869,
+    "created_at": "2026-11-13T09:21:45.914171Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 11867837959,
+    "eval_duration_ns": 26542766750,
+    "total_duration_ns": 42863479167,
+    "load_duration_ns": 4447938959,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

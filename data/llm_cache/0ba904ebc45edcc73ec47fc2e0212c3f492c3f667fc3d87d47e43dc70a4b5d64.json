@@ -1,0 +1,88 @@
+{
+  "key": "0ba904ebc45edcc73ec47fc2e0212c3f492c3f667fc3d87d47e43dc70a4b5d64",
+  "result": {
+    "extraction_id": "b334e789-a8ec-419e-b5eb-cc930ea552e6",
+    "doc_id": "b44b9ffb-c0c5-59fe-80e0-27f9a53f0c2d",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"CAM-2026-8103\",\n  \"invoice_date\": \"29/10/2026\",\n  \"due_date\": \"28/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"CoolAir M&E Services Pte. Ltd.\",\n  \"supplier_address\": \"88 Test Road #10-10, Singapore 399992\",\n  \"supplier_uen\": \"209900890X\",\n  \"supplier_gst_reg_no\": \"209900890X\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Aquatic Centre\",\n  \"service_period\": \"29 Oct 2026\",\n  \"subtotal\": \"2,150.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"193.50\",\n  \"total\": \"2,343.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-890123-4\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"M&E maintenance\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"1,800.00\",\n      \"amount\": \"1,800.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Pump servicing\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"350.00\",\n      \"amount\": \"350.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "CAM-2026-8103",
+      "invoice_date": "29/10/2026",
+      "due_date": "28/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "CoolAir M&E Services Pte. Ltd.",
+      "supplier_address": "88 Test Road #10-10, Singapore 399992",
+      "supplier_uen": "209900890X",
+      "supplier_gst_reg_no": "209900890X",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Aquatic Centre",
+      "service_period": "29 Oct 2026",
+      "subtotal": "2,150.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "193.50",
+      "total": "2,343.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-890123-4",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "M&E maintenance",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "1,800.00",
+          "amount": "1,800.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Pump servicing",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "350.00",
+          "amount": "350.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1247,
+    "completion_tokens": 582,
+    "latency_ms": 28297,
+    "created_at": "2026-11-13T09:18:01.342518Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 4307029750,
+    "eval_duration_ns": 23946597458,
+    "total_duration_ns": 28283202500,
+    "load_duration_ns": 6952375,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

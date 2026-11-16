@@ -1,0 +1,103 @@
+{
+  "document_id": "pre-c-03",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "C1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "KSS-2026-3003",
+    "invoice_date": "18/10/2026",
+    "due_date": "17/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "Kallang Security Services Pte. Ltd.",
+    "supplier_address": "27 Placeholder Street #02-03, Singapore 399997",
+    "supplier_uen": "209900345P",
+    "supplier_gst_reg_no": "209900345P",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "SIS",
+    "service_period": "18 Oct 2026",
+    "subtotal": "2,640.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "237.60",
+    "total": "2,877.60",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "UOB Bank",
+    "bank_account": "000-345678-9",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Security services",
+        "quantity": "120",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "22.00",
+        "amount": "2,640.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "KSS-2026-3003",
+    "invoice_date": "2026-10-18",
+    "due_date": "2026-11-17",
+    "currency": "SGD",
+    "supplier_name": "Kallang Security Services Pte. Ltd.",
+    "supplier_uen": "209900345P",
+    "supplier_gst_reg_no": "209900345P",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "SIS",
+    "subtotal": "2640.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "237.60",
+    "total": "2877.60",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0003456789",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Security services",
+        "quantity": "120",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "22.00",
+        "amount": "2640.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V003",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "620200",
+      "cost_center": "KG1200",
+      "tax_code": "TX",
+      "net_amount": "2640.00",
+      "tax_amount": "237.60",
+      "description": "Security services, SIS",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

@@ -1,0 +1,494 @@
+{
+  "company": {
+    "company_code": "KG01",
+    "currency": "SGD",
+    "timezone": "Asia/Singapore",
+    "entity_names": [
+      "The Kallang Group",
+      "The Kallang Group Pte. Ltd.",
+      "Kallang Alive Sport Management Co Pte Ltd"
+    ]
+  },
+  "vendors": [
+    {
+      "vendor_id": "V001",
+      "sap_vendor_no": "100014",
+      "name": "Stagecraft AV Rentals Pte. Ltd.",
+      "uen": "209900123K",
+      "gst_reg_no": "209900123K",
+      "address": "18 Fictional Lane #04-12, Singapore 399999",
+      "bank_name": "DBS Bank",
+      "bank_account": "0001234567",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "610200",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V002",
+      "sap_vendor_no": "100015",
+      "name": "Marina Event Logistics Pte. Ltd.",
+      "uen": "209900234M",
+      "gst_reg_no": "209900234M",
+      "address": "3 Imaginary Road #08-01, Singapore 399998",
+      "bank_name": "OCBC Bank",
+      "bank_account": "0002345678",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "630100",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V003",
+      "sap_vendor_no": "100016",
+      "name": "Kallang Security Services Pte. Ltd.",
+      "uen": "209900345P",
+      "gst_reg_no": "209900345P",
+      "address": "27 Placeholder Street #02-03, Singapore 399997",
+      "bank_name": "UOB Bank",
+      "bank_account": "0003456789",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "620200",
+      "default_cost_center": "KG3100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V004",
+      "sap_vendor_no": "100017",
+      "name": "CleanWave Facilities Pte. Ltd.",
+      "uen": "209900456R",
+      "gst_reg_no": "209900456R",
+      "address": "41 Sample Avenue #11-05, Singapore 399996",
+      "bank_name": "DBS Bank",
+      "bank_account": "0004567890",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "620100",
+      "default_cost_center": "KG3100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V005",
+      "sap_vendor_no": "100018",
+      "name": "BrightLite Productions Pte. Ltd.",
+      "uen": "209900567T",
+      "gst_reg_no": "209900567T",
+      "address": "9 Mock Crescent #03-08, Singapore 399995",
+      "bank_name": "OCBC Bank",
+      "bank_account": "0005678901",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "610100",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V006",
+      "sap_vendor_no": "100019",
+      "name": "PrimeCater Event Catering Pte. Ltd.",
+      "uen": "209900678V",
+      "gst_reg_no": "209900678V",
+      "address": "62 Demo Drive #01-02, Singapore 399994",
+      "bank_name": "UOB Bank",
+      "bank_account": "0006789012",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "640100",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V007",
+      "sap_vendor_no": "100020",
+      "name": "PrintWorks Studio Pte. Ltd.",
+      "uen": "209900789W",
+      "gst_reg_no": "209900789W",
+      "address": "14 Synthetic Way #06-07, Singapore 399993",
+      "bank_name": "DBS Bank",
+      "bank_account": "0007890123",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "650100",
+      "default_cost_center": "KG9100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V008",
+      "sap_vendor_no": "100021",
+      "name": "CoolAir M&E Services Pte. Ltd.",
+      "uen": "209900890X",
+      "gst_reg_no": "209900890X",
+      "address": "88 Test Road #10-10, Singapore 399992",
+      "bank_name": "OCBC Bank",
+      "bank_account": "0008901234",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "620300",
+      "default_cost_center": "KG3100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V009",
+      "sap_vendor_no": "100022",
+      "name": "SafeHands Event Crew Pte. Ltd.",
+      "uen": "209900901Y",
+      "gst_reg_no": "209900901Y",
+      "address": "5 Fictional Court #04-04, Singapore 399991",
+      "bank_name": "UOB Bank",
+      "bank_account": "0009012345",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "610100",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V010",
+      "sap_vendor_no": "100023",
+      "name": "VenueTech Rigging Pte. Ltd.",
+      "uen": "209900012A",
+      "gst_reg_no": "209900012A",
+      "address": "33 Imaginary Terrace #09-01, Singapore 399990",
+      "bank_name": "DBS Bank",
+      "bank_account": "0000123456",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "610200",
+      "default_cost_center": "KG1100",
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V011",
+      "sap_vendor_no": "100024",
+      "name": "GreenScape Horticulture Pte. Ltd.",
+      "uen": "209900113B",
+      "gst_reg_no": "209900113B",
+      "address": "70 Placeholder Close #05-06, Singapore 399989",
+      "bank_name": "OCBC Bank",
+      "bank_account": "0001123457",
+      "currency": "SGD",
+      "locale": "SG",
+      "is_overseas": false,
+      "default_gl": "630100",
+      "default_cost_center": null,
+      "default_tax_code": "TX",
+      "active": true
+    },
+    {
+      "vendor_id": "V012",
+      "sap_vendor_no": "100025",
+      "name": "Harbourline Audio Visual LLC",
+      "uen": "209900214C",
+      "gst_reg_no": "209900214C",
+      "address": "1200 Fictional Avenue, Los Angeles, CA 90001, USA",
+      "bank_name": "Bank of America",
+      "bank_account": "0002123458",
+      "currency": "USD",
+      "locale": "US",
+      "is_overseas": true,
+      "default_gl": "610200",
+      "default_cost_center": "KG2100",
+      "default_tax_code": "TX",
+      "active": true
+    }
+  ],
+  "purchase_orders": [
+    {
+      "po_number": "4500012345",
+      "vendor_id": "V001",
+      "currency": "SGD",
+      "amount": "5000.00",
+      "open_amount": "5000.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    },
+    {
+      "po_number": "4500012346",
+      "vendor_id": "V005",
+      "currency": "SGD",
+      "amount": "8000.00",
+      "open_amount": "8000.00",
+      "gl_account": "610100",
+      "cost_center": "KG1400"
+    },
+    {
+      "po_number": "4500012347",
+      "vendor_id": "V006",
+      "currency": "SGD",
+      "amount": "3000.00",
+      "open_amount": "3000.00",
+      "gl_account": "640100",
+      "cost_center": "KG1100"
+    },
+    {
+      "po_number": "4500012348",
+      "vendor_id": "V010",
+      "currency": "SGD",
+      "amount": "6000.00",
+      "open_amount": "6000.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    },
+    {
+      "po_number": "4500012349",
+      "vendor_id": "V002",
+      "currency": "SGD",
+      "amount": "2500.00",
+      "open_amount": "2500.00",
+      "gl_account": "630100",
+      "cost_center": "KG2100"
+    },
+    {
+      "po_number": "4500012350",
+      "vendor_id": "V009",
+      "currency": "SGD",
+      "amount": "4000.00",
+      "open_amount": "4000.00",
+      "gl_account": "610100",
+      "cost_center": "KG1200"
+    },
+    {
+      "po_number": "4500012351",
+      "vendor_id": "V004",
+      "currency": "SGD",
+      "amount": "7000.00",
+      "open_amount": "7000.00",
+      "gl_account": "620100",
+      "cost_center": "KG3100"
+    },
+    {
+      "po_number": "4500012352",
+      "vendor_id": "V008",
+      "currency": "SGD",
+      "amount": "4500.00",
+      "open_amount": "4500.00",
+      "gl_account": "620300",
+      "cost_center": "KG3100"
+    },
+    {
+      "po_number": "4500012353",
+      "vendor_id": "V003",
+      "currency": "SGD",
+      "amount": "9000.00",
+      "open_amount": "9000.00",
+      "gl_account": "620200",
+      "cost_center": "KG3100"
+    },
+    {
+      "po_number": "4500012354",
+      "vendor_id": "V007",
+      "currency": "SGD",
+      "amount": "1500.00",
+      "open_amount": "1500.00",
+      "gl_account": "650100",
+      "cost_center": "KG9100"
+    },
+    {
+      "po_number": "4500012355",
+      "vendor_id": "V001",
+      "currency": "SGD",
+      "amount": "500.00",
+      "open_amount": "500.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    },
+    {
+      "po_number": "4500012356",
+      "vendor_id": "V005",
+      "currency": "SGD",
+      "amount": "6000.00",
+      "open_amount": "6000.00",
+      "gl_account": "610100",
+      "cost_center": "KG1500"
+    },
+    {
+      "po_number": "4500012357",
+      "vendor_id": "V001",
+      "currency": "SGD",
+      "amount": "3500.00",
+      "open_amount": "3500.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    },
+    {
+      "po_number": "4500012358",
+      "vendor_id": "V001",
+      "currency": "SGD",
+      "amount": "3500.00",
+      "open_amount": "3500.00",
+      "gl_account": "610200",
+      "cost_center": "KG1100"
+    }
+  ],
+  "coding": {
+    "gl_accounts": [
+      {
+        "code": "610100",
+        "name": "Event production",
+        "active": true
+      },
+      {
+        "code": "610200",
+        "name": "Equipment rental",
+        "active": true
+      },
+      {
+        "code": "620100",
+        "name": "Cleaning services",
+        "active": true
+      },
+      {
+        "code": "620200",
+        "name": "Security services",
+        "active": true
+      },
+      {
+        "code": "620300",
+        "name": "M&E maintenance",
+        "active": true
+      },
+      {
+        "code": "630100",
+        "name": "Repairs and consumables",
+        "active": true
+      },
+      {
+        "code": "640100",
+        "name": "Catering",
+        "active": true
+      },
+      {
+        "code": "650100",
+        "name": "Printing and marketing",
+        "active": true
+      }
+    ],
+    "cost_centers": [
+      {
+        "code": "KG1100",
+        "name": "National Stadium",
+        "active": true
+      },
+      {
+        "code": "KG1200",
+        "name": "Singapore Indoor Stadium",
+        "active": true
+      },
+      {
+        "code": "KG1300",
+        "name": "OCBC Aquatic Centre",
+        "active": true
+      },
+      {
+        "code": "KG1400",
+        "name": "OCBC Arena",
+        "active": true
+      },
+      {
+        "code": "KG1500",
+        "name": "Kallang Wave Mall",
+        "active": true
+      },
+      {
+        "code": "KG2100",
+        "name": "Events",
+        "active": true
+      },
+      {
+        "code": "KG3100",
+        "name": "Facilities Management",
+        "active": true
+      },
+      {
+        "code": "KG9100",
+        "name": "Corporate",
+        "active": true
+      }
+    ],
+    "tax_codes": [
+      {
+        "code": "TX",
+        "rate_percent": "9",
+        "description": "Standard-rated purchase, 9% input tax"
+      },
+      {
+        "code": "ZP",
+        "rate_percent": "0",
+        "description": "Zero-rated purchase"
+      },
+      {
+        "code": "NR",
+        "rate_percent": "0",
+        "description": "Supplier not GST-registered"
+      },
+      {
+        "code": "OP",
+        "rate_percent": "0",
+        "description": "Out of scope, e.g. overseas services"
+      },
+      {
+        "code": "BL",
+        "rate_percent": "9",
+        "description": "Input tax not claimable"
+      },
+      {
+        "code": "EP",
+        "rate_percent": "0",
+        "description": "Exempt purchase"
+      }
+    ],
+    "venue_aliases": [
+      {
+        "alias": "National Stadium",
+        "cost_center": "KG1100"
+      },
+      {
+        "alias": "Singapore Indoor Stadium",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "Indoor Stadium",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "SIS",
+        "cost_center": "KG1200"
+      },
+      {
+        "alias": "OCBC Aquatic Centre",
+        "cost_center": "KG1300"
+      },
+      {
+        "alias": "OCBC Arena",
+        "cost_center": "KG1400"
+      },
+      {
+        "alias": "Kallang Wave Mall",
+        "cost_center": "KG1500"
+      }
+    ]
+  }
+}

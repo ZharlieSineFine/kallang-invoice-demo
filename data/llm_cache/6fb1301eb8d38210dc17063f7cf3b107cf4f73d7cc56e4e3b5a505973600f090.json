@@ -1,0 +1,79 @@
+{
+  "key": "6fb1301eb8d38210dc17063f7cf3b107cf4f73d7cc56e4e3b5a505973600f090",
+  "result": {
+    "extraction_id": "814f93f9-3575-4b44-9a05-b24f78dd0b48",
+    "doc_id": "42c5d8a4-af35-5d68-a8a1-a0ea1bc31858",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"CAM-2026-2005\",\n  \"invoice_date\": \"23/10/2026\",\n  \"due_date\": \"22/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"CoolAir M&E Services Pte. Ltd.\",\n  \"supplier_address\": \"88 Test Road #10-10, Singapore 399992\",\n  \"supplier_uen\": \"209900890X\",\n  \"supplier_gst_reg_no\": \"209900890X\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Aquatic Centre\",\n  \"service_period\": \"23 Oct 2026\",\n  \"subtotal\": \"1,800.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"162.00\",\n  \"total\": \"1,962.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-890123-4\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"M&E maintenance\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"1,800.00\",\n      \"amount\": \"1,800.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "CAM-2026-2005",
+      "invoice_date": "23/10/2026",
+      "due_date": "22/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "CoolAir M&E Services Pte. Ltd.",
+      "supplier_address": "88 Test Road #10-10, Singapore 399992",
+      "supplier_uen": "209900890X",
+      "supplier_gst_reg_no": "209900890X",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Aquatic Centre",
+      "service_period": "23 Oct 2026",
+      "subtotal": "1,800.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "162.00",
+      "total": "1,962.00",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-890123-4",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "M&E maintenance",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "1,800.00",
+          "amount": "1,800.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1226,
+    "completion_tokens": 506,
+    "latency_ms": 20598,
+    "created_at": "2026-11-13T09:08:41.888587Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3527710667,
+    "eval_duration_ns": 17033168958,
+    "total_duration_ns": 20584083833,
+    "load_duration_ns": 6882000,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

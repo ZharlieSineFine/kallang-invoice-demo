@@ -1,0 +1,115 @@
+{
+  "key": "1d3c413fc309692f4c4a445c225ec043a5320c01efed8f2c57c322ee9b1c2ccb",
+  "result": {
+    "extraction_id": "1f079310-9f61-4cef-a8f1-cb884ef8075c",
+    "doc_id": "d46a8217-5e53-5c86-ade9-192dcd3cdc9b",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"OST-2026-3004\",\n  \"invoice_date\": \"19/10/2026\",\n  \"due_date\": \"18/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Orchard Supplies & Trading Pte. Ltd.\",\n  \"supplier_address\": \"99 Unknown Street #01-01, Singapore 399988\",\n  \"supplier_uen\": \"9090000097\",\n  \"supplier_gst_reg_no\": \"20996\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012358\",\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"19-21 Oct 2026\",\n  \"subtotal\": \"1,080.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"97.20\",\n  \"total\": \"1,177.20\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": null,\n  \"original_invoice_ref\": \"OST-2026-30(\",\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"LED wall panel rental\",\n      \"quantity\": \"4\",\n      \"unit\": \"pcs\",\n      \"days\": \"3\",\n      \"unit_price\": \"45.00\",\n      \"amount\": \"540.00\"\n    },\n    {\n      \"line_no\": \"Z\",\n      \"description\": \"Line array speaker rental\",\n      \"quantity\": \"2\",\n      \"unit\": \"pcs\",\n      \"days\": \"3\",\n      \"unit_price\": \"50.00\",\n      \"amount\": \"300.00\"\n    },\n    {\n      \"line_no\": \"technician\",\n      \"description\": \"technician\",\n      \"quantity\": \"4\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"40.00\",\n      \"amount\": \"160.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"AV and 1 lot\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": \"80.00\",\n      \"amount\": \"80.00\"\n    },\n    {\n      \"line_no\": \"4\",\n      \"description\": \"Transport setup\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": null\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "OST-2026-3004",
+      "invoice_date": "19/10/2026",
+      "due_date": "18/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "Orchard Supplies & Trading Pte. Ltd.",
+      "supplier_address": "99 Unknown Street #01-01, Singapore 399988",
+      "supplier_uen": "9090000097",
+      "supplier_gst_reg_no": "20996",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012358",
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "19-21 Oct 2026",
+      "subtotal": "1,080.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "97.20",
+      "total": "1,177.20",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": null,
+      "original_invoice_ref": "OST-2026-30(",
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "LED wall panel rental",
+          "quantity": "4",
+          "unit": "pcs",
+          "days": "3",
+          "unit_price": "45.00",
+          "amount": "540.00"
+        },
+        {
+          "line_no": "Z",
+          "description": "Line array speaker rental",
+          "quantity": "2",
+          "unit": "pcs",
+          "days": "3",
+          "unit_price": "50.00",
+          "amount": "300.00"
+        },
+        {
+          "line_no": "technician",
+          "description": "technician",
+          "quantity": "4",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "40.00",
+          "amount": "160.00"
+        },
+        {
+          "line_no": "3",
+          "description": "AV and 1 lot",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": "80.00",
+          "amount": "80.00"
+        },
+        {
+          "line_no": "4",
+          "description": "Transport setup",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": null
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1295,
+    "completion_tokens": 796,
+    "latency_ms": 42528,
+    "created_at": "2026-11-13T05:53:06.061394Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 12994593042,
+    "eval_duration_ns": 29480705541,
+    "total_duration_ns": 42507039250,
+    "load_duration_ns": 9580500,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

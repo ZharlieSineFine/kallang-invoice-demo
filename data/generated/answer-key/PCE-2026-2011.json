@@ -1,0 +1,103 @@
+{
+  "document_id": "pre-b-11",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B2",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "PCE-2026-2011",
+    "invoice_date": "29/10/2026",
+    "due_date": "28/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "PrimeCater Event Catering Pte. Ltd.",
+    "supplier_address": "62 Demo Drive #01-02, Singapore 399994",
+    "supplier_uen": "209900678V",
+    "supplier_gst_reg_no": "209900678V",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Singapore Indoor Stadium",
+    "service_period": "29 Oct 2026",
+    "subtotal": "1,200.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "108.00",
+    "total": "1,308.00",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "UOB Bank",
+    "bank_account": "000-678901-2",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Event catering package",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "1,200.00",
+        "amount": "1,200.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "PCE-2026-2011",
+    "invoice_date": "2026-10-29",
+    "due_date": "2026-11-28",
+    "currency": "SGD",
+    "supplier_name": "PrimeCater Event Catering Pte. Ltd.",
+    "supplier_uen": "209900678V",
+    "supplier_gst_reg_no": "209900678V",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Singapore Indoor Stadium",
+    "subtotal": "1200.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "108.00",
+    "total": "1308.00",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0006789012",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Event catering package",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "1200.00",
+        "amount": "1200.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V006",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "640100",
+      "cost_center": "KG1200",
+      "tax_code": "TX",
+      "net_amount": "1200.00",
+      "tax_amount": "108.00",
+      "description": "Catering, Singapore Indoor Stadium",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

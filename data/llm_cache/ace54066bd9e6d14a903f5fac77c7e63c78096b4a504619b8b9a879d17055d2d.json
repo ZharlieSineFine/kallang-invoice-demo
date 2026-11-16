@@ -1,0 +1,79 @@
+{
+  "key": "ace54066bd9e6d14a903f5fac77c7e63c78096b4a504619b8b9a879d17055d2d",
+  "result": {
+    "extraction_id": "1ab217d2-0fd0-4813-b445-460f68726cbc",
+    "doc_id": "823222da-c032-5afc-a862-8bde7366c147",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"SIMPLIFIED_TAX_INVOICE\",\n  \"title\": \"SIMPLIFIED TAX INVOICE\",\n  \"invoice_number\": \"SHC-2026-7004\",\n  \"invoice_date\": \"04/11/2026\",\n  \"due_date\": \"04/12/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"SafeHands Event Crew Pte. Ltd.\",\n  \"supplier_address\": \"5 Fictional Court #04-04, Singapore 399991\",\n  \"supplier_uen\": \"209900901Y\",\n  \"supplier_gst_reg_no\": \"209900901Y\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012350\",\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"4 Nov 2026\",\n  \"subtotal\": \"950.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"78.44\",\n  \"total\": \"950.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": \"Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.\",\n  \"sgd_total\": \"950.00\",\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": \"000-901234-5\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Equipment handling (price includes GST)\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"950.00\",\n      \"amount\": \"950.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "SIMPLIFIED_TAX_INVOICE",
+      "title": "SIMPLIFIED TAX INVOICE",
+      "invoice_number": "SHC-2026-7004",
+      "invoice_date": "04/11/2026",
+      "due_date": "04/12/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "SafeHands Event Crew Pte. Ltd.",
+      "supplier_address": "5 Fictional Court #04-04, Singapore 399991",
+      "supplier_uen": "209900901Y",
+      "supplier_gst_reg_no": "209900901Y",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012350",
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "4 Nov 2026",
+      "subtotal": "950.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "78.44",
+      "total": "950.00",
+      "amount_due": null,
+      "gst_inclusive_note": "Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.",
+      "sgd_total": "950.00",
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": "000-901234-5",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Equipment handling (price includes GST)",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "950.00",
+          "amount": "950.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1268,
+    "completion_tokens": 555,
+    "latency_ms": 39088,
+    "created_at": "2026-11-13T09:22:25.144047Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 13105509291,
+    "eval_duration_ns": 25951624083,
+    "total_duration_ns": 39073323958,
+    "load_duration_ns": 3564833,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

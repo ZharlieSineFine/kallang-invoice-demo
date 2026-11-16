@@ -1,0 +1,88 @@
+{
+  "key": "a417637feb8673fe3edf5bc3126909524f786d57fdc9ebadf9c09d0ffef81bcc",
+  "result": {
+    "extraction_id": "429f83b2-7956-45a5-a959-772119cb0693",
+    "doc_id": "056c3000-0f9f-59b1-9c25-86a023db8d7c",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"BLP-2026-1002\",\n  \"invoice_date\": \"16/10/2026\",\n  \"due_date\": \"15/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"BrightLite Productions Pte. Ltd.\",\n  \"supplier_address\": \"9 Mock Crescent #03-08, Singapore 399995\",\n  \"supplier_uen\": \"209900567T\",\n  \"supplier_gst_reg_no\": \"209900567T\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012346\",\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"16-17 Oct 2026\",\n  \"subtotal\": \"1,010.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"90.90\",\n  \"total\": \"1,100.90\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-567890-1\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Scaffold tower rental\",\n      \"quantity\": \"2\",\n      \"unit\": \"pcs\",\n      \"days\": \"5\",\n      \"unit_price\": \"95.00\",\n      \"amount\": \"950.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Safety inspection\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"60.00\",\n      \"amount\": \"60.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "BLP-2026-1002",
+      "invoice_date": "16/10/2026",
+      "due_date": "15/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "BrightLite Productions Pte. Ltd.",
+      "supplier_address": "9 Mock Crescent #03-08, Singapore 399995",
+      "supplier_uen": "209900567T",
+      "supplier_gst_reg_no": "209900567T",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012346",
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "16-17 Oct 2026",
+      "subtotal": "1,010.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "90.90",
+      "total": "1,100.90",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-567890-1",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Scaffold tower rental",
+          "quantity": "2",
+          "unit": "pcs",
+          "days": "5",
+          "unit_price": "95.00",
+          "amount": "950.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Safety inspection",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "60.00",
+          "amount": "60.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1260,
+    "completion_tokens": 587,
+    "latency_ms": 21096,
+    "created_at": "2026-11-13T08:59:50.114410Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3355109000,
+    "eval_duration_ns": 17706697125,
+    "total_duration_ns": 21081248584,
+    "load_duration_ns": 11446875,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

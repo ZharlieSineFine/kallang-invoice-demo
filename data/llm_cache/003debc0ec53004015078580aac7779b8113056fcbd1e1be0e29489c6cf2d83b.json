@@ -1,0 +1,79 @@
+{
+  "key": "003debc0ec53004015078580aac7779b8113056fcbd1e1be0e29489c6cf2d83b",
+  "result": {
+    "extraction_id": "3922c6f6-9ded-4c57-95b8-8ef5d0364d9a",
+    "doc_id": "0bfddb19-13d6-590b-8c86-4e15a401d762",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"SHC -2026- 3006\",\n  \"invoice_date\": \"21/10/2026\",\n  \"due_date\": \"20/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"SafeHands Event Crew Pte. Ltd.\",\n  \"supplier_address\": \"5 Fictional Court #04-04, Singapore 399991\",\n  \"supplier_uen\": \"209900901Y\",\n  \"supplier_gst_reg_no\": \"209900901Y\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"21 Oct 2026\",\n  \"subtotal\": \"880.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"79.20\",\n  \"total\": \"959.20\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": \"000-901234-5\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Event crew\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"880.00\",\n      \"amount\": \"880.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "SHC -2026- 3006",
+      "invoice_date": "21/10/2026",
+      "due_date": "20/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "SafeHands Event Crew Pte. Ltd.",
+      "supplier_address": "5 Fictional Court #04-04, Singapore 399991",
+      "supplier_uen": "209900901Y",
+      "supplier_gst_reg_no": "209900901Y",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "21 Oct 2026",
+      "subtotal": "880.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "79.20",
+      "total": "959.20",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": "000-901234-5",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Event crew",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "880.00",
+          "amount": "880.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1242,
+    "completion_tokens": 498,
+    "latency_ms": 24948,
+    "created_at": "2026-11-13T09:06:00.138048Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3342592209,
+    "eval_duration_ns": 21552981958,
+    "total_duration_ns": 24919923833,
+    "load_duration_ns": 6920667,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

@@ -1,0 +1,79 @@
+{
+  "key": "3316129197dfa3315925c7d2fb80e32b0961641e7a5844af925ed1c8e1104ea4",
+  "result": {
+    "extraction_id": "8863175e-c7c1-42a0-b0c2-92d447cade9b",
+    "doc_id": "99e15d3c-699f-5e6b-9b44-e1a522f6eb87",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"PCE-2026-2011\",\n  \"invoice_date\": \"29/10/2026\",\n  \"due_date\": \"28/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"PrimeCater Event Catering Pte. Ltd.\",\n  \"supplier_address\": \"62 Demo Drive #01-02, Singapore 399994\",\n  \"supplier_uen\": \"209900678V\",\n  \"supplier_gst_reg_no\": \"209900678V\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"Singapore Indoor Stadium\",\n  \"service_period\": \"29 Oct 2026\",\n  \"subtotal\": \"1,200.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"108.00\",\n  \"total\": \"1,308.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": \"000-678901-2\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Event catering package\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"1,200.00\",\n      \"amount\": \"1,200.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "PCE-2026-2011",
+      "invoice_date": "29/10/2026",
+      "due_date": "28/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "PrimeCater Event Catering Pte. Ltd.",
+      "supplier_address": "62 Demo Drive #01-02, Singapore 399994",
+      "supplier_uen": "209900678V",
+      "supplier_gst_reg_no": "209900678V",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "Singapore Indoor Stadium",
+      "service_period": "29 Oct 2026",
+      "subtotal": "1,200.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "108.00",
+      "total": "1,308.00",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": "000-678901-2",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Event catering package",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "1,200.00",
+          "amount": "1,200.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1209,
+    "completion_tokens": 504,
+    "latency_ms": 25019,
+    "created_at": "2026-11-13T09:17:00.894377Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3455964791,
+    "eval_duration_ns": 21513669667,
+    "total_duration_ns": 24996989000,
+    "load_duration_ns": 6611459,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

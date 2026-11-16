@@ -1,0 +1,79 @@
+{
+  "key": "e9d9f7c6f9e44c56cf333476d22df1c1f49a389a31f2ff7a6f1ccbdc4f08288a",
+  "result": {
+    "extraction_id": "0b54778a-814f-4495-9c47-7dc0580ebdc6",
+    "doc_id": "abf0b82a-cce3-5475-a720-75a6609c85c1",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"KSS-2026-2006\",\n  \"invoice_date\": \"24/10/2026\",\n  \"due_date\": \"23/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Kallang Security Services Pte. Ltd.\",\n  \"supplier_address\": \"27 Placeholder Street #02-03, Singapore 399997\",\n  \"supplier_uen\": \"209900345P\",\n  \"supplier_gst_reg_no\": \"209900345P\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"Indoor Stadium\",\n  \"service_period\": \"24 Oct 2026\",\n  \"subtotal\": \"3,520.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"316.80\",\n  \"total\": \"3,836.80\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": \"999-777666-5\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Security services\",\n      \"quantity\": \"160\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"22.00\",\n      \"amount\": \"3,520.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "KSS-2026-2006",
+      "invoice_date": "24/10/2026",
+      "due_date": "23/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "Kallang Security Services Pte. Ltd.",
+      "supplier_address": "27 Placeholder Street #02-03, Singapore 399997",
+      "supplier_uen": "209900345P",
+      "supplier_gst_reg_no": "209900345P",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "Indoor Stadium",
+      "service_period": "24 Oct 2026",
+      "subtotal": "3,520.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "316.80",
+      "total": "3,836.80",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": "999-777666-5",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Security services",
+          "quantity": "160",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "22.00",
+          "amount": "3,520.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1206,
+    "completion_tokens": 501,
+    "latency_ms": 19724,
+    "created_at": "2026-11-13T09:09:45.948145Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3297046000,
+    "eval_duration_ns": 16414600750,
+    "total_duration_ns": 19719278709,
+    "load_duration_ns": 1110459,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

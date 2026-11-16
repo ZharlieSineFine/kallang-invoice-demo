@@ -1,0 +1,106 @@
+{
+  "key": "3d3d32433d140e17ea9c878a77136bb1d68f316f0bc10ad4d9eec0a8afdd4f51",
+  "result": {
+    "extraction_id": "56a875ec-0dfd-4fbf-a0b1-aad74677b2f5",
+    "doc_id": "450e474c-e877-55e2-ae84-db866a9f2347",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"BLP-2026-3005\",\n  \"invoice_date\": \"20/10/2026\",\n  \"due_date\": \"19/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"BrightLite Productions Pte. Ltd.\",\n  \"supplier_address\": \"9 Mock Crescent #03-08, Singapore 399995\",\n  \"supplier_uen\": \"209990567T\",\n  \"supplier_gst_reg_no\": \"209900567T\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012356\",\n  \"contract_number\": null,\n  \"venue\": \"Kallang Wave Mall\",\n  \"service_period\": \"20-21 Oct 2026\",\n  \"subtotal\": \"750.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"67.50\",\n  \"total\": \"817.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-567890-1\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Crowd barricade rental\",\n      \"quantity\": \"40\",\n      \"unit\": \"pcs\",\n      \"days\": \"2\",\n      \"unit_price\": \"6.00\",\n      \"amount\": \"480.00\"\n    },\n    {\n      \"line_no\": null,\n      \"description\": \"Installation\",\n      \"quantity\": \"4\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"45.00\",\n      \"amount\": \"180.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"crew\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"90.00\",\n      \"amount\": \"90.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"‘Transport\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": null\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "BLP-2026-3005",
+      "invoice_date": "20/10/2026",
+      "due_date": "19/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "BrightLite Productions Pte. Ltd.",
+      "supplier_address": "9 Mock Crescent #03-08, Singapore 399995",
+      "supplier_uen": "209990567T",
+      "supplier_gst_reg_no": "209900567T",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012356",
+      "contract_number": null,
+      "venue": "Kallang Wave Mall",
+      "service_period": "20-21 Oct 2026",
+      "subtotal": "750.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "67.50",
+      "total": "817.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-567890-1",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Crowd barricade rental",
+          "quantity": "40",
+          "unit": "pcs",
+          "days": "2",
+          "unit_price": "6.00",
+          "amount": "480.00"
+        },
+        {
+          "line_no": null,
+          "description": "Installation",
+          "quantity": "4",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "45.00",
+          "amount": "180.00"
+        },
+        {
+          "line_no": "2",
+          "description": "crew",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "90.00",
+          "amount": "90.00"
+        },
+        {
+          "line_no": "3",
+          "description": "‘Transport",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": null
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1306,
+    "completion_tokens": 719,
+    "latency_ms": 47998,
+    "created_at": "2026-11-13T09:04:32.219780Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 17472885750,
+    "eval_duration_ns": 26270201959,
+    "total_duration_ns": 47991581708,
+    "load_duration_ns": 4239737042,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

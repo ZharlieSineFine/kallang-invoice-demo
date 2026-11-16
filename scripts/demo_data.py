@@ -79,7 +79,9 @@ def _load_batch(docs, pipeline, store, today):
                 doc_id=doc.doc_id,
                 source="demo-data",
             )
-        except (psycopg.Error, ValueError) as error:
+        except (psycopg.Error, ValueError, LookupError) as error:
+            # LookupError covers a replay cache miss (CacheMiss), e.g. a scan OCR'd by a
+            # different Tesseract version on another machine.
             # Nothing of the document is left behind; report it and load the rest.
             scores.append(Score(doc.name, "FAILED", doc.expected, (), folder=doc.folder))
             print(f"{doc.name:<22} FAILED        {type(error).__name__}: {error}", flush=True)

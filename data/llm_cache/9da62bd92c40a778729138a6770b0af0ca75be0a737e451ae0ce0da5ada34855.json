@@ -1,0 +1,79 @@
+{
+  "key": "9da62bd92c40a778729138a6770b0af0ca75be0a737e451ae0ce0da5ada34855",
+  "result": {
+    "extraction_id": "1b75ae4f-9e7e-403f-9e16-7184caed930f",
+    "doc_id": "05d35ba0-4e1c-5f77-9ec8-401337815cf8",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"KSS- 2026-3003\",\n  \"invoice_date\": \"18/10/2026\",\n  \"due_date\": \"17/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Kallang Security Services Pte. Ltd.\",\n  \"supplier_address\": \"27 Placeholder Street #02-03, Singapore 399997\",\n  \"supplier_uen\": \"209900345P\",\n  \"supplier_gst_reg_no\": \"209900345P\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": null,\n  \"service_period\": \"18 Oct 2026\",\n  \"subtotal\": \"2,640.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"237.60\",\n  \"total\": \"2,877.60\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"UOB Bank\",\n  \"bank_account\": \"000-345678-9\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Security services\",\n      \"quantity\": \"120\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"22.00\",\n      \"amount\": \"2,640.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "KSS- 2026-3003",
+      "invoice_date": "18/10/2026",
+      "due_date": "17/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "Kallang Security Services Pte. Ltd.",
+      "supplier_address": "27 Placeholder Street #02-03, Singapore 399997",
+      "supplier_uen": "209900345P",
+      "supplier_gst_reg_no": "209900345P",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": null,
+      "service_period": "18 Oct 2026",
+      "subtotal": "2,640.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "237.60",
+      "total": "2,877.60",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "UOB Bank",
+      "bank_account": "000-345678-9",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Security services",
+          "quantity": "120",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "22.00",
+          "amount": "2,640.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1231,
+    "completion_tokens": 503,
+    "latency_ms": 35092,
+    "created_at": "2026-11-13T09:01:28.413288Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 12089403875,
+    "eval_duration_ns": 19050327791,
+    "total_duration_ns": 35087030458,
+    "load_duration_ns": 3939528792,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

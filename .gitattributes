@@ -1,0 +1,11 @@
+# Keep shared demo data byte-identical on every machine: the manifest records each file's
+# SHA-256, and the replay cache is looked up by content.
+*.pdf binary
+*.jpg binary
+*.png binary
+data/generated/** -text
+data/llm_cache/** -text
+
+# Shell scripts run under bash (Git Bash on Windows, or inside containers): keep LF endings.
+*.sh text eol=lf
+Makefile text eol=lf

@@ -1,0 +1,88 @@
+{
+  "key": "89d6f66988ab42da3e13ded927de3288fe910723eaa99eaa8c48de872bb58d58",
+  "result": {
+    "extraction_id": "30054d47-686f-4500-85eb-32d6faea2321",
+    "doc_id": "7cfb76c9-697d-5547-b5cf-01ccf691eb36",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"VTR-2026-1012\",\n  \"invoice_date\": \"25/10/2026\",\n  \"due_date\": \"24/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"VenueTech Rigging Pte. Ltd.\",\n  \"supplier_address\": \"33 Imaginary Terrace #09-01, Singapore 399990\",\n  \"supplier_uen\": \"209900012A\",\n  \"supplier_gst_reg_no\": \"209900012A\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012348\",\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"25-27 Oct 2026\",\n  \"subtotal\": \"1,010.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"90.90\",\n  \"total\": \"1,100.90\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-012345-6\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Scaffold tower rental\",\n      \"quantity\": \"2\",\n      \"unit\": \"pcs\",\n      \"days\": \"5\",\n      \"unit_price\": \"95.00\",\n      \"amount\": \"950.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Safety inspection\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"60.00\",\n      \"amount\": \"60.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "VTR-2026-1012",
+      "invoice_date": "25/10/2026",
+      "due_date": "24/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "VenueTech Rigging Pte. Ltd.",
+      "supplier_address": "33 Imaginary Terrace #09-01, Singapore 399990",
+      "supplier_uen": "209900012A",
+      "supplier_gst_reg_no": "209900012A",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012348",
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "25-27 Oct 2026",
+      "subtotal": "1,010.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "90.90",
+      "total": "1,100.90",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-012345-6",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Scaffold tower rental",
+          "quantity": "2",
+          "unit": "pcs",
+          "days": "5",
+          "unit_price": "95.00",
+          "amount": "950.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Safety inspection",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "60.00",
+          "amount": "60.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1261,
+    "completion_tokens": 589,
+    "latency_ms": 32242,
+    "created_at": "2026-11-13T09:10:56.901618Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 12382837709,
+    "eval_duration_ns": 19845862916,
+    "total_duration_ns": 32240341959,
+    "load_duration_ns": 5719042,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

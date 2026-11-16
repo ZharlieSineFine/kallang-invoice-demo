@@ -1,0 +1,97 @@
+{
+  "key": "2ca936addd3a8975000d2fdef8cdc84403d9abb6f323ae578a82cf1dcbe5fafe",
+  "result": {
+    "extraction_id": "c10e9983-1464-473c-a111-17b5c9a05002",
+    "doc_id": "e3b44d80-6038-5ce2-877d-d71b775fdcd1",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"SAV-2026-1001\",\n  \"invoice_date\": \"15/10/2026\",\n  \"due_date\": \"14/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Stagecraft AV Rentals Pte. Ltd.\",\n  \"supplier_address\": \"18 Fictional Lane #04-12, Singapore 399999\",\n  \"supplier_uen\": \"209900123K\",\n  \"supplier_gst_reg_no\": \"209900123K\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012345\",\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"12-14 Oct 2026\",\n  \"subtotal\": \"1,040.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"93.60\",\n  \"total\": \"1,133.60\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-123456-7\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Stage lighting package\",\n      \"quantity\": \"6\",\n      \"unit\": \"pcs\",\n      \"days\": \"2\",\n      \"unit_price\": \"65.00\",\n      \"amount\": \"780.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Rigging crew\",\n      \"quantity\": \"3\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"55.00\",\n      \"amount\": \"165.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"Transport and setup\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"95.00\",\n      \"amount\": \"95.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "SAV-2026-1001",
+      "invoice_date": "15/10/2026",
+      "due_date": "14/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "Stagecraft AV Rentals Pte. Ltd.",
+      "supplier_address": "18 Fictional Lane #04-12, Singapore 399999",
+      "supplier_uen": "209900123K",
+      "supplier_gst_reg_no": "209900123K",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012345",
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "12-14 Oct 2026",
+      "subtotal": "1,040.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "93.60",
+      "total": "1,133.60",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-123456-7",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Stage lighting package",
+          "quantity": "6",
+          "unit": "pcs",
+          "days": "2",
+          "unit_price": "65.00",
+          "amount": "780.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Rigging crew",
+          "quantity": "3",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "55.00",
+          "amount": "165.00"
+        },
+        {
+          "line_no": "3",
+          "description": "Transport and setup",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "95.00",
+          "amount": "95.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1282,
+    "completion_tokens": 663,
+    "latency_ms": 21874,
+    "created_at": "2026-11-13T08:58:20.882501Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 2997902167,
+    "eval_duration_ns": 18831022000,
+    "total_duration_ns": 21857286291,
+    "load_duration_ns": 3846875,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 938
+  },
+  "context_warning": false
+}

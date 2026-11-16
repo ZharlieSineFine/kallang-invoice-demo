@@ -1,0 +1,106 @@
+{
+  "key": "4c69669693f30cc9f10f5e5e87afdfeba836d19565d19c0a9106ca4f61923fc7",
+  "result": {
+    "extraction_id": "bee0f5ee-c69e-4284-b6bb-8f2d1fadbde9",
+    "doc_id": "2dca022e-6d18-5a9b-a621-7059366a6ef8",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"MEL-2026-9003\",\n  \"invoice_date\": \"06/11/2026\",\n  \"due_date\": \"06/12/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Marina Event Logistics Pte. Ltd.\",\n  \"supplier_address\": \"3 Imaginary Road #08-01, Singapore 399998\",\n  \"supplier_uen\": \"209900234M\",\n  \"supplier_gst_reg_no\": \"209900234\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"6-7 Nov 2026\",\n  \"subtotal\": \"750.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"67.50\",\n  \"total\": \"817.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000 -234567-8\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Crowd barricade rental\",\n      \"quantity\": \"40\",\n      \"unit\": \"pcs\",\n      \"days\": \"2\",\n      \"unit_price\": \"6.00\",\n      \"amount\": \"480.00\"\n    },\n    {\n      \"line_no\": null,\n      \"description\": \"Installation\",\n      \"quantity\": \"4\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"45.00\",\n      \"amount\": \"180.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"crew\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"90.00\",\n      \"amount\": \"90.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"Transport\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": null\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "MEL-2026-9003",
+      "invoice_date": "06/11/2026",
+      "due_date": "06/12/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "Marina Event Logistics Pte. Ltd.",
+      "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+      "supplier_uen": "209900234M",
+      "supplier_gst_reg_no": "209900234",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "6-7 Nov 2026",
+      "subtotal": "750.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "67.50",
+      "total": "817.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000 -234567-8",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Crowd barricade rental",
+          "quantity": "40",
+          "unit": "pcs",
+          "days": "2",
+          "unit_price": "6.00",
+          "amount": "480.00"
+        },
+        {
+          "line_no": null,
+          "description": "Installation",
+          "quantity": "4",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "45.00",
+          "amount": "180.00"
+        },
+        {
+          "line_no": "2",
+          "description": "crew",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "90.00",
+          "amount": "90.00"
+        },
+        {
+          "line_no": "3",
+          "description": "Transport",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": null
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1270,
+    "completion_tokens": 703,
+    "latency_ms": 30233,
+    "created_at": "2026-11-13T09:23:49.008224Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 4050718750,
+    "eval_duration_ns": 26142283083,
+    "total_duration_ns": 30215377208,
+    "load_duration_ns": 6398792,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

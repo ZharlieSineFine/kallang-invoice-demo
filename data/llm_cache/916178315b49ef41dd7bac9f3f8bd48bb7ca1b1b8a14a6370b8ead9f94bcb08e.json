@@ -1,0 +1,97 @@
+{
+  "key": "916178315b49ef41dd7bac9f3f8bd48bb7ca1b1b8a14a6370b8ead9f94bcb08e",
+  "result": {
+    "extraction_id": "30d084ed-3271-4f92-9a5a-24ad62937ae5",
+    "doc_id": "efc7898e-f17a-58fb-887e-fcd776a3ba02",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"STATEMENT\",\n  \"title\": \"STATEMENT OF ACCOUNT\",\n  \"invoice_number\": \"SAV-2026-1001\",\n  \"invoice_date\": \"15/10/2026\",\n  \"due_date\": null,\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Stagecraft AV Rentals Pte. Ltd.\",\n  \"supplier_address\": \"18 Fictional Lane #04-12, Singapore 399999\",\n  \"supplier_uen\": \"209900123K\",\n  \"supplier_gst_reg_no\": \"209900123K\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": null,\n  \"service_period\": null,\n  \"subtotal\": null,\n  \"discount\": null,\n  \"gst_rate\": null,\n  \"gst_amount\": null,\n  \"total\": \"3,542.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-123456-7\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": null,\n      \"description\": \"Event services\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": \"1,177.20\"\n    },\n    {\n      \"line_no\": null,\n      \"description\": \"Event services\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": \"1,188.10\"\n    },\n    {\n      \"line_no\": null,\n      \"description\": \"Event services\",\n      \"quantity\": null,\n      \"unit\": null,\n      \"days\": null,\n      \"unit_price\": null,\n      \"amount\": \"1,177.20\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "STATEMENT",
+      "title": "STATEMENT OF ACCOUNT",
+      "invoice_number": "SAV-2026-1001",
+      "invoice_date": "15/10/2026",
+      "due_date": null,
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "Stagecraft AV Rentals Pte. Ltd.",
+      "supplier_address": "18 Fictional Lane #04-12, Singapore 399999",
+      "supplier_uen": "209900123K",
+      "supplier_gst_reg_no": "209900123K",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": null,
+      "service_period": null,
+      "subtotal": null,
+      "discount": null,
+      "gst_rate": null,
+      "gst_amount": null,
+      "total": "3,542.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-123456-7",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": null,
+          "description": "Event services",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": "1,177.20"
+        },
+        {
+          "line_no": null,
+          "description": "Event services",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": "1,188.10"
+        },
+        {
+          "line_no": null,
+          "description": "Event services",
+          "quantity": null,
+          "unit": null,
+          "days": null,
+          "unit_price": null,
+          "amount": "1,177.20"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1279,
+    "completion_tokens": 589,
+    "latency_ms": 26619,
+    "created_at": "2026-11-13T09:20:03.969489Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 4668383667,
+    "eval_duration_ns": 21925587458,
+    "total_duration_ns": 26605285417,
+    "load_duration_ns": 2027750,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

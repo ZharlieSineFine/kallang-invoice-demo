@@ -1,0 +1,88 @@
+{
+  "key": "9a7497496ddc93d53b9c46b258b8cadb0180b8dcabb01c16da51c02221a57601",
+  "result": {
+    "extraction_id": "a43d9a97-29d9-4b5b-bb73-15ac29034100",
+    "doc_id": "8d880b3e-12e7-5ef8-b3ba-f629f2d866f7",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"CAM-2026-2012\",\n  \"invoice_date\": \"30/10/2026\",\n  \"due_date\": \"29/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"CoolAir M&E Services Pte. Ltd.\",\n  \"supplier_address\": \"88 Test Road #10-10, Singapore 399992\",\n  \"supplier_uen\": \"209900890X\",\n  \"supplier_gst_reg_no\": \"209900890X\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"SIS\",\n  \"service_period\": \"30 Oct 2026\",\n  \"subtotal\": \"2,350.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"211.50\",\n  \"total\": \"2,561.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-890123-4\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"M&E maintenance\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"1,800.00\",\n      \"amount\": \"1,800.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Chiller servicing\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"550.00\",\n      \"amount\": \"550.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "CAM-2026-2012",
+      "invoice_date": "30/10/2026",
+      "due_date": "29/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "CoolAir M&E Services Pte. Ltd.",
+      "supplier_address": "88 Test Road #10-10, Singapore 399992",
+      "supplier_uen": "209900890X",
+      "supplier_gst_reg_no": "209900890X",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "SIS",
+      "service_period": "30 Oct 2026",
+      "subtotal": "2,350.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "211.50",
+      "total": "2,561.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-890123-4",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "M&E maintenance",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "1,800.00",
+          "amount": "1,800.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Chiller servicing",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "550.00",
+          "amount": "550.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1245,
+    "completion_tokens": 580,
+    "latency_ms": 34567,
+    "created_at": "2026-11-13T09:19:15.614687Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 13559276166,
+    "eval_duration_ns": 20987912917,
+    "total_duration_ns": 34555962875,
+    "load_duration_ns": 1378833,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

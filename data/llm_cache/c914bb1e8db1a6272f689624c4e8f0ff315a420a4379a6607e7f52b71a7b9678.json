@@ -1,0 +1,79 @@
+{
+  "key": "c914bb1e8db1a6272f689624c4e8f0ff315a420a4379a6607e7f52b71a7b9678",
+  "result": {
+    "extraction_id": "23dfd375-7e1c-4339-ad87-3f565ec2260a",
+    "doc_id": "95218336-d7fe-5d41-bd2e-ce414c92e678",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"GSH- 2026-9004\",\n  \"invoice_date\": \"06/11/2026\",\n  \"due_date\": \"06/12/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"GreenScape Horticulture Pte. Ltd.\",\n  \"supplier_address\": \"70 Placeholder Close #05-06, Singapore 399989\",\n  \"supplier_uen\": \"209900113B\",\n  \"supplier_gst_reg_no\": \"209900113B\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"Singapore Indoor Stadium\",\n  \"service_period\": \"6 Nov 2026\",\n  \"subtotal\": \"880.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"79.20\",\n  \"total\": \"959.20\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-112345-7\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Horticulture maintenance\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"880.00\",\n      \"amount\": \"880.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "GSH- 2026-9004",
+      "invoice_date": "06/11/2026",
+      "due_date": "06/12/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+      "supplier_address": "70 Placeholder Close #05-06, Singapore 399989",
+      "supplier_uen": "209900113B",
+      "supplier_gst_reg_no": "209900113B",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "Singapore Indoor Stadium",
+      "service_period": "6 Nov 2026",
+      "subtotal": "880.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "79.20",
+      "total": "959.20",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-112345-7",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Horticulture maintenance",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "880.00",
+          "amount": "880.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1247,
+    "completion_tokens": 497,
+    "latency_ms": 23973,
+    "created_at": "2026-11-13T09:24:15.199298Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3804189833,
+    "eval_duration_ns": 20126799791,
+    "total_duration_ns": 23955221166,
+    "load_duration_ns": 7295125,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

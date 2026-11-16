@@ -1,0 +1,122 @@
+{
+  "document_id": "bench-b-02",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B2",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "CWF-2026-8102",
+    "invoice_date": "28/10/2026",
+    "due_date": "27/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "CleanWave Facilities Pte. Ltd.",
+    "supplier_address": "41 Sample Avenue #11-05, Singapore 399996",
+    "supplier_uen": "209900456R",
+    "supplier_gst_reg_no": "209900456R",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "28 Oct 2026",
+    "subtotal": "1,870.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "168.30",
+    "total": "2,038.30",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "DBS Bank",
+    "bank_account": "000-456789-0",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Cleaning services",
+        "quantity": "90",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "18.00",
+        "amount": "1,620.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Consumables",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "250.00",
+        "amount": "250.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "CWF-2026-8102",
+    "invoice_date": "2026-10-28",
+    "due_date": "2026-11-27",
+    "currency": "SGD",
+    "supplier_name": "CleanWave Facilities Pte. Ltd.",
+    "supplier_uen": "209900456R",
+    "supplier_gst_reg_no": "209900456R",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "1870.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "168.30",
+    "total": "2038.30",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0004567890",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Cleaning services",
+        "quantity": "90",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "18.00",
+        "amount": "1620.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Consumables",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "250.00",
+        "amount": "250.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V004",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "620100",
+      "cost_center": "KG1100",
+      "tax_code": "TX",
+      "net_amount": "1870.00",
+      "tax_amount": "168.30",
+      "description": "Cleaning services, National Stadium",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

@@ -1,0 +1,106 @@
+{
+  "key": "94f9359062468b287cba3bbd874dad78b6211582db9715c081fa418bd7a4942e",
+  "result": {
+    "extraction_id": "9b3a7317-d80f-49c3-b2e4-060bb85df0e3",
+    "doc_id": "17732a7e-ed38-596c-9209-3fffdea31ee3",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"SAV-2026-3001\",\n  \"invoice_date\": \"15/10/2026\",\n  \"due_date\": \"14/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Stagecraft AV Rentals Pte. Ltd.\",\n  \"supplier_address\": \"18 Fictional Lane #04-12, Singapore 399999\",\n  \"supplier_uen\": null,\n  \"supplier_gst_reg_no\": null,\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": \"4500012345\",\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"15-17 Oct 2026\",\n  \"subtotal\": \"1,080.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"97.20\",\n  \"total\": \"1,177.20\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"Account\",\n  \"bank_account\": \"900-123456-7\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"LED wall panel rental\",\n      \"quantity\": \"4\",\n      \"unit\": \"pcs\",\n      \"days\": \n      \"unit_price\",\n      \"amount\": \"540.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Line array speaker rental\",\n      \"quantity\": \"2\",\n      \"unit\": \"pcs\",\n      \"days\": \n      \"unit_price\",\n      \"amount\": \"300.00\"\n    },\n    {\n      \"line_no\": \"3\",\n      \"description\": \"AV technician\",\n      \"quantity\": \"4\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"40.00\",\n      \"amount\": \"160.00\"\n    },\n    {\n      \"line_no\": \"4\",\n      \"description\": \"Transport setup\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"80.00\",\n      \"amount\": \"80.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "SAV-2026-3001",
+      "invoice_date": "15/10/2026",
+      "due_date": "14/11/2026",
+      "payment_terms": "30 days",
+      "currency": "SGD",
+      "supplier_name": "Stagecraft AV Rentals Pte. Ltd.",
+      "supplier_address": "18 Fictional Lane #04-12, Singapore 399999",
+      "supplier_uen": null,
+      "supplier_gst_reg_no": null,
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": "4500012345",
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "15-17 Oct 2026",
+      "subtotal": "1,080.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "97.20",
+      "total": "1,177.20",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "Account",
+      "bank_account": "900-123456-7",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "LED wall panel rental",
+          "quantity": "4",
+          "unit": "pcs",
+          "days": "unit_price",
+          "unit_price": null,
+          "amount": "540.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Line array speaker rental",
+          "quantity": "2",
+          "unit": "pcs",
+          "days": "unit_price",
+          "unit_price": null,
+          "amount": "300.00"
+        },
+        {
+          "line_no": "3",
+          "description": "AV technician",
+          "quantity": "4",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "40.00",
+          "amount": "160.00"
+        },
+        {
+          "line_no": "4",
+          "description": "Transport setup",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "80.00",
+          "amount": "80.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1289,
+    "completion_tokens": 702,
+    "latency_ms": 40645,
+    "created_at": "2026-11-13T05:51:19.114286Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 11460264958,
+    "eval_duration_ns": 24916309792,
+    "total_duration_ns": 40636779083,
+    "load_duration_ns": 4252049417,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 0
+  },
+  "context_warning": false
+}

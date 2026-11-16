@@ -1,0 +1,79 @@
+{
+  "key": "8174d574ddfb1a216d209d9ee62655904cb3810288724d2a4f4815058770d084",
+  "result": {
+    "extraction_id": "532ddfa8-2f5e-4b5f-8f76-a5835825a19e",
+    "doc_id": "4e71c467-26ba-5081-ba12-c7336c06eaa7",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"INVOICE\",\n  \"title\": \"INVOICE\",\n  \"invoice_number\": \"HAV-2026-6001\",\n  \"invoice_date\": \"26/10/2026\",\n  \"due_date\": \"25/11/2026\",\n  \"payment_terms\": \"30 days\",\n  \"currency\": \"USD\",\n  \"supplier_name\": \"Harbourline Audio Visual LLC\",\n  \"supplier_address\": \"1200 Fictional Avenue, Los Angeles, CA 90001, USA\",\n  \"supplier_uen\": \"209900214C\",\n  \"supplier_gst_reg_no\": \"209900214C\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"26-27 Oct 2026\",\n  \"subtotal\": \"1,200.00\",\n  \"discount\": null,\n  \"gst_rate\": \"0%\",\n  \"gst_amount\": \"0.00\",\n  \"total\": \"1,200.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": \"1,620.00\",\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"Bank of America\",\n  \"bank_account\": \"000-212345-8\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Overseas audio consultancy\",\n      \"quantity\": \"2\",\n      \"unit\": \"day\",\n      \"days\": \"600.00\",\n      \"unit_price\": \"1,200.00\",\n      \"amount\": null\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "INVOICE",
+      "title": "INVOICE",
+      "invoice_number": "HAV-2026-6001",
+      "invoice_date": "26/10/2026",
+      "due_date": "25/11/2026",
+      "payment_terms": "30 days",
+      "currency": "USD",
+      "supplier_name": "Harbourline Audio Visual LLC",
+      "supplier_address": "1200 Fictional Avenue, Los Angeles, CA 90001, USA",
+      "supplier_uen": "209900214C",
+      "supplier_gst_reg_no": "209900214C",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "26-27 Oct 2026",
+      "subtotal": "1,200.00",
+      "discount": null,
+      "gst_rate": "0%",
+      "gst_amount": "0.00",
+      "total": "1,200.00",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": "1,620.00",
+      "sgd_gst_amount": null,
+      "bank_name": "Bank of America",
+      "bank_account": "000-212345-8",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Overseas audio consultancy",
+          "quantity": "2",
+          "unit": "day",
+          "days": "600.00",
+          "unit_price": "1,200.00",
+          "amount": null
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1239,
+    "completion_tokens": 509,
+    "latency_ms": 21024,
+    "created_at": "2026-11-13T09:12:22.318669Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3326363125,
+    "eval_duration_ns": 17672926875,
+    "total_duration_ns": 21012306709,
+    "load_duration_ns": 1915834,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

@@ -1,0 +1,88 @@
+{
+  "key": "8bf76125e96d35b409a1089ff7f7eec1db23a9ce74b0afde5f757e8cde18f1e3",
+  "result": {
+    "extraction_id": "6855845c-a808-478e-a4d4-67afc24ea05a",
+    "doc_id": "f0387072-2186-5e1b-8666-00e0793ef800",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"SIMPLIFIED_TAX_INVOICE\",\n  \"title\": \"SIMPLIFIED TAX INVOICE\",\n  \"invoice_number\": \"MEL-2026-8003\",\n  \"invoice_date\": \"29/10/2026\",\n  \"due_date\": \"28/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"Marina Event Logistics Pte. Ltd.\",\n  \"supplier_address\": \"3 Imaginary Road #08-01, Singapore 399998\",\n  \"supplier_uen\": \"209900234M\",\n  \"supplier_gst_reg_no\": \"209900234M\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": null,\n  \"service_period\": \"29 Oct 2026\",\n  \"subtotal\": \"810.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"66.88\",\n  \"total\": \"810.00\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": \"Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.\",\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-234567-8\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Usher services (price includes GST)\",\n      \"quantity\": \"2\",\n      \"unit\": \"pcs\",\n      \"days\": null,\n      \"unit_price\": \"120.00\",\n      \"amount\": \"480.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Supervisor (price includes GST)\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"330.00\",\n      \"amount\": \"330.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "SIMPLIFIED_TAX_INVOICE",
+      "title": "SIMPLIFIED TAX INVOICE",
+      "invoice_number": "MEL-2026-8003",
+      "invoice_date": "29/10/2026",
+      "due_date": "28/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "Marina Event Logistics Pte. Ltd.",
+      "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+      "supplier_uen": "209900234M",
+      "supplier_gst_reg_no": "209900234M",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": null,
+      "service_period": "29 Oct 2026",
+      "subtotal": "810.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "66.88",
+      "total": "810.00",
+      "amount_due": null,
+      "gst_inclusive_note": "Price payable includes GST. Simplified tax invoice for a total not exceeding S$1,000. GST is shown for information only and is already included in the prices above.",
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-234567-8",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Usher services (price includes GST)",
+          "quantity": "2",
+          "unit": "pcs",
+          "days": null,
+          "unit_price": "120.00",
+          "amount": "480.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Supervisor (price includes GST)",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "330.00",
+          "amount": "330.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1272,
+    "completion_tokens": 612,
+    "latency_ms": 31572,
+    "created_at": "2026-11-13T09:17:32.815385Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 5622208542,
+    "eval_duration_ns": 25890412209,
+    "total_duration_ns": 31554670583,
+    "load_duration_ns": 11414166,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

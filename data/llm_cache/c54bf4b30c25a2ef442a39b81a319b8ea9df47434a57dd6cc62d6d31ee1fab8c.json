@@ -1,0 +1,88 @@
+{
+  "key": "c54bf4b30c25a2ef442a39b81a319b8ea9df47434a57dd6cc62d6d31ee1fab8c",
+  "result": {
+    "extraction_id": "6cabae7c-b09f-40ed-b239-2caf3f629534",
+    "doc_id": "be5c2fe8-0a62-5a4c-a2bd-ccb84d8ac63f",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"CWF-2026-2004\",\n  \"invoice_date\": \"22/10/2026\",\n  \"due_date\": \"21/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"CleanWave Facilities Pte. Ltd.\",\n  \"supplier_address\": \"41 Sample Avenue #11-05, Singapore 399996\",\n  \"supplier_uen\": \"209900456R\",\n  \"supplier_gst_reg_no\": \"209900456R\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"National Stadium\",\n  \"service_period\": \"22 Oct 2026\",\n  \"subtotal\": \"1,450.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"130.50\",\n  \"total\": \"1,580.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-456789-0\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Cleaning services\",\n      \"quantity\": \"60\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"18.00\",\n      \"amount\": \"1,080.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Floor scrubbing\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"370.00\",\n      \"amount\": \"370.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "CWF-2026-2004",
+      "invoice_date": "22/10/2026",
+      "due_date": "21/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "CleanWave Facilities Pte. Ltd.",
+      "supplier_address": "41 Sample Avenue #11-05, Singapore 399996",
+      "supplier_uen": "209900456R",
+      "supplier_gst_reg_no": "209900456R",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "National Stadium",
+      "service_period": "22 Oct 2026",
+      "subtotal": "1,450.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "130.50",
+      "total": "1,580.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-456789-0",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Cleaning services",
+          "quantity": "60",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "18.00",
+          "amount": "1,080.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Floor scrubbing",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "370.00",
+          "amount": "370.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1223,
+    "completion_tokens": 574,
+    "latency_ms": 25133,
+    "created_at": "2026-11-13T09:06:54.440825Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3858539708,
+    "eval_duration_ns": 21247911709,
+    "total_duration_ns": 25118204375,
+    "load_duration_ns": 5075750,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

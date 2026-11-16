@@ -1,0 +1,122 @@
+{
+  "document_id": "bench-a-03",
+  "doc_type": "SIMPLIFIED_TAX_INVOICE",
+  "template_id": "A2",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "SIMPLIFIED_TAX_INVOICE",
+    "title": "SIMPLIFIED TAX INVOICE",
+    "invoice_number": "MEL-2026-8003",
+    "invoice_date": "29/10/2026",
+    "due_date": "28/11/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": null,
+    "service_period": "29 Oct 2026",
+    "subtotal": "810.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "66.88",
+    "total": "810.00",
+    "amount_due": null,
+    "gst_inclusive_note": "Price payable includes GST",
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-234567-8",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Usher services (price includes GST)",
+        "quantity": "2",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "120.00",
+        "amount": "480.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Supervisor (price includes GST)",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "330.00",
+        "amount": "330.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "SIMPLIFIED_TAX_INVOICE",
+    "invoice_number": "MEL-2026-8003",
+    "invoice_date": "2026-10-29",
+    "due_date": "2026-11-28",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": null,
+    "subtotal": "743.12",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "66.88",
+    "total": "810.00",
+    "amount_due": null,
+    "gst_inclusive": true,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0002345678",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Usher services (price includes GST)",
+        "quantity": "2",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "120.00",
+        "amount": "480.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Supervisor (price includes GST)",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "330.00",
+        "amount": "330.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V002",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "630100",
+      "cost_center": "KG2100",
+      "tax_code": "TX",
+      "net_amount": "743.12",
+      "tax_amount": "66.88",
+      "description": "Repairs and consumables",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENDOR_DEFAULT"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

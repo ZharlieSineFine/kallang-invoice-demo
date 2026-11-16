@@ -5,6 +5,9 @@ model extraction, normalization, checks, human review, and a hypothetical SAP CS
 The demo runs on this Mac; the pipeline logic is plain Python so the same functions can run
 in Azure Functions later.
 
+**On Windows:** follow [`docs/windows-setup.md`](docs/windows-setup.md). The 54 generated
+invoices and the recorded model answers are in the repo, so the demo loads without the model.
+
 **Status: Phase 0 complete** (git tag `contracts-v1`). Contracts, database schema, config,
 golden fixtures, and a skeleton pipeline on stubs all work. The real stages arrive in Phase 1
 across eight workstreams. The build plan lives in the Obsidian vault; the short version is

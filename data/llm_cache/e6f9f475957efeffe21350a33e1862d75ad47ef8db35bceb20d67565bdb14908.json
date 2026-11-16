@@ -1,0 +1,88 @@
+{
+  "key": "e6f9f475957efeffe21350a33e1862d75ad47ef8db35bceb20d67565bdb14908",
+  "result": {
+    "extraction_id": "066b6219-b7a2-4d96-80d7-2aeea5c9f600",
+    "doc_id": "20cfdc21-25ac-5697-9b9c-cf75849d316b",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"GSH-2026-2010\",\n  \"invoice_date\": \"28/10/2026\",\n  \"due_date\": \"27/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"GreenScape Horticulture Pte. Ltd.\",\n  \"supplier_address\": \"70 Placeholder Close #05-06, Singapore 399989\",\n  \"supplier_uen\": \"209900113B\",\n  \"supplier_gst_reg_no\": \"209900113B\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"28 Oct 2026\",\n  \"subtotal\": \"1,240.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"111.60\",\n  \"total\": \"1,351.60\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"OCBC Bank\",\n  \"bank_account\": \"000-112345-7\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Horticulture maintenance\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"880.00\",\n      \"amount\": \"880.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Plant replacement\",\n      \"quantity\": \"12\",\n      \"unit\": \"pcs\",\n      \"days\": null,\n      \"unit_price\": \"30.00\",\n      \"amount\": \"360.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "GSH-2026-2010",
+      "invoice_date": "28/10/2026",
+      "due_date": "27/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+      "supplier_address": "70 Placeholder Close #05-06, Singapore 399989",
+      "supplier_uen": "209900113B",
+      "supplier_gst_reg_no": "209900113B",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "28 Oct 2026",
+      "subtotal": "1,240.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "111.60",
+      "total": "1,351.60",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "OCBC Bank",
+      "bank_account": "000-112345-7",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Horticulture maintenance",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "880.00",
+          "amount": "880.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Plant replacement",
+          "quantity": "12",
+          "unit": "pcs",
+          "days": null,
+          "unit_price": "30.00",
+          "amount": "360.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1238,
+    "completion_tokens": 573,
+    "latency_ms": 22128,
+    "created_at": "2026-11-13T09:14:51.700968Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3446775500,
+    "eval_duration_ns": 18642511208,
+    "total_duration_ns": 22111324042,
+    "load_duration_ns": 6616458,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

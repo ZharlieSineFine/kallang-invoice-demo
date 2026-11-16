@@ -21,14 +21,6 @@ else
 GOLDEN_ENV :=
 endif
 
-# cp -p keeps each file's arrival time, which is the order invoice_intake takes them in.
-define drop_folder
-test -d data/generated/$(1) || { echo "no data/generated/$(1): run make data first"; exit 1; }; \
-mkdir -p data/inbox; \
-cp -p data/generated/$(1)/*.pdf data/inbox/; \
-echo "dropped $$(ls data/generated/$(1)/*.pdf | wc -l | tr -d ' ') invoices from $(1)/ into data/inbox"
-endef
-
 .PHONY: help setup doctor up down down-dev logs db-dev fixtures skeleton golden test lint fmt \
         data warm demo-data drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
         check-dags
@@ -110,11 +102,11 @@ drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@cp tests/fixtures/golden/$(N)/invoice.pdf data/inbox/$(N).pdf
 	@echo "dropped $(N) into data/inbox/$(N).pdf (invoice_intake picks it up)"
 
-drop-all: ## copy the 50 full-run invoices into data/inbox, keeping their arrival times (needs make data)
-	@$(call drop_folder,invoices)
+drop-all: ## copy the 50 full-run invoices into data/inbox in arrival order (times from the manifest)
+	@$(UV) run python scripts/drop.py invoices
 
 drop-live: ## copy the 4 live-demo invoices into data/inbox (run after the full run finishes)
-	@$(call drop_folder,live-demo)
+	@$(UV) run python scripts/drop.py live-demo
 
 intake: ## run invoice_intake now instead of waiting for its 5-minute schedule (needs make up)
 	$(COMPOSE_FULL) exec -T airflow-scheduler airflow dags trigger invoice_intake

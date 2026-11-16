@@ -6,7 +6,11 @@ __pycache__/
 .coverage
 htmlcov/
 .env
-data/
+# Runtime state stays local. Shared in git: the generated invoices and answer key (synthetic,
+# rebuilt identically by `make data`) and the replay cache (runs the demo without the model).
+data/*
+!data/generated/
+!data/llm_cache/
 reports/*
 !reports/baseline.json
 .DS_Store

@@ -1,0 +1,103 @@
+{
+  "document_id": "pre-usd-01",
+  "doc_type": "INVOICE",
+  "template_id": "A1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "INVOICE",
+    "title": "INVOICE",
+    "invoice_number": "HAV-2026-6001",
+    "invoice_date": "26/10/2026",
+    "due_date": "25/11/2026",
+    "payment_terms": "30 days",
+    "currency": "USD",
+    "supplier_name": "Harbourline Audio Visual LLC",
+    "supplier_address": "1200 Fictional Avenue, Los Angeles, CA 90001, USA",
+    "supplier_uen": "209900214C",
+    "supplier_gst_reg_no": "209900214C",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "26-27 Oct 2026",
+    "subtotal": "1,200.00",
+    "discount": null,
+    "gst_rate": "0%",
+    "gst_amount": "0.00",
+    "total": "1,200.00",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": "1,620.00",
+    "sgd_gst_amount": "0.00",
+    "bank_name": "Bank of America",
+    "bank_account": "000-212345-8",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Overseas audio consultancy",
+        "quantity": "2",
+        "unit": "day",
+        "days": null,
+        "unit_price": "600.00",
+        "amount": "1,200.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "INVOICE",
+    "invoice_number": "HAV-2026-6001",
+    "invoice_date": "2026-10-26",
+    "due_date": "2026-11-25",
+    "currency": "USD",
+    "supplier_name": "Harbourline Audio Visual LLC",
+    "supplier_uen": "209900214C",
+    "supplier_gst_reg_no": "209900214C",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "1200.00",
+    "discount": null,
+    "gst_rate_percent": "0",
+    "gst_amount": "0.00",
+    "total": "1200.00",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": "1620.00",
+    "sgd_gst_amount": "0.00",
+    "bank_account": "0002123458",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Overseas audio consultancy",
+        "quantity": "2",
+        "unit": "day",
+        "days": null,
+        "unit_price": "600.00",
+        "amount": "1200.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V012",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610200",
+      "cost_center": "KG1100",
+      "tax_code": "OP",
+      "net_amount": "1200.00",
+      "tax_amount": "0.00",
+      "description": "Equipment rental, National Stadium",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

@@ -1,0 +1,88 @@
+{
+  "key": "dddb3ad628dfcaf41167ab52d732df50541f8733312ca73fc0d6a43ff7b08193",
+  "result": {
+    "extraction_id": "10815059-262a-461b-bf41-d15b87978273",
+    "doc_id": "388238cd-4186-536c-bc4c-ed48c5d291bd",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"CWF-2026-2007\",\n  \"invoice_date\": \"25/10/2026\",\n  \"due_date\": \"24/11/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"CleanWave Facilities Pte. Ltd.\",\n  \"supplier_address\": \"41 Sample Avenue #11-05, Singapore 399996\",\n  \"supplier_uen\": \"209900456R\",\n  \"supplier_gst_reg_no\": \"209900456R\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"OCBC Arena\",\n  \"service_period\": \"25 Oct 2026\",\n  \"subtotal\": \"2,280.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"205.20\",\n  \"total\": \"2,485.20\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-456789-0\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Cleaning services\",\n      \"quantity\": \"120\",\n      \"unit\": \"hr\",\n      \"days\": null,\n      \"unit_price\": \"18.00\",\n      \"amount\": \"2,160.00\"\n    },\n    {\n      \"line_no\": \"2\",\n      \"description\": \"Consumables\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"120.00\",\n      \"amount\": \"120.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "CWF-2026-2007",
+      "invoice_date": "25/10/2026",
+      "due_date": "24/11/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "CleanWave Facilities Pte. Ltd.",
+      "supplier_address": "41 Sample Avenue #11-05, Singapore 399996",
+      "supplier_uen": "209900456R",
+      "supplier_gst_reg_no": "209900456R",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "OCBC Arena",
+      "service_period": "25 Oct 2026",
+      "subtotal": "2,280.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "205.20",
+      "total": "2,485.20",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-456789-0",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Cleaning services",
+          "quantity": "120",
+          "unit": "hr",
+          "days": null,
+          "unit_price": "18.00",
+          "amount": "2,160.00"
+        },
+        {
+          "line_no": "2",
+          "description": "Consumables",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "120.00",
+          "amount": "120.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1227,
+    "completion_tokens": 577,
+    "latency_ms": 22384,
+    "created_at": "2026-11-13T09:11:19.418224Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3269037750,
+    "eval_duration_ns": 19100187334,
+    "total_duration_ns": 22380412125,
+    "load_duration_ns": 1139667,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

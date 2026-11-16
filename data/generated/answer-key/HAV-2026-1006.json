@@ -1,0 +1,110 @@
+{
+  "document_id": "pre-a-06",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "A1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "HAV-2026-1006",
+    "invoice_date": "03/04/2026",
+    "due_date": "04/03/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "Harbourline Audio Visual LLC",
+    "supplier_address": "1200 Fictional Avenue, Los Angeles, CA 90001, USA",
+    "supplier_uen": "209900214C",
+    "supplier_gst_reg_no": "209900214C",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "4 Mar 2026",
+    "subtotal": "450.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "40.50",
+    "total": "490.50",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "Bank of America",
+    "bank_account": "000-212345-8",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Audio equipment rental",
+        "quantity": "3",
+        "unit": "pcs",
+        "days": "1",
+        "unit_price": "150.00",
+        "amount": "450.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "HAV-2026-1006",
+    "invoice_date": "2026-03-04",
+    "due_date": "2026-04-03",
+    "currency": "SGD",
+    "supplier_name": "Harbourline Audio Visual LLC",
+    "supplier_uen": "209900214C",
+    "supplier_gst_reg_no": "209900214C",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "450.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "40.50",
+    "total": "490.50",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0002123458",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Audio equipment rental",
+        "quantity": "3",
+        "unit": "pcs",
+        "days": "1",
+        "unit_price": "150.00",
+        "amount": "450.00"
+      }
+    ],
+    "ambiguous_dates": [
+      "invoice_date",
+      "due_date"
+    ]
+  },
+  "vendor_id": "V012",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610200",
+      "cost_center": "KG1100",
+      "tax_code": "TX",
+      "net_amount": "450.00",
+      "tax_amount": "40.50",
+      "description": "Equipment rental, National Stadium",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [
+    "us_date_month_first"
+  ],
+  "expected_rules": [
+    "R11"
+  ]
+}

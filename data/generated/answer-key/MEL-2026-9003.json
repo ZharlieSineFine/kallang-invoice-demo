@@ -1,0 +1,141 @@
+{
+  "document_id": "showcase-scan-1",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "C1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "MEL-2026-9003",
+    "invoice_date": "06/11/2026",
+    "due_date": "06/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "service_period": "6-7 Nov 2026",
+    "subtotal": "750.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "67.50",
+    "total": "817.50",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-234567-8",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Crowd barricade rental",
+        "quantity": "40",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "6.00",
+        "amount": "480.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Installation crew",
+        "quantity": "4",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "45.00",
+        "amount": "180.00"
+      },
+      {
+        "line_no": "3",
+        "description": "Transport",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "90.00",
+        "amount": "90.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "MEL-2026-9003",
+    "invoice_date": "2026-11-06",
+    "due_date": "2026-12-06",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "subtotal": "750.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "67.50",
+    "total": "817.50",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0002345678",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Crowd barricade rental",
+        "quantity": "40",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "6.00",
+        "amount": "480.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Installation crew",
+        "quantity": "4",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "45.00",
+        "amount": "180.00"
+      },
+      {
+        "line_no": 3,
+        "description": "Transport",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "90.00",
+        "amount": "90.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V002",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "630100",
+      "cost_center": "KG1400",
+      "tax_code": "TX",
+      "net_amount": "750.00",
+      "tax_amount": "67.50",
+      "description": "Repairs and consumables, OCBC Arena",
+      "source_line_nos": [
+        1,
+        2,
+        3
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

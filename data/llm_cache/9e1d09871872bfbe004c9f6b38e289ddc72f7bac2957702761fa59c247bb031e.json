@@ -1,0 +1,79 @@
+{
+  "key": "9e1d09871872bfbe004c9f6b38e289ddc72f7bac2957702761fa59c247bb031e",
+  "result": {
+    "extraction_id": "d8a3b8f1-6277-4842-930c-953664cfdfd4",
+    "doc_id": "d63475dc-0608-51c3-9699-2a419486ebcf",
+    "model": "gemma4:12b",
+    "model_digest": "c7597fc90b86aff6965317f37dd5465402284e26382d9b4bf2dfe3ef1491f4b6",
+    "prompt_version": "extract-v1",
+    "schema_version": "extraction-v1",
+    "params": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 2048,
+      "think": false,
+      "images_mode": "auto",
+      "n_images": 0
+    },
+    "mode": "LIVE",
+    "raw_output": "{\n  \"document_type\": \"TAX_INVOICE\",\n  \"title\": \"TAX INVOICE\",\n  \"invoice_number\": \"PWS-2026-9002\",\n  \"invoice_date\": \"05/11/2026\",\n  \"due_date\": \"05/12/2026\",\n  \"payment_terms\": null,\n  \"currency\": \"SGD\",\n  \"supplier_name\": \"PrintWorks Studio Pte. Ltd.\",\n  \"supplier_address\": \"14 Synthetic Way #06-07, Singapore 399993\",\n  \"supplier_uen\": \"209900789W\",\n  \"supplier_gst_reg_no\": \"209900789W\",\n  \"buyer_name\": \"The Kallang Group\",\n  \"buyer_address\": \"Kallang, Singapore\",\n  \"po_number\": null,\n  \"contract_number\": null,\n  \"venue\": \"Kallang Wave Mall\",\n  \"service_period\": \"5 Nov 2026\",\n  \"subtotal\": \"650.00\",\n  \"discount\": null,\n  \"gst_rate\": \"9%\",\n  \"gst_amount\": \"58.50\",\n  \"total\": \"708.50\",\n  \"amount_due\": null,\n  \"gst_inclusive_note\": null,\n  \"sgd_total\": null,\n  \"sgd_gst_amount\": null,\n  \"bank_name\": \"DBS Bank\",\n  \"bank_account\": \"000-789012-3\",\n  \"original_invoice_ref\": null,\n  \"line_items\": [\n    {\n      \"line_no\": \"1\",\n      \"description\": \"Event signage and print\",\n      \"quantity\": \"1\",\n      \"unit\": \"lot\",\n      \"days\": null,\n      \"unit_price\": \"650.00\",\n      \"amount\": \"650.00\"\n    }\n  ]\n}",
+    "extraction": {
+      "document_type": "TAX_INVOICE",
+      "title": "TAX INVOICE",
+      "invoice_number": "PWS-2026-9002",
+      "invoice_date": "05/11/2026",
+      "due_date": "05/12/2026",
+      "payment_terms": null,
+      "currency": "SGD",
+      "supplier_name": "PrintWorks Studio Pte. Ltd.",
+      "supplier_address": "14 Synthetic Way #06-07, Singapore 399993",
+      "supplier_uen": "209900789W",
+      "supplier_gst_reg_no": "209900789W",
+      "buyer_name": "The Kallang Group",
+      "buyer_address": "Kallang, Singapore",
+      "po_number": null,
+      "contract_number": null,
+      "venue": "Kallang Wave Mall",
+      "service_period": "5 Nov 2026",
+      "subtotal": "650.00",
+      "discount": null,
+      "gst_rate": "9%",
+      "gst_amount": "58.50",
+      "total": "708.50",
+      "amount_due": null,
+      "gst_inclusive_note": null,
+      "sgd_total": null,
+      "sgd_gst_amount": null,
+      "bank_name": "DBS Bank",
+      "bank_account": "000-789012-3",
+      "original_invoice_ref": null,
+      "line_items": [
+        {
+          "line_no": "1",
+          "description": "Event signage and print",
+          "quantity": "1",
+          "unit": "lot",
+          "days": null,
+          "unit_price": "650.00",
+          "amount": "650.00"
+        }
+      ]
+    },
+    "valid": true,
+    "error": null,
+    "prompt_tokens": 1215,
+    "completion_tokens": 495,
+    "latency_ms": 21301,
+    "created_at": "2026-11-13T09:23:16.449902Z"
+  },
+  "durations": {
+    "prompt_eval_duration_ns": 3662947958,
+    "eval_duration_ns": 17575437416,
+    "total_duration_ns": 21289895208,
+    "load_duration_ns": 7339875,
+    "done_reason": "stop",
+    "prompt_eval_cached_count": 930
+  },
+  "context_warning": false
+}

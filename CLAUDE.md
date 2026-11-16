@@ -67,7 +67,7 @@ make up              # full Airflow stack (8080) + review app (8501); make down 
 make data                # rebuild: invoices/ (50, full run) + live-demo/ (4) + answer-key/, named by invoice number
 make demo-data RESET=1   # rehearsal: the 50, then the 4, through the live model (~27 min), scored per folder
 make demo-data RESET=1 STACK=1   # same, into the full stack's Postgres on 127.0.0.1:5434
-make drop-all            # copy the 50 into data/inbox with their arrival times (stack picks them up)
+make drop-all            # copy the 50 into data/inbox; times come from the manifest (git drops file times)
 make drop-live           # copy the 4 live-demo invoices in, after the full run has finished
 make intake              # trigger invoice_intake now instead of waiting up to 5 min
 uv run python scripts/stage_benchmark.py          # stage the 10 benchmark invoices for bench_models.py
@@ -75,6 +75,11 @@ uv run python scripts/bench_models.py --docs data/benchmark --out data/bench --m
 uv run python -m invoiceflow.export               # SAP CSV from the golden fixtures
 uv run python -m invoiceflow.evaluate --gate      # evaluation + gate
 ```
+
+Windows: `docs/windows-setup.md`. `data/generated/` and `data/llm_cache/` are tracked in git
+(2026-11-16) so a clone can replay without the model; the rest of `data/` stays local, and
+`.gitattributes` keeps those files byte-identical. Remote: private
+`github.com/ZharlieSineFine/kallang-invoice-demo`.
 
 Environment: uv 0.11.x, Python 3.12, Docker Desktop, `docker-compose` standalone, Ollama
 with gemma4:12b (fallback qwen3-vl:4b deliberately not pulled), Tesseract 5.5.4. WeasyPrint

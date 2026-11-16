@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from uuid import UUID
 
 import pytest
@@ -140,3 +141,50 @@ def test_eval_sample_reports_what_the_pipeline_actually_produced(golden):
     assert sample.predicted_extraction == fixture.extraction.extraction
     assert sample.predicted_rules == ("R02",)
     assert sample.latency_ms == fixture.extraction.latency_ms
+
+
+# ---- dropping a folder into the inbox, in arrival order, on any machine ------------------
+
+
+def _arrivals(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    root = tmp_path / "generated"
+    rows = []
+    start = datetime(2026, 11, 6, 9, 0, tzinfo=UTC)
+    names = [("invoices", "SAV-2026-1001"), ("invoices", "SAV-2026-1001 (2)"), ("live-demo", "V-1")]
+    for index, (folder, name) in enumerate(names):
+        (root / folder).mkdir(parents=True, exist_ok=True)
+        (root / folder / f"{name}.pdf").write_bytes(b"%PDF-1.4 " + name.encode())
+        received = (start + timedelta(minutes=index)).isoformat().replace("+00:00", "Z")
+        rows.append({"file": f"{folder}/{name}.pdf", "received_at": received})
+    # A fresh git checkout gives every file the same time, in no useful order.
+    for path in (root / "invoices").iterdir():
+        os.utime(path, (2_000_000_000, 2_000_000_000))
+    (root / "manifest.json").write_text(json.dumps({"documents": rows}), encoding="utf-8")
+    return root
+
+
+def test_drop_copies_a_folder_and_restores_the_arrival_order(tmp_path):
+    from invoiceflow.pipeline.demo_data import drop_folder
+    from invoiceflow.pipeline.steps import list_inbox
+
+    inbox = tmp_path / "inbox"
+    copied = drop_folder(_arrivals(tmp_path), "invoices", inbox)
+    assert copied == 2
+    assert [p.name for p in list_inbox(inbox)] == ["SAV-2026-1001.pdf", "SAV-2026-1001 (2).pdf"]
+
+
+def test_drop_only_copies_the_named_folder(tmp_path):
+    from invoiceflow.pipeline.demo_data import drop_folder
+
+    inbox = tmp_path / "inbox"
+    assert drop_folder(_arrivals(tmp_path), "live-demo", inbox) == 1
+    assert [p.name for p in inbox.iterdir()] == ["V-1.pdf"]
+
+
+def test_drop_refuses_an_unknown_folder(tmp_path):
+    from invoiceflow.pipeline.demo_data import drop_folder
+
+    with pytest.raises(SystemExit, match="make data"):
+        drop_folder(_arrivals(tmp_path), "nope", tmp_path / "inbox")

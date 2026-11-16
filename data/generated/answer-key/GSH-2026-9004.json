@@ -1,0 +1,103 @@
+{
+  "document_id": "showcase-scan-2",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "C1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "GSH-2026-9004",
+    "invoice_date": "06/11/2026",
+    "due_date": "06/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+    "supplier_address": "70 Placeholder Close #05-06, Singapore 399989",
+    "supplier_uen": "209900113B",
+    "supplier_gst_reg_no": "209900113B",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Singapore Indoor Stadium",
+    "service_period": "6 Nov 2026",
+    "subtotal": "880.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "79.20",
+    "total": "959.20",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-112345-7",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Horticulture maintenance",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "880.00",
+        "amount": "880.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "GSH-2026-9004",
+    "invoice_date": "2026-11-06",
+    "due_date": "2026-12-06",
+    "currency": "SGD",
+    "supplier_name": "GreenScape Horticulture Pte. Ltd.",
+    "supplier_uen": "209900113B",
+    "supplier_gst_reg_no": "209900113B",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Singapore Indoor Stadium",
+    "subtotal": "880.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "79.20",
+    "total": "959.20",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0001123457",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Horticulture maintenance",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "880.00",
+        "amount": "880.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V011",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "630100",
+      "cost_center": "KG1200",
+      "tax_code": "TX",
+      "net_amount": "880.00",
+      "tax_amount": "79.20",
+      "description": "Repairs and consumables, Singapore Indoor Stadium",
+      "source_line_nos": [
+        1
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

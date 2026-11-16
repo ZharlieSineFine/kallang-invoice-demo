@@ -1,0 +1,141 @@
+{
+  "document_id": "showcase-pdf-1",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "A1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "VTR-2026-9001",
+    "invoice_date": "05/11/2026",
+    "due_date": "05/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "VenueTech Rigging Pte. Ltd.",
+    "supplier_address": "33 Imaginary Terrace #09-01, Singapore 399990",
+    "supplier_uen": "209900012A",
+    "supplier_gst_reg_no": "209900012A",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "5-7 Nov 2026",
+    "subtotal": "970.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "87.30",
+    "total": "1,057.30",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "DBS Bank",
+    "bank_account": "000-012345-6",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Truss and motor rental",
+        "quantity": "8",
+        "unit": "pcs",
+        "days": "3",
+        "unit_price": "30.00",
+        "amount": "720.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Rigging crew",
+        "quantity": "4",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "45.00",
+        "amount": "180.00"
+      },
+      {
+        "line_no": "3",
+        "description": "Delivery and collection",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "70.00",
+        "amount": "70.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "VTR-2026-9001",
+    "invoice_date": "2026-11-05",
+    "due_date": "2026-12-05",
+    "currency": "SGD",
+    "supplier_name": "VenueTech Rigging Pte. Ltd.",
+    "supplier_uen": "209900012A",
+    "supplier_gst_reg_no": "209900012A",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "970.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "87.30",
+    "total": "1057.30",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0000123456",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Truss and motor rental",
+        "quantity": "8",
+        "unit": "pcs",
+        "days": "3",
+        "unit_price": "30.00",
+        "amount": "720.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Rigging crew",
+        "quantity": "4",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "45.00",
+        "amount": "180.00"
+      },
+      {
+        "line_no": 3,
+        "description": "Delivery and collection",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "70.00",
+        "amount": "70.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V010",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610200",
+      "cost_center": "KG1100",
+      "tax_code": "TX",
+      "net_amount": "970.00",
+      "tax_amount": "87.30",
+      "description": "Equipment rental, National Stadium",
+      "source_line_nos": [
+        1,
+        2,
+        3
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}
