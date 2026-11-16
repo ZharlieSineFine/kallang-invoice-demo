@@ -11,7 +11,8 @@ Rules that hold here:
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -50,6 +51,7 @@ from invoiceflow.contracts import (
 from invoiceflow.normalize.normalizer import gst_inclusive_from_note
 from invoiceflow.settings import data_relative, load_config
 from invoiceflow.storage import words_rel_path
+from invoiceflow.store.connection import connect
 
 _EXPORTED = DocStatus.EXPORTED.value
 # Header field names that differ on NormalizedInvoice.
@@ -106,6 +108,35 @@ class Repo:
             return cur.fetchone() is not None
 
     # ---------------------------------------------------------------- documents
+    def unfinished_document(self, sha256: str) -> tuple[UUID, UUID] | None:
+        """``(doc_id, file_id)`` of the file's RECEIVED document, left if intake stopped midway."""
+        row = self._one(
+            """
+            SELECT d.doc_id, d.file_id
+            FROM documents d JOIN bronze_files b USING (file_id)
+            WHERE b.sha256 = %s AND d.status = %s
+            """,
+            (sha256, DocStatus.RECEIVED.value),
+        )
+        return (row[0], row[1]) if row else None
+
+    def discard_document(self, doc_id: UUID, file_id: UUID) -> None:
+        """Remove a document that never got past RECEIVED, and its file row, so a retry is not
+        mistaken for a duplicate. A document with an outcome is never removed."""
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM documents WHERE doc_id = %s AND status = %s",
+                (doc_id, DocStatus.RECEIVED.value),
+            )
+            cur.execute(
+                """
+                DELETE FROM bronze_files b
+                WHERE b.file_id = %s
+                  AND NOT EXISTS (SELECT 1 FROM documents d WHERE d.file_id = b.file_id)
+                """,
+                (file_id,),
+            )
+
     def create_document(self, record: DocumentRecord) -> None:
         with self._conn.cursor() as cur:
             cur.execute(
@@ -734,3 +765,11 @@ class Repo:
             invoice_date=date.fromisoformat(invoice_date) if invoice_date else None,
             file_sha256=sha256,
         )
+
+
+@contextmanager
+def repo_transaction() -> Iterator[Repo]:
+    """One transaction on a new connection: committed when the block ends, rolled back if it
+    raises. ``intake_in_steps`` opens one per step."""
+    with connect() as conn, conn.transaction():
+        yield Repo(conn)

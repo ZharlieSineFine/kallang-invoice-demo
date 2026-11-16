@@ -8,6 +8,8 @@ nothing from Airflow, so they can be called from scripts, tests, or an Azure Fun
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -26,12 +28,14 @@ from invoiceflow.contracts import (
     MasterData,
     MatchType,
     NormalizedInvoice,
+    PriorInvoice,
     ValueSource,
 )
 from invoiceflow.export.checks import check_batch
 from invoiceflow.export.exporter import build_batch, build_rows, export_versions
 from invoiceflow.export.mapping import SapMapping, load_sap_mapping
 from invoiceflow.export.models import ExportDocument
+from invoiceflow.normalize.text import REFERENCE_CLEANUP_REASON, reference_cleanup
 from invoiceflow.pipeline.deps import build_deps
 from invoiceflow.pipeline.stages import PipelineDeps, ProcessResult, process_document
 from invoiceflow.settings import data_dir, load_config, singapore_today
@@ -118,11 +122,16 @@ def processed_dir() -> Path:
 
 
 def list_inbox(inbox: Path | None = None) -> tuple[Path, ...]:
-    """Files waiting for intake, in name order. Directories are ignored."""
+    """Files waiting for intake, oldest first, like mail in the order it arrived.
+
+    Name order would be wrong: "SAV-2026-1001 (2).pdf" sorts before "SAV-2026-1001.pdf",
+    and R05 can only catch the re-send if the original went through first.
+    """
     box = inbox or inbox_dir()
     if not box.is_dir():
         return ()
-    return tuple(sorted(p for p in box.iterdir() if p.is_file()))
+    files = (p for p in box.iterdir() if p.is_file())
+    return tuple(sorted(files, key=lambda p: (p.stat().st_mtime, p.name)))
 
 
 def ensure_master(repo, master: MasterData) -> bool:
@@ -131,6 +140,131 @@ def ensure_master(repo, master: MasterData) -> bool:
         return False
     repo.save_master(master)
     return True
+
+
+@dataclass(frozen=True)
+class Received:
+    """A file saved as a RECEIVED document, ready for the model. ``duplicate``: seen before."""
+
+    path: Path
+    doc_id: UUID
+    file_id: UUID
+    sha256: str
+    prior_invoices: tuple[PriorInvoice, ...] = ()
+    duplicate: bool = False
+
+    def skipped(self) -> IntakeResult:
+        return IntakeResult(
+            doc_id=self.doc_id,
+            file_id=self.file_id,
+            sha256=self.sha256,
+            status=DocStatus.RECEIVED,
+            skipped=True,
+            reason="sha256 already ingested",
+        )
+
+
+def receive_document(
+    path: Path,
+    *,
+    repo,
+    store: LocalBlobStore,
+    pipeline: Pipeline,
+    file_id: UUID | None = None,
+    doc_id: UUID | None = None,
+    source: str = "folder",
+    sender: str | None = None,
+) -> Received:
+    """Save the file and a RECEIVED document. A byte-identical file is a duplicate, unless its
+    document never got past RECEIVED (the process died midway): that one is resumed."""
+    ensure_master(repo, pipeline.master)
+    data = path.read_bytes()
+    sha256, bronze_path = store.put_bronze(data, path.name)
+    file_id = file_id or uuid4()
+    doc_id = doc_id or uuid4()
+    bronze = BronzeFile(
+        file_id=file_id,
+        sha256=sha256,
+        original_name=path.name,
+        source=source,
+        sender=sender,
+        received_at=datetime.now(UTC),
+        size_bytes=len(data),
+        mime_type=guess_mime(path.name),
+        path=bronze_path,
+    )
+    prior_invoices = repo.prior_invoices(None)
+    if repo.register_file(bronze):
+        repo.create_document(
+            DocumentRecord(doc_id=doc_id, file_id=file_id, status=DocStatus.RECEIVED)
+        )
+        repo.log_event(ACTOR, "intake.received", doc_id, {"sha256": sha256, "source": source})
+        return Received(path, doc_id, file_id, sha256, prior_invoices)
+
+    unfinished = repo.unfinished_document(sha256)
+    if unfinished is not None:
+        doc_id, file_id = unfinished
+        repo.log_event(ACTOR, "intake.resumed", doc_id, {"sha256": sha256, "name": path.name})
+        return Received(path, doc_id, file_id, sha256, prior_invoices)
+
+    repo.log_event(ACTOR, "intake.duplicate_file", None, {"sha256": sha256, "name": path.name})
+    return Received(path, doc_id, file_id, sha256, duplicate=True)
+
+
+def _process(received: Received, pipeline: Pipeline, today: date, run_id: str) -> ProcessResult:
+    """Every pipeline stage, model included. Touches no database."""
+    return process_document(
+        received.path,
+        file_id=received.file_id,
+        doc_id=received.doc_id,
+        deps=pipeline.deps,
+        master=pipeline.master,
+        today=today,
+        run_id=run_id,
+        rules_config=pipeline.rules_config,
+        prior_invoices=received.prior_invoices,
+    )
+
+
+def _save_outcome(
+    repo, store: LocalBlobStore, received: Received, result: ProcessResult, run_id: str
+) -> IntakeResult:
+    _persist_silver(repo, store, result, run_id)
+    _log_cleanups(repo, received.doc_id, result)
+    invoice = result.context.invoice
+    repo.set_document_meta(
+        received.doc_id,
+        invoice.document_type if invoice else None,
+        result.context.vendor.vendor_id if result.context.vendor else None,
+    )
+    status = result.decision.status
+    repo.set_status(received.doc_id, status, "; ".join(result.decision.reasons) or None)
+    repo.log_event(
+        ACTOR, "intake.completed", received.doc_id, {"status": status.value, "run_id": run_id}
+    )
+    return IntakeResult(
+        doc_id=received.doc_id,
+        file_id=received.file_id,
+        sha256=received.sha256,
+        status=status,
+        process=result,
+    )
+
+
+def _log_cleanups(repo, doc_id: UUID, result: ProcessResult) -> None:
+    """Audit trail: say when normalization changed how a printed reference reads."""
+    printed = result.extraction.extraction
+    cleanup = reference_cleanup(printed.invoice_number) if printed is not None else None
+    if cleanup is None:
+        return
+    before, after = cleanup
+    payload = {
+        "field": "invoice_number",
+        "printed": before,
+        "cleaned": after,
+        "reason": REFERENCE_CLEANUP_REASON,
+    }
+    repo.log_event(ACTOR, "normalize.cleaned", doc_id, payload)
 
 
 def intake_document(
@@ -146,64 +280,80 @@ def intake_document(
     source: str = "folder",
     sender: str | None = None,
 ) -> IntakeResult:
-    """Run one file through every stage and persist bronze + silver. Returns the outcome."""
-    ensure_master(repo, pipeline.master)
-    data = path.read_bytes()
-    sha256, bronze_path = store.put_bronze(data, path.name)
-    file_id = file_id or uuid4()
-    doc_id = doc_id or uuid4()
-
-    bronze = BronzeFile(
-        file_id=file_id,
-        sha256=sha256,
-        original_name=path.name,
-        source=source,
-        sender=sender,
-        received_at=datetime.now(UTC),
-        size_bytes=len(data),
-        mime_type=guess_mime(path.name),
-        path=bronze_path,
-    )
-    prior_invoices = repo.prior_invoices(None)
-    if not repo.register_file(bronze):
-        duplicate = {"sha256": sha256, "name": path.name}
-        repo.log_event(ACTOR, "intake.duplicate_file", None, duplicate)
-        return IntakeResult(
-            doc_id=doc_id,
-            file_id=file_id,
-            sha256=sha256,
-            status=DocStatus.RECEIVED,
-            skipped=True,
-            reason="sha256 already ingested",
-        )
-
-    repo.create_document(DocumentRecord(doc_id=doc_id, file_id=file_id, status=DocStatus.RECEIVED))
-    repo.log_event(ACTOR, "intake.received", doc_id, {"sha256": sha256, "source": source})
-
-    result = process_document(
+    """Run one file through every stage and persist bronze + silver, all in the caller's one
+    transaction (``make e2e`` rolls it back). Returns the outcome."""
+    received = receive_document(
         path,
+        repo=repo,
+        store=store,
+        pipeline=pipeline,
         file_id=file_id,
         doc_id=doc_id,
-        deps=pipeline.deps,
-        master=pipeline.master,
-        today=today,
-        run_id=run_id,
-        rules_config=pipeline.rules_config,
-        prior_invoices=prior_invoices,
+        source=source,
+        sender=sender,
     )
-    _persist_silver(repo, store, result, run_id)
-    invoice = result.context.invoice
-    repo.set_document_meta(
-        doc_id,
-        invoice.document_type if invoice else None,
-        result.context.vendor.vendor_id if result.context.vendor else None,
-    )
-    status = result.decision.status
-    repo.set_status(doc_id, status, "; ".join(result.decision.reasons) or None)
-    repo.log_event(ACTOR, "intake.completed", doc_id, {"status": status.value, "run_id": run_id})
-    return IntakeResult(
-        doc_id=doc_id, file_id=file_id, sha256=sha256, status=status, process=result
-    )
+    if received.duplicate:
+        return received.skipped()
+    result = _process(received, pipeline, today, run_id)
+    return _save_outcome(repo, store, received, result, run_id)
+
+
+def intake_in_steps(
+    path: Path,
+    *,
+    transaction: Callable[[], AbstractContextManager[Any]],
+    store: LocalBlobStore,
+    pipeline: Pipeline,
+    today: date,
+    run_id: str,
+    file_id: UUID | None = None,
+    doc_id: UUID | None = None,
+    source: str = "folder",
+    sender: str | None = None,
+) -> IntakeResult:
+    """Like ``intake_document``, but committed in steps so the review app can show the document
+    while the model reads it. ``transaction()`` yields a repository and commits on exit (see
+    ``store.repo.repo_transaction``).
+
+    1. Save the file and a RECEIVED document, and commit.
+    2. Run the model, with no transaction open.
+    3. Save the outcome, and commit.
+
+    If step 2 or 3 fails, the RECEIVED document is removed and the error re-raised, so a retry
+    starts clean. If the process is killed instead, the retry finds the RECEIVED document and
+    resumes it (see ``receive_document``).
+    """
+    with transaction() as repo:
+        received = receive_document(
+            path,
+            repo=repo,
+            store=store,
+            pipeline=pipeline,
+            file_id=file_id,
+            doc_id=doc_id,
+            source=source,
+            sender=sender,
+        )
+    if received.duplicate:
+        return received.skipped()
+    try:
+        result = _process(received, pipeline, today, run_id)
+        with transaction() as repo:
+            return _save_outcome(repo, store, received, result, run_id)
+    except Exception as error:
+        with transaction() as repo:
+            repo.discard_document(received.doc_id, received.file_id)
+            repo.log_event(
+                ACTOR,
+                "intake.failed",
+                received.doc_id,
+                {
+                    "sha256": received.sha256,
+                    "name": path.name,
+                    "error": f"{type(error).__name__}: {error}",
+                },
+            )
+        raise
 
 
 def intake_inbox(

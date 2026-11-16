@@ -12,6 +12,7 @@ import streamlit as st
 from app import ui
 from app.backend import Backend, CodingUpdate, subtotal_hint
 from app.boxes import crop_region, draw_boxes, page_boxes
+from app.cleanup import highlight_cleaned, show_cleanups
 from app.formatting import (
     confidence_label,
     format_money,
@@ -154,23 +155,22 @@ def _render_fields(bundle: DocumentBundle) -> None:
     if not bundle.fields:
         st.caption("No current fields.")
         return
-    st.dataframe(
-        pd.DataFrame(
-            [
-                {
-                    "field": field.name,
-                    "printed": field.value_raw or "—",
-                    "normalized": field.value_norm or "—",
-                    "confidence": confidence_label(field.confidence),
-                    "match": field.match_type.value,
-                    "source": field.source.value,
-                }
-                for field in bundle.fields
-            ]
-        ),
-        hide_index=True,
-        width="stretch",
+    # Changes the system made on its own come first, so the reviewer sees them.
+    changed = show_cleanups(bundle.fields)
+    table = pd.DataFrame(
+        [
+            {
+                "field": field.name,
+                "printed": field.value_raw or "—",
+                "normalized": field.value_norm or "—",
+                "confidence": confidence_label(field.confidence),
+                "match": field.match_type.value,
+                "source": field.source.value,
+            }
+            for field in bundle.fields
+        ]
     )
+    st.dataframe(highlight_cleaned(table, changed), hide_index=True, width="stretch")
 
 
 def _decimal(value: Any) -> Decimal | None:
@@ -338,7 +338,8 @@ def render(backend: Backend | None = None) -> None:
     backend = backend or ui.get_backend()
     st.title("Review")
     ui.show_flash()
-    docs = backend.list_documents()
+    # A document the model is still reading has nothing to review yet.
+    docs = [doc for doc in backend.list_documents() if not doc.is_processing]
     if not docs:
         st.info("No documents to review. Run `make db-dev && make fixtures`.")
         return

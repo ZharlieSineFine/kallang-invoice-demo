@@ -243,7 +243,7 @@ def build_truth(plan: DocumentPlan, seeds: Seeds) -> InvoiceTruth:
         document_id=plan.document_id,
         doc_type=plan.doc_type,
         template_id=plan.template,
-        set_name=plan.set_name,
+        set_name="demo",  # one batch; the golden fixtures use "golden"
         printed=printed_extraction(plan, seeds),
         invoice=normalized_invoice(plan, seeds),
         vendor_id=plan.vendor_id,

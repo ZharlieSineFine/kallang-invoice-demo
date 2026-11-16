@@ -121,3 +121,18 @@ The integrator decides, applies the change on `main`, updates the contract tests
   wrote a stub CSV because nothing could read back a `NormalizedInvoice`, and R05 never saw
   earlier invoices because intake passed none.
 - **Impact:** no migration and no `SCHEMA_VERSION` bump. Existing callers keep working.
+
+### CR-008 — `Repository` support for showing a document while the model reads it
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (integrator, 2026-11-13)
+- **What changes:** `Repository` gains `unfinished_document(sha256)` and
+  `discard_document(doc_id, file_id)`. `pipeline.steps` gains `intake_in_steps`, which commits
+  the RECEIVED document before the model runs and the outcome after it.
+- **Why:** intake saved everything in one transaction at the end, so the review app could not
+  show the invoice being read (user request 2026-11-13, "Processing…" card). Committing
+  RECEIVED early needs two things the contract lacked: removing that placeholder when
+  processing fails, so a retry is not skipped as a duplicate of itself, and finding it when the
+  process was killed, so the retry resumes it instead of losing the invoice.
+- **Impact:** no migration and no `SCHEMA_VERSION` bump; `DocStatus.RECEIVED` already exists.
+  `intake_document` keeps its single-transaction behavior for `make e2e` and the fixtures.

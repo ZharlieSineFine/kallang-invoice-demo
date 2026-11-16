@@ -16,9 +16,12 @@ from PIL import Image
 from app import ui
 from app.models import DocumentSummary
 from invoiceflow.contracts import DocStatus, DocType
+from invoiceflow.parse.images import render_pdf_page
 from invoiceflow.settings import data_dir
 
 _THUMBNAIL_WIDTH = 360
+_PDF_THUMBNAIL_DPI = 72  # enough for a 360 px card; page images replace it once read
+_PROCESSING = "Processing…"
 _TONES = {
     DocStatus.AUTO_PASSED: "passed",
     DocStatus.APPROVED: "passed",
@@ -31,6 +34,7 @@ _TONE_COLORS = {
     "passed": ("#e8f5e9", "#1b5e20"),
     "flagged": ("#fff4e0", "#8a5200"),
     "held": ("#fdecec", "#b71c1c"),
+    "processing": ("#e3f2fd", "#0d47a1"),
     "other": ("#f1f3f5", "#5a6068"),
 }
 _TYPE_NAMES = {
@@ -73,7 +77,22 @@ def load_type_labels(path: Path | None = None) -> dict[UUID, str]:
     return {UUID(doc["doc_id"]): _template_label(doc["template"]) for doc in documents}
 
 
+def _processing_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
+    """The model is still reading it: show the uploaded file, not an outcome."""
+    return InboxCard(
+        doc_id=doc.doc_id,
+        image_path=doc.file_path,
+        type_label=labels.get(doc.doc_id) or "Reading the page",
+        vendor=doc.file_name or "Uploaded file",
+        amount=ui.money_metric(None),
+        tone="processing",
+        outcome=_PROCESSING,
+    )
+
+
 def inbox_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
+    if doc.is_processing:
+        return _processing_card(doc, labels)
     if doc.doc_type is not None:
         type_label = _TYPE_NAMES[doc.doc_type]
     else:
@@ -93,7 +112,11 @@ def inbox_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
 @st.cache_data(show_spinner=False)
 def _thumbnail_bytes(path: str, modified: float) -> bytes:
     del modified  # part of the cache key only
-    with Image.open(path) as image:
+    with Path(path).open("rb") as handle:
+        is_pdf = handle.read(5) == b"%PDF-"
+    # An upload still being read has no page image yet; its stored file has no extension.
+    image = render_pdf_page(Path(path), dpi=_PDF_THUMBNAIL_DPI) if is_pdf else Image.open(path)
+    with image:
         small = image.convert("RGB")
         small.thumbnail((_THUMBNAIL_WIDTH, _THUMBNAIL_WIDTH * 2))
         buffer = BytesIO()
@@ -138,10 +161,15 @@ def render_grid(docs: Sequence[DocumentSummary], *, columns: int = 5) -> None:
             if image is not None:
                 st.image(image, width="stretch")
             st.markdown(_card_html(card), unsafe_allow_html=True)
-            st.button(
+            if card.tone == "processing":
+                continue  # nothing to open until it has an outcome
+            # The Queue grid runs in an auto-refreshing fragment; a click there reruns only
+            # the fragment, so rerun the whole app to switch pages.
+            if st.button(
                 "Open",
                 key=f"inbox_open_{card.doc_id}",
                 on_click=_open_document,
                 args=(card.doc_id,),
                 width="stretch",
-            )
+            ):
+                st.rerun()

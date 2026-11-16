@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import re
-
 from invoiceflow.contracts import CheckContext, DocType, Finding, Scope, Severity
+from invoiceflow.normalize.text import invoice_number_key
 from invoiceflow.rules.base import BaseRule
 
 # Types the router must send to NOT_INVOICE (mirrors the routing table in the build plan).
@@ -66,7 +65,7 @@ class R10(BaseRule):
                 prior
                 for prior in ctx.prior_invoices
                 if prior.vendor_id == vendor_id
-                and _reference_key(prior.invoice_number) == _reference_key(quoted)
+                and invoice_number_key(prior.invoice_number) == invoice_number_key(quoted)
             ),
             None,
         )
@@ -90,8 +89,3 @@ class R10(BaseRule):
                 "original_invoice_ref": original.invoice_number or quoted,
             },
         )
-
-
-def _reference_key(value: str | None) -> str:
-    """Invoice numbers compared on letters and digits only: SAV-2026-1001 == SAV20261001."""
-    return re.sub(r"[^0-9A-Z]", "", (value or "").upper())

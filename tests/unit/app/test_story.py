@@ -333,3 +333,45 @@ def test_accuracy_values_are_percentages(fake_backend, evaluation):
     at = _run(story, fake_backend)
     _advance(at, 7)
     assert [metric.value for metric in at.metric if metric.label == "Accuracy"] == ["1.0%"]
+
+
+# ---- every step follows the invoice picked in the dropdown --------------------------------
+
+
+def _pick(at, doc_id):
+    at.selectbox(key="story_document").set_value(doc_id).run(timeout=30)
+    assert not at.exception, [str(exc) for exc in at.exception]
+    return at
+
+
+@pytest.mark.parametrize("step", [1, 2, 3, 4, 5])
+def test_each_invoice_step_keeps_the_picked_invoice(fake_backend, clean_bundle, step):
+    """Pick the clean invoice on Read, walk forward: no step may switch to another one."""
+    at = _run(story, fake_backend)
+    _advance(at, 1)
+    clean_id = clean_bundle.document.doc_id
+    _pick(at, clean_id)
+    _advance(at, step - 1)
+    assert at.session_state["selected_doc_id"] == clean_id
+    assert at.selectbox(key="story_document").value == clean_id
+
+
+def test_the_check_step_shows_the_picked_invoice(fake_backend, clean_bundle):
+    at = _run(story, fake_backend)
+    _advance(at, 1)
+    _pick(at, clean_bundle.document.doc_id)
+    _advance(at, 3)  # Step 5: "What did the system catch?"
+    assert "What did the system catch?" in _text(at)
+    assert any("No open findings" in item.value for item in at.success)
+
+
+def test_an_example_button_jumps_only_when_clicked(fake_backend, clean_bundle, mismatch_bundle):
+    at = _run(story, fake_backend)
+    _advance(at, 1)
+    _pick(at, clean_bundle.document.doc_id)
+    _advance(at, 3)
+    at.button(key="story_example_R02").click().run(timeout=30)
+    assert at.session_state["selected_doc_id"] == mismatch_bundle.document.doc_id
+    assert at.selectbox(key="story_document").value == mismatch_bundle.document.doc_id
+    _advance(at, 1)  # and the next step keeps that invoice
+    assert at.selectbox(key="story_document").value == mismatch_bundle.document.doc_id

@@ -137,6 +137,14 @@ class Repository(Protocol):
         """True if new; False if a file with the same sha256 already exists."""
         ...
 
+    def unfinished_document(self, sha256: str) -> tuple[UUID, UUID] | None:
+        """``(doc_id, file_id)`` of this file's RECEIVED document, if intake stopped midway."""
+        ...
+
+    def discard_document(self, doc_id: UUID, file_id: UUID) -> None:
+        """Remove a RECEIVED document and its file row; never one with an outcome."""
+        ...
+
     def create_document(self, record: DocumentRecord) -> None: ...
 
     def set_document_meta(

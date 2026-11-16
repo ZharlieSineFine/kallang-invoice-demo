@@ -4,6 +4,7 @@ within the duplicate window."""
 from __future__ import annotations
 
 from invoiceflow.contracts import CheckContext, Finding, Scope, Severity
+from invoiceflow.normalize.text import invoice_number_key
 from invoiceflow.rules.base import NOT_INVOICE_TYPES, BaseRule, fmt2, money_sgd
 
 
@@ -36,12 +37,14 @@ class R05(BaseRule):
                 )
                 break
 
-        # Same vendor + same invoice number.
+        # Same vendor + same invoice number, compared on letters and digits only, so an OCR
+        # spacing slip ("GSH- 2026-9004") cannot hide a duplicate.
         if ctx.vendor is not None and invoice.invoice_number:
+            number = invoice_number_key(invoice.invoice_number)
             for prior in ctx.prior_invoices:
                 if (
                     prior.vendor_id == ctx.vendor.vendor_id
-                    and prior.invoice_number == invoice.invoice_number
+                    and invoice_number_key(prior.invoice_number) == number
                 ):
                     findings.append(
                         self.finding(

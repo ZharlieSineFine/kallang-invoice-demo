@@ -235,3 +235,8 @@ def test_golden_truth_normalizes_exactly():
 def test_normalized_invoice_is_the_contract_model():
     result = to_normalized(_extraction(), VENDOR)
     assert isinstance(result.invoice, NormalizedInvoice)
+
+
+def test_normalizer_cleans_spaces_around_hyphens_in_the_invoice_number():
+    result = Normalizer().to_normalized(_extraction(invoice_number="GSH- 2026-9004"), VENDOR)
+    assert result.invoice.invoice_number == "GSH-2026-9004"

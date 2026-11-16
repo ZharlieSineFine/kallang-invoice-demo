@@ -70,19 +70,24 @@ def document_picker(docs, *, key: str, label: str = "Document") -> UUID | None:
     by_id = {doc.doc_id: doc for doc in docs}
     ids = list(by_id)
     wanted = st.session_state.get("selected_doc_id")
-    # The Queue page (or another page) can point us at a document after this widget was
-    # first rendered; a keyed selectbox keeps its old value, so move it before the widget.
-    if wanted in ids and st.session_state.get(key) not in (None, wanted):
-        st.session_state[key] = wanted
-    index = ids.index(wanted) if wanted in ids else 0
+    shown = f"{key}__shown"  # what this picker last showed
+    current = st.session_state.get(key)
+    if wanted in ids and wanted != st.session_state.get(shown):
+        # Another page or button chose a document since this picker last ran (the Queue's
+        # Open, a step button): follow it. Without this check the user's own pick, which
+        # arrives in st.session_state[key], would be overwritten by the previous choice.
+        current = wanted
+    elif current not in ids:
+        current = wanted if wanted in ids else ids[0]
+    st.session_state[key] = current  # set before the widget exists, so no index is passed
     chosen = st.selectbox(
         label,
         ids,
-        index=index,
         format_func=lambda doc_id: by_id[doc_id].label,
         key=key,
     )
     st.session_state["selected_doc_id"] = chosen
+    st.session_state[shown] = chosen
     return chosen
 
 

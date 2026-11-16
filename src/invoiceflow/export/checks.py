@@ -12,6 +12,7 @@ from uuid import UUID
 from invoiceflow.contracts import CodingMaster, money, money_sum
 from invoiceflow.export.mapping import SapMapping, empty_required
 from invoiceflow.export.models import ExportDocument
+from invoiceflow.normalize.text import invoice_number_key
 
 _ZERO = Decimal("0")
 
@@ -58,7 +59,8 @@ def _unique_vendor_reference(documents: tuple[ExportDocument, ...]) -> list[str]
     for doc in documents:
         vendor_no = doc.vendor.sap_vendor_no
         reference = doc.invoice.invoice_number or ""
-        key = (vendor_no, reference)
+        # Letters and digits only, so "GSH-2026-9004" and "GSH- 2026-9004" are one reference.
+        key = (vendor_no, invoice_number_key(reference))
         if key in seen:
             problems.append(
                 f"vendor {vendor_no} and reference {reference!r} appears twice "

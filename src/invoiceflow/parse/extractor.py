@@ -28,7 +28,12 @@ from invoiceflow.parse.images import (
     render_page,
     save_page_image,
 )
-from invoiceflow.parse.pdf import extract_pdf_words, hidden_words, visible_char_count
+from invoiceflow.parse.pdf import (
+    check_text_layer,
+    extract_pdf_words,
+    hidden_words,
+    visible_char_count,
+)
 from invoiceflow.parse.reading import page_texts
 from invoiceflow.settings import data_dir
 
@@ -96,9 +101,8 @@ class DocumentParser:
     ) -> PageText:
         page_no = index + 1
         words = extract_pdf_words(page, self.config)
-        visible = visible_char_count(words)
-        rotation = int(getattr(page, "rotation", 0) or 0)
-        if visible >= self.config.scanned_page_min_chars and rotation == 0:
+        # The same check the review app shows on the Demo page's Read step.
+        if check_text_layer(words, page, self.config).uses_text_layer:
             review = render_page(document, index, dpi=self.config.review_dpi)
             image_path = self._write_image(review, doc_id, page_no)
             return PageText(

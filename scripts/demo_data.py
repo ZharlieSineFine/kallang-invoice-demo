@@ -1,9 +1,14 @@
 #!/usr/bin/env python
-"""`make demo-data`: load the "yesterday" batch through the real pipeline and the live model.
+"""`make demo-data`: a rehearsal of the recorded demo, run without Airflow.
+
+Every generated document goes through the real pipeline and the live model in the demo's
+order: the 50 in ``invoices/`` (the recorded full run), then the 4 in ``live-demo/``, each
+oldest arrival first, exactly as the inbox will take them. Each result is scored against the
+answer key, and every model answer is recorded, so ``LLM_MODE=replay`` can repeat the run
+without the model.
 
 Replaces the master data and every document in the target database, so it refuses to run on a
-database that has documents unless ``--reset`` is given. Also runs the live set without saving
-it, which records the replay cache for the documents uploaded during the demo.
+database that has documents unless ``--reset`` is given.
 """
 
 from __future__ import annotations
@@ -25,14 +30,13 @@ from invoiceflow.pipeline.demo_data import (
     render_scoreboard,
     require_empty_or_reset,
 )
-from invoiceflow.pipeline.stages import process_document
-from invoiceflow.pipeline.steps import build_pipeline, intake_document
+from invoiceflow.pipeline.steps import build_pipeline, intake_in_steps
 from invoiceflow.settings import data_dir, load_config, repo_root, singapore_today
 from invoiceflow.storage import LocalBlobStore
 from invoiceflow.store.connection import connect, database_url
 from invoiceflow.store.fixtures import truncate
 from invoiceflow.store.migrate import apply_migrations
-from invoiceflow.store.repo import Repo
+from invoiceflow.store.repo import Repo, repo_transaction
 
 STACK_PORT_ENV = "AP_STACK_DB_PORT"
 DEFAULT_STACK_PORT = "5434"
@@ -63,51 +67,38 @@ def _load_batch(docs, pipeline, store, today):
     for doc in docs:
         started = time.monotonic()
         try:
-            with connect() as conn, conn.transaction():
-                result = intake_document(
-                    doc.path,
-                    repo=Repo(conn),
-                    store=store,
-                    pipeline=pipeline,
-                    today=today,
-                    run_id="demo-data",
-                    file_id=doc.file_id,
-                    doc_id=doc.doc_id,
-                    source="demo-data",
-                )
+            # Committed in steps, like the DAG, so the Queue shows the invoice being read.
+            result = intake_in_steps(
+                doc.path,
+                transaction=repo_transaction,
+                store=store,
+                pipeline=pipeline,
+                today=today,
+                run_id="demo-data",
+                file_id=doc.file_id,
+                doc_id=doc.doc_id,
+                source="demo-data",
+            )
         except (psycopg.Error, ValueError) as error:
-            # The document's transaction rolled back; report it and load the rest.
-            scores.append(Score(doc.name, "FAILED", doc.expected, ()))
-            print(f"{doc.name:<14} FAILED        {type(error).__name__}: {error}", flush=True)
+            # Nothing of the document is left behind; report it and load the rest.
+            scores.append(Score(doc.name, "FAILED", doc.expected, (), folder=doc.folder))
+            print(f"{doc.name:<22} FAILED        {type(error).__name__}: {error}", flush=True)
             continue
         if result.skipped:
-            scores.append(Score(doc.name, "SKIPPED", doc.expected, (), skipped=True))
+            scores.append(
+                Score(doc.name, "SKIPPED", doc.expected, (), skipped=True, folder=doc.folder)
+            )
         else:
             sample = eval_sample(doc.name, load_truth(doc), result.process)
             samples.append(sample)
             actual = sample.predicted_rules
-            scores.append(Score(doc.name, result.status.value, doc.expected, actual))
+            scores.append(
+                Score(doc.name, result.status.value, doc.expected, actual, folder=doc.folder)
+            )
         print(
-            f"{doc.name:<14} {scores[-1].status:<13} {time.monotonic() - started:5.0f}s", flush=True
+            f"{doc.name:<22} {scores[-1].status:<13} {time.monotonic() - started:5.0f}s", flush=True
         )
     return tuple(scores), tuple(samples)
-
-
-def _record_live_set(docs, pipeline, today) -> None:
-    """Rehearse the demo's uploads: records the replay cache and saves nothing."""
-    for doc in docs:
-        result = process_document(
-            doc.path,
-            file_id=doc.file_id,
-            doc_id=doc.doc_id,
-            deps=pipeline.deps,
-            master=pipeline.master,
-            today=today,
-            run_id="demo-data-live",
-            rules_config=pipeline.rules_config,
-        )
-        rules = sorted({finding.rule_id for finding in result.findings})
-        print(f"{doc.name:<14} {result.decision.status.value:<13} {rules} (not saved)", flush=True)
 
 
 def main() -> int:
@@ -120,17 +111,15 @@ def main() -> int:
     if args.stack:
         _use_full_stack_database()
     root = data_dir() / "generated"
-    docs = load_manifest(root, "pre")
-    live = load_manifest(root, "live")
+    docs = load_manifest(root)
     pipeline = build_pipeline()
     store = LocalBlobStore(data_dir())
     today = singapore_today()
 
     _prepare_database(pipeline, reset=args.reset)
     scores, samples = _load_batch(docs, pipeline, store, today)
-    _record_live_set(live, pipeline, today)
 
-    report = evaluate(samples, set_name="pre")
+    report = evaluate(samples, set_name="demo")
     json_path, _ = write_report(report, repo_root() / "reports", for_dashboard=True)
     print(render_scoreboard(scores))
     print(f"accuracy {report.accuracy:.2f}% on {report.samples} documents; wrote {json_path}")

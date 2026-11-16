@@ -5,33 +5,52 @@ Usage::
     uv run python generator/build.py --seed 42
     uv run python -m generator.build --seed 42 --out data/generated
 
-The default output is ``data/generated/`` (git-ignored): one directory per document with the
-file and ``truth.json``, plus ``manifest.json`` and ``master.json``. WS6 should wire
-``make data SEED=42`` to the command above.
+The default output is ``data/generated/`` (git-ignored):
+
+- ``invoices/``: the 50 documents for the recorded full run, named by invoice number. When a
+  number repeats (the planted re-send and duplicate file), the later arrival gets `` (2)``.
+  Each file's time is its arrival time, so an inbox that takes the oldest file first
+  processes them in order.
+- ``live-demo/``: the 4 clean invoices uploaded live after the full run (two digital PDFs, two
+  scans), named the same way and timed after the 50.
+- ``answer-key/``: what each of the 54 documents prints and which checks should fire, same
+  names, plus the page image each scan was made from.
+- ``manifest.json`` (in arrival order) and ``master.json``.
+
+``make data`` runs the command above.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import shutil
 import sys
 import time
-from datetime import UTC, datetime
+from collections import Counter
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
 if __package__ in {None, ""}:  # direct execution: python generator/build.py
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generator.plans import DocumentPlan, build_plans
+from generator.plans import DocumentPlan, arrival_order, build_plans, is_live_demo
 from generator.render import file_sha256, write_pdf, write_scan
 from generator.seeds import Seeds, load_seeds
 from generator.truth import build_master, build_truth, totals_for
 from invoiceflow.settings import repo_root
 
 BUILD_TIME = datetime(2026, 11, 4, tzinfo=UTC)
-SCHEMA_VERSION = "ws1-v1"
+SCHEMA_VERSION = "ws1-v2"
+INVOICE_DIR = "invoices"  # the 50 for the recorded full run
+LIVE_DEMO_DIR = "live-demo"  # the 4 uploaded live afterward
+ANSWER_KEY_DIR = "answer-key"
+# Arrival times are one minute apart, starting here; only their order matters.
+FIRST_ARRIVAL = datetime(2026, 11, 6, 9, 0, tzinfo=UTC)
+_SAFE_NAME = re.compile(r"^[A-Za-z0-9-]+$")
 
 
 def _uuid(seed: int, document_id: str, kind: str) -> str:
@@ -46,18 +65,38 @@ def _relative(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+def file_names(plans) -> dict[str, str]:
+    """Each document's file name: its invoice number, with " (2)" on a later repeat."""
+    names: dict[str, str] = {}
+    seen: dict[str, int] = {}
+    for plan in arrival_order(plans):
+        if not _SAFE_NAME.fullmatch(plan.invoice_number):
+            raise ValueError(f"{plan.document_id}: {plan.invoice_number!r} is not a safe file name")
+        seen[plan.invoice_number] = seen.get(plan.invoice_number, 0) + 1
+        count = seen[plan.invoice_number]
+        names[plan.document_id] = (
+            plan.invoice_number if count == 1 else f"{plan.invoice_number} ({count})"
+        )
+    return names
+
+
+def invoice_folder(plan: DocumentPlan) -> str:
+    return LIVE_DEMO_DIR if is_live_demo(plan) else INVOICE_DIR
+
+
 def build_document(
     plan: DocumentPlan,
     *,
     seed: int,
     index: int,
+    name: str,
     out: Path,
     seeds: Seeds,
     built: dict[str, Path],
 ) -> dict[str, object]:
-    doc_dir = out / "docs" / plan.document_id
-    doc_dir.mkdir(parents=True, exist_ok=True)
-    truth_path = doc_dir / "truth.json"
+    invoice_dir = out / invoice_folder(plan)
+    key_dir = out / ANSWER_KEY_DIR
+    truth_path = key_dir / f"{name}.json"
     truth = build_truth(plan, seeds)
     _dump(truth_path, truth.model_dump(mode="json"))
 
@@ -66,15 +105,15 @@ def build_document(
         source = built.get(plan.copy_of)
         if source is None:
             raise RuntimeError(f"{plan.document_id} copies {plan.copy_of}, which is not built yet")
-        pdf_path = doc_dir / f"{plan.document_id}.pdf"
+        pdf_path = invoice_dir / f"{name}.pdf"
         shutil.copyfile(source, pdf_path)
         files["pdf"] = _relative(pdf_path, out)
         built[plan.document_id] = pdf_path
         sha = file_sha256(pdf_path)
         text_layer = True
     elif plan.template == "C1":
-        jpg_path = doc_dir / f"{plan.document_id}.jpg"
-        pdf_path = doc_dir / f"{plan.document_id}.pdf"
+        jpg_path = key_dir / f"{name}.jpg"
+        pdf_path = invoice_dir / f"{name}.pdf"
         write_scan(
             plan,
             seeds,
@@ -88,7 +127,7 @@ def build_document(
         sha = file_sha256(pdf_path)
         text_layer = False
     else:
-        pdf_path = doc_dir / f"{plan.document_id}.pdf"
+        pdf_path = invoice_dir / f"{name}.pdf"
         write_pdf(plan, seeds, pdf_path)
         files["pdf"] = _relative(pdf_path, out)
         built[plan.document_id] = pdf_path
@@ -98,7 +137,6 @@ def build_document(
     totals = totals_for(plan)
     return {
         "id": plan.document_id,
-        "set": plan.set_name,
         "doc_type": plan.doc_type.value,
         "template": plan.template,
         "anomalies": list(plan.anomalies),
@@ -117,42 +155,49 @@ def build_document(
     }
 
 
-def build(
-    *,
-    seed: int = 42,
-    out: Path | None = None,
-    plan_filter: str | None = None,
-) -> dict[str, object]:
-    """Build the set and return the manifest. Existing output is replaced."""
+def _stamp_arrivals(rows: list[dict[str, object]], out: Path) -> list[dict[str, object]]:
+    """Give each file its arrival time. The rows come in arrival order."""
+    stamped = []
+    for arrival, row in enumerate(rows, start=1):
+        received = FIRST_ARRIVAL + timedelta(minutes=arrival - 1)
+        os.utime(out / str(row["file"]), (received.timestamp(), received.timestamp()))
+        stamped.append(
+            {**row, "arrival": arrival, "received_at": received.isoformat().replace("+00:00", "Z")}
+        )
+    return stamped
+
+
+def build(*, seed: int = 42, out: Path | None = None) -> dict[str, object]:
+    """Build every document and return the manifest. Existing output is replaced."""
     root = repo_root()
     target = (out or (root / "data" / "generated")).resolve()
     if target.exists():
         shutil.rmtree(target)
-    target.mkdir(parents=True)
+    for folder in (INVOICE_DIR, LIVE_DEMO_DIR, ANSWER_KEY_DIR):
+        (target / folder).mkdir(parents=True)
 
     seeds = load_seeds(root)
     master = build_master(seeds)
     _dump(target / "master.json", master.model_dump(mode="json"))
 
     all_plans = build_plans(seed)
-    selected = {
-        plan.document_id
-        for plan in all_plans
-        if plan_filter is None or plan.set_name == plan_filter
-    }
-
+    names = file_names(all_plans)
     built: dict[str, Path] = {}
-    rows = []
+    by_id: dict[str, dict[str, object]] = {}
+    # Plan order, so a copy is built after its original; the index keeps each scan's noise.
     for index, plan in enumerate(all_plans):
-        if plan.document_id not in selected:
-            continue
-        rows.append(
-            build_document(plan, seed=seed, index=index, out=target, seeds=seeds, built=built)
+        by_id[plan.document_id] = build_document(
+            plan,
+            seed=seed,
+            index=index,
+            name=names[plan.document_id],
+            out=target,
+            seeds=seeds,
+            built=built,
         )
+    rows = _stamp_arrivals([by_id[plan.document_id] for plan in arrival_order(all_plans)], target)
 
-    counts: dict[str, int] = {}
-    for row in rows:
-        counts[str(row["set"])] = counts.get(str(row["set"]), 0) + 1
+    digital = sum(bool(row["text_layer"]) for row in rows)
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "seed": seed,
@@ -164,7 +209,8 @@ def build(
             "IBMPlexMono-Regular.ttf",
             "IBMPlexMono-Bold.ttf",
         ],
-        "counts": counts,
+        "counts": {"digital": digital, "scanned": len(rows) - digital},
+        "folders": dict(Counter(Path(str(row["file"])).parent.name for row in rows)),
         "documents": rows,
     }
     _dump(target / "manifest.json", manifest)
@@ -180,19 +226,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="output directory (default data/generated)",
     )
-    parser.add_argument(
-        "--only",
-        choices=("pre", "live", "benchmark"),
-        default=None,
-        help="build only one set (debugging; the demo needs all three)",
-    )
     args = parser.parse_args(argv)
 
     started = time.perf_counter()
-    manifest = build(seed=args.seed, out=args.out, plan_filter=args.only)
+    manifest = build(seed=args.seed, out=args.out)
     elapsed = time.perf_counter() - started
     counts = ", ".join(f"{key}={value}" for key, value in sorted(manifest["counts"].items()))
+    folders = ", ".join(f"{count} in {name}/" for name, count in manifest["folders"].items())
     print(f"WS1: wrote {len(manifest['documents'])} documents ({counts}) in {elapsed:.1f}s")
+    print(f"     {folders}")
     print(f"manifest: {Path(args.out or repo_root() / 'data' / 'generated') / 'manifest.json'}")
     return 0
 

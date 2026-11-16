@@ -78,6 +78,7 @@ SELECT d.doc_id,
        tot.value_norm AS total,
        b.received_at,
        b.original_name AS file_name,
+       b.path AS file_path,
        ttl.value_raw AS printed_title,
        pg.image_path AS first_page_image,
        ext.mode AS extraction_mode,
@@ -170,6 +171,7 @@ def _summary(row: dict[str, Any]) -> DocumentSummary:
         extraction_valid=row["extraction_valid"],
         printed_title=row["printed_title"],
         file_name=row["file_name"],
+        file_path=row["file_path"],
     )
 
 

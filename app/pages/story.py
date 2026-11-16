@@ -18,11 +18,13 @@ import streamlit as st
 from app import ui
 from app.backend import Backend
 from app.boxes import BoxSpec, draw_boxes, page_boxes, word_boxes
+from app.cleanup import highlight_cleaned, show_cleanups
 from app.compliance import card_for, card_html
 from app.csv_trace import render_csv_trace
 from app.flow import render_flow_strip
 from app.inbox import render_grid
 from app.models import DocumentBundle, DocumentSummary
+from app.read_rule import RULE_SOURCE, page_check, read_rule_html, read_summary, stored_note
 from invoiceflow.contracts import DocStatus
 
 _STEP_KEY = "story_step"
@@ -141,15 +143,31 @@ def _read(ctx: Context) -> str:
         return "The words for this page are not stored."
     hidden = sum(word.hidden for word in words.words)
     conf = words.ocr_mean_conf
+    check = page_check(bundle.document.file_path, page.page_no) if page is not None else None
     with right:
+        if check is not None:
+            # The parser's own check, rerun on the stored upload: text layer or OCR, and why.
+            st.markdown(read_rule_html(check), unsafe_allow_html=True)
+            note = stored_note(check, words)
+            if note:
+                st.caption(note)
+        else:
+            st.metric("How", "PDF text layer" if conf is None else "Text recognition")
         st.metric("Words found", len(words.words))
-        st.metric("How", "PDF text layer" if conf is None else "Text recognition")
         if conf is not None:
             st.metric("Mean recognition confidence", f"{conf:.0f}%")
         st.metric("Invisible to a person", hidden)
         if ui.technical_view():
+            if check is not None:
+                st.code(
+                    f"visible_chars = {check.visible_chars}; rotation = {check.rotation}\n"
+                    f"scanned_page_min_chars = {check.min_chars}\n{RULE_SOURCE}",
+                    language="python",
+                )
             st.code(_json([word.model_dump() for word in words.words[:15]]), language="json")
     extra = f" {hidden} are invisible to a person and shown in red." if hidden else ""
+    if check is not None:
+        return f"{read_summary(check, len(words.words))}{extra}"
     return f"The system found {len(words.words)} words on this page.{extra}"
 
 
@@ -217,44 +235,50 @@ def _understand(ctx: Context) -> str:
         _show_image(page, boxes)
         st.caption("Green: found on the page. Amber: fuzzy match or low confidence. Red: flagged.")
     with right:
+        # Changes the system made on its own come first, so the reviewer sees them.
+        changed = show_cleanups(bundle.fields)
+        table = pd.DataFrame(
+            [
+                {
+                    "field": field.name,
+                    "printed": field.value_raw,
+                    "standardized": field.value_norm,
+                    "match": field.match_type.value,
+                }
+                for field in bundle.fields
+            ]
+        )
         st.dataframe(
-            pd.DataFrame(
-                [
-                    {
-                        "field": field.name,
-                        "printed": field.value_raw,
-                        "standardized": field.value_norm,
-                        "match": field.match_type.value,
-                    }
-                    for field in bundle.fields
-                ]
-            ),
-            hide_index=True,
-            width="stretch",
-            height=560,
+            highlight_cleaned(table, changed), hide_index=True, width="stretch", height=560
         )
     found = sum(field.bbox is not None for field in bundle.fields)
     return f"{found} of {len(bundle.fields)} values were located on the page."
 
 
-def _scenario_doc(ctx: Context) -> DocumentSummary | None:
-    loaded = [(rule, label) for rule, label in _SCENARIOS if _doc_with_rule(ctx.docs, rule)]
-    missing = [rule for rule, _ in _SCENARIOS if not _doc_with_rule(ctx.docs, rule)]
+def _jump_to(doc_id: UUID) -> None:
+    """Runs before widgets are built, so the Invoice dropdown follows on this rerun."""
+    st.session_state["selected_doc_id"] = doc_id
+
+
+def _example_buttons(ctx: Context) -> None:
+    """Optional shortcuts to an invoice where a check fired. They change the invoice only
+    when clicked; otherwise the step shows the invoice picked in the dropdown."""
+    loaded = [(rule, label, _doc_with_rule(ctx.docs, rule)) for rule, label in _SCENARIOS]
+    available = [(rule, label, doc) for rule, label, doc in loaded if doc is not None]
+    missing = [rule for rule, _, doc in loaded if doc is None]
     if missing:
         st.caption(f"Not in the loaded data: {', '.join(missing)}")
-    if not loaded:
-        return None
-    labels = {rule: f"{rule}: {label}" for rule, label in loaded}
-    rule = st.radio(
-        "Scenario",
-        list(labels),
-        format_func=labels.get,
-        horizontal=True,
-        key="story_scenario",
-    )
-    doc = _doc_with_rule(ctx.docs, rule)
-    st.session_state["selected_doc_id"] = doc.doc_id
-    return doc
+    if not available:
+        return
+    st.caption("Jump to an example:")
+    for column, (rule, label, doc) in zip(st.columns(len(available)), available, strict=True):
+        column.button(
+            f"{rule}: {label}",
+            key=f"story_example_{rule}",
+            on_click=_jump_to,
+            args=(doc.doc_id,),
+            width="stretch",
+        )
 
 
 def _check_cards(bundle: DocumentBundle) -> None:
@@ -271,8 +295,8 @@ def _check_cards(bundle: DocumentBundle) -> None:
 
 
 def _check(ctx: Context) -> str:
-    doc = _scenario_doc(ctx)
-    bundle = ctx.backend.document(doc.doc_id) if doc is not None else _current_bundle(ctx)
+    _example_buttons(ctx)
+    bundle = _current_bundle(ctx)
     if bundle is None:
         return "That document is no longer in the database."
     left, right = st.columns([3, 2])
@@ -476,5 +500,9 @@ def render(backend: Backend | None = None) -> None:
     render_flow_strip(docs, step.stage)
     _navigation(index)
     heading = st.empty()
-    outcome = step.render(Context(backend=backend, docs=docs))
+    finished = tuple(doc for doc in docs if not doc.is_processing)
+    if not finished:
+        st.info("The first document is still being read. Its outcome appears here when done.")
+        return
+    outcome = step.render(Context(backend=backend, docs=finished))
     heading.markdown(_stage_card(step.question, outcome), unsafe_allow_html=True)

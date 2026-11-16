@@ -9,18 +9,56 @@ import pytest
 from generator.plans import (
     ANOMALY_RULES,
     AV_1080,
+    arrival_order,
     build_plans,
+    is_live_demo,
     plan_by_id,
 )
 from invoiceflow.contracts import DocType
 
 
-def test_counts_match_the_build_plan(plans):
-    counts = {}
+def test_fifty_for_the_full_run_and_four_for_the_live_demo(plans):
+    assert len(plans) == 54
+    assert sum(is_live_demo(plan) for plan in plans) == 4
+    assert not hasattr(plans[0], "set_name")
+
+
+def test_live_demo_invoices_show_both_ways_of_reading_a_page(plans):
+    live = [plan for plan in plans if is_live_demo(plan)]
+    digital = [plan for plan in live if plan.template != "C1"]
+    scanned = [plan for plan in live if plan.template == "C1"]
+    assert len(digital) == 2 and len(scanned) == 2  # pdfplumber text layer vs Tesseract OCR
+    assert all(not plan.anomalies and not plan.expected_rules for plan in live)
+
+
+def test_live_demo_invoices_arrive_after_the_full_run(plans):
+    # Uploaded after the recorded run, so they must never look older than it.
+    assert [is_live_demo(plan) for plan in arrival_order(plans)] == [False] * 50 + [True] * 4
+
+
+def test_only_planted_repeats_share_an_invoice_number(plans):
+    by_number: dict[str, list] = {}
     for plan in plans:
-        counts[plan.set_name] = counts.get(plan.set_name, 0) + 1
-    assert counts == {"pre": 36, "live": 4, "benchmark": 10}
-    assert len(plans) == 50
+        by_number.setdefault(plan.invoice_number, []).append(plan)
+    repeats = {number: group for number, group in by_number.items() if len(group) > 1}
+    assert all(
+        any({"resend", "duplicate_file"} & set(plan.anomalies) for plan in group)
+        for group in repeats.values()
+    )
+
+
+def test_arrival_order_puts_originals_before_their_repeats_and_credit_notes(plans):
+    order = {plan.document_id: index for index, plan in enumerate(arrival_order(plans))}
+    by_number = {}
+    for plan in arrival_order(plans):
+        by_number.setdefault(plan.invoice_number, plan)
+    for plan in plans:
+        first = by_number[plan.invoice_number]
+        if first.document_id != plan.document_id:
+            assert not set(first.anomalies) & {"resend", "duplicate_file"}
+            assert order[first.document_id] < order[plan.document_id]
+        if plan.original_invoice_ref:
+            assert order[by_number[plan.original_invoice_ref].document_id] < order[plan.document_id]
 
 
 def test_document_ids_are_unique(plans):
@@ -47,24 +85,12 @@ def test_each_document_has_at_most_one_anomaly(plans):
     assert all(len(plan.anomalies) <= 1 for plan in plans)
 
 
-def test_live_set_has_the_slide_three_invoice(plans):
-    live = {plan.document_id: plan for plan in plans if plan.set_name == "live"}
-    assert set(live) == {"live-01", "live-02", "live-03", "live-04"}
-    assert live["live-01"].anomalies == ()
-    edited = live["live-02"]
+def test_the_slide_three_invoice_is_in_the_batch(plans):
+    edited = {plan.document_id: plan for plan in plans}["live-02"]
     assert edited.anomalies == ("total_edited",)
     assert edited.total_override == Decimal("1090.00")
     assert edited.lines == AV_1080
     assert sum(line.amount for line in edited.lines) == Decimal("1080.00")
-
-
-def test_live_set_covers_clean_total_bank_and_hidden(plans):
-    live = [plan for plan in plans if plan.set_name == "live"]
-    assert {anomaly for plan in live for anomaly in plan.anomalies} == {
-        "total_edited",
-        "bank_account_changed",
-        "hidden_instructions",
-    }
 
 
 def test_a_type_a_invoice_uses_no_po_and_the_vendor_default(plans):
@@ -81,11 +107,7 @@ def test_a_type_a_invoice_uses_no_po_and_the_vendor_default(plans):
 
 
 def test_type_b_invoices_name_their_venue(plans):
-    b_invoices = [
-        plan
-        for plan in plans
-        if plan.template.startswith("B") and plan.set_name in {"pre", "benchmark"}
-    ]
+    b_invoices = [plan for plan in plans if plan.template.startswith("B")]
     assert b_invoices
     assert all(plan.venue for plan in b_invoices)
 
@@ -103,7 +125,6 @@ def test_duplicate_file_pair_and_resend_pair(plans):
     duplicate = next(plan for plan in plans if "duplicate_file" in plan.anomalies)
     original = by_id[duplicate.copy_of]
     assert duplicate.invoice_number == original.invoice_number
-    assert duplicate.set_name == original.set_name
 
     resend = next(plan for plan in plans if "resend" in plan.anomalies)
     earlier = by_id["pre-a-01"]
@@ -149,7 +170,7 @@ def test_negative_seed_is_refused():
 
 def test_plan_lookup_matches(plans):
     lookup = plan_by_id(42)
-    assert len(lookup) == 50
+    assert len(lookup) == 54
     assert lookup["live-02"].anomalies == ("total_edited",)
 
 
@@ -167,12 +188,12 @@ def _total(plan):
 
 
 def test_only_planted_duplicates_share_a_vendor_and_total_within_a_week(plans):
-    # R05 holds a vendor's second invoice for the same total within 7 days. Any such pair in
-    # the batch must be a planted duplicate, or the answer key contradicts the check.
+    # R05 holds a vendor's second invoice for the same total within 7 days. All 54 go through
+    # one inbox, so any such pair must be a planted duplicate, or the answer key is wrong.
     invoices = [
         p
         for p in plans
-        if p.set_name == "pre" and p.doc_type in {DocType.TAX_INVOICE, DocType.INVOICE}
+        if p.doc_type in {DocType.TAX_INVOICE, DocType.INVOICE, DocType.SIMPLIFIED_TAX_INVOICE}
     ]
     clashes = [
         (a.document_id, b.document_id)

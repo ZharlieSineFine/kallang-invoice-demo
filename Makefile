@@ -21,8 +21,16 @@ else
 GOLDEN_ENV :=
 endif
 
+# cp -p keeps each file's arrival time, which is the order invoice_intake takes them in.
+define drop_folder
+test -d data/generated/$(1) || { echo "no data/generated/$(1): run make data first"; exit 1; }; \
+mkdir -p data/inbox; \
+cp -p data/generated/$(1)/*.pdf data/inbox/; \
+echo "dropped $$(ls data/generated/$(1)/*.pdf | wc -l | tr -d ' ') invoices from $(1)/ into data/inbox"
+endef
+
 .PHONY: help setup doctor up down down-dev logs db-dev fixtures skeleton golden test lint fmt \
-        data warm demo-data drop export eval eval-bench gate bench snapshot restore reset e2e \
+        data warm demo-data drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
         check-dags
 
 help: ## show this help
@@ -31,7 +39,10 @@ help: ## show this help
 	@grep -E '^[a-zA-Z0-9_.-]+:.*## ' $(MAKEFILE_LIST) | sort | \
 	  awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 	@echo
-	@echo "Demo:        make setup && make up && make drop && make export"
+	@echo "Demo:        make setup && make data && make up && make reset"
+	@echo "             full run:  make drop-all && make intake   (wait for all 50)"
+	@echo "             live:      make drop-live && make intake  (about 2 min)"
+	@echo "             then:      make export"
 	@echo "Dev checks:  make test && make skeleton"
 	@echo "Dev DB:      make db-dev && make fixtures"
 
@@ -91,13 +102,23 @@ warm: ## load the model and keep it loaded (WS3)
 	@echo "make warm: WS3 wires Ollama (MODEL=$(MODEL))."
 	@exit 1
 
-demo-data: ## run the yesterday batch through the real pipeline, score it, record the replay cache (RESET=1 wipes existing documents, STACK=1 targets the full stack)
+demo-data: ## rehearse the demo: every generated invoice through the real pipeline, oldest first, scored, replay cache recorded (RESET=1 wipes existing documents, STACK=1 targets the full stack)
 	@$(UV) run python scripts/demo_data.py $(if $(RESET),--reset) $(if $(STACK),--stack)
 
 drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@mkdir -p data/inbox
 	@cp tests/fixtures/golden/$(N)/invoice.pdf data/inbox/$(N).pdf
 	@echo "dropped $(N) into data/inbox/$(N).pdf (invoice_intake picks it up)"
+
+drop-all: ## copy the 50 full-run invoices into data/inbox, keeping their arrival times (needs make data)
+	@$(call drop_folder,invoices)
+
+drop-live: ## copy the 4 live-demo invoices into data/inbox (run after the full run finishes)
+	@$(call drop_folder,live-demo)
+
+intake: ## run invoice_intake now instead of waiting for its 5-minute schedule (needs make up)
+	$(COMPOSE_FULL) exec -T airflow-scheduler airflow dags trigger invoice_intake
+	@echo "triggered invoice_intake"
 
 export: ## trigger the sap_export DAG (needs make up)
 	$(COMPOSE_FULL) exec -T airflow-scheduler airflow dags trigger sap_export

@@ -11,21 +11,39 @@ rehearsal prep. All data is synthetic.
 - All eight Phase 1 workstreams are merged into `main`; the pipeline runs on the **real**
   stages (parse/extract/normalize/locate/rules/coding), not stubs.
 - Branch `feat/visual-demo`: the visual demo from `docs/demo-plan.md` (Demo page, flow strip,
-  technical toggle, inbox grid, compliance cards, CSV trace) is committed. The fixes that
-  make it run on real data were uncommitted as of 2026-11-13 (check `git status`).
-- `make demo-data RESET=1` loads the 36-invoice "yesterday" batch through gemma4:12b (about
-  20 min, ~26 s per invoice) and scores it against the generator's planted checks. Live run
-  2026-11-13: 32 of 36 matched; header accuracy 97.14% on 35 (the byte-identical copy is
-  skipped at intake); check precision 72.7%, recall 100%, coding 85.7%. The 4 that differ
-  are model misreads the checks caught (pre-cn-02, pre-usd-01), an OCR bank-digit misread
-  (pre-c-02, R08 FLAG), and R06 following R04 on the unknown vendor (pre-c-04).
-- The live set (live-01..04) routes as planned: AUTO_PASSED, R02, R08, R09.
-- Replay works with no model: `LLM_MODE=replay make demo-data RESET=1` reproduces the live run
-  in ~16 s; `make e2e` passes the same way.
+  technical toggle, inbox grid, compliance cards, CSV trace) is committed, and the real-data
+  fixes are committed as `c122ff3`. The two-folder dataset and the "Processing…" card were
+  uncommitted as of 2026-11-13 (check `git status`).
+- Dataset: `make data` writes 50 invoices for the recorded full run (`invoices/`) and 4 for
+  the live demo (`live-demo/`: two digital PDFs, two scans), named by invoice number.
+- `make demo-data RESET=1` runs the 50, then the 4, through gemma4:12b (~27 min, ~30 s per
+  invoice) and scores them against the generator's planted checks. Live run 2026-11-13: 47
+  of 54 matched; header accuracy 96.97% on 53 (the byte-identical copy is skipped). All 7
+  differences are misreads a check caught: quantity or price misread (R02 on KSS-2026-8202,
+  MEL-2026-8003, KSS-CN-2026-4002), the USD invoice's lines not read (HAV-2026-6001, R02 and
+  R03), the OCR bank digit (SAV-2026-1001 (2), R08), R01 and R06 on the unknown vendor
+  (OST-2026-3004), and OCR dropping the last letter of live-demo scan MEL-2026-9003's GST
+  number (R03, so it goes to NEEDS_REVIEW; the other 3 live-demo invoices pass clean).
+- Intake commits in steps (`intake_in_steps`, CR-008): RECEIVED before the model runs, the
+  outcome after. The Queue refreshes every 3 s and shows a "Processing…" card meanwhile. A
+  failure removes the placeholder; a killed run is resumed on retry. Checked against real
+  Postgres 2026-11-13.
+- Replay works with no model: `LLM_MODE=replay make demo-data RESET=1` repeats the live run;
+  `make e2e` passes the same way.
 - Full stack verified 2026-11-13: containers reach host Ollama, the `sap_export` DAG writes the
   16-column CSV (19 rows), and the container review app runs `app/main.py` (it served a WS6
   placeholder before; `docker/review_app.py` is now unused).
-- `make test`: 839 passed (without the live-model tests).
+- Demo page Read step shows the parser's rule live: visible characters in the text layer vs
+  `scanned_page_min_chars` (25, characters not words; hidden text excluded; a rotated page goes
+  to OCR) and highlights the branch taken. Parser and app share `parse.pdf.TextLayerCheck`.
+- Invoice numbers (2026-11-16): OCR adds spaces around hyphens ("GSH- 2026-9004"; 5 of the 54
+  in the replayed run). Three layers: the normalizer removes spaces around hyphens and slashes
+  (`normalize.text.clean_reference`); R05, R10, and the export's vendor + reference check
+  compare `invoice_number_key` (letters and digits only, uppercase); intake logs a
+  `normalize.cleaned` event, and the Review page and Demo Step 4 show an amber "Changed
+  automatically by the system" box ABOVE the values table (user asked 2026-11-16: system-made
+  changes must come first and catch the reviewer's eye), with the changed row highlighted. Not a finding on purpose: the evaluator counts every finding as a check that fired.
+- `uv run pytest`: 926 passed (2026-11-16).
 
 ## Read these first (in order)
 
@@ -46,10 +64,13 @@ make db-dev && make fixtures    # Postgres 16 on 5433 + load the golden document
 make e2e             # inbox -> silver -> export, replay mode, rollback transaction
 uv run streamlit run app/main.py   # review app on http://localhost:8501
 make up              # full Airflow stack (8080) + review app (8501); make down to stop
-uv run python generator/build.py --seed 42        # rebuild the 50-document dataset
-make demo-data RESET=1   # 36 "yesterday" invoices through the live model (~20 min), scored
+make data                # rebuild: invoices/ (50, full run) + live-demo/ (4) + answer-key/, named by invoice number
+make demo-data RESET=1   # rehearsal: the 50, then the 4, through the live model (~27 min), scored per folder
 make demo-data RESET=1 STACK=1   # same, into the full stack's Postgres on 127.0.0.1:5434
-uv run python scripts/stage_benchmark.py          # stage bench-* for bench_models.py
+make drop-all            # copy the 50 into data/inbox with their arrival times (stack picks them up)
+make drop-live           # copy the 4 live-demo invoices in, after the full run has finished
+make intake              # trigger invoice_intake now instead of waiting up to 5 min
+uv run python scripts/stage_benchmark.py          # stage the 10 benchmark invoices for bench_models.py
 uv run python scripts/bench_models.py --docs data/benchmark --out data/bench --modes text,image --dpi 150 --limit 2
 uv run python -m invoiceflow.export               # SAP CSV from the golden fixtures
 uv run python -m invoiceflow.evaluate --gate      # evaluation + gate
@@ -81,10 +102,14 @@ needs `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` on macOS. Dev Postgres:
 ## Next work (in order)
 
 1. Decide R03 on a 0% rate: it flags the USD invoice's zero-rated "0%" as a wrong rate.
+   Live-demo scan MEL-2026-9003 stays as is (user decision 2026-11-13): it shows a check
+   catching an OCR slip, a realistic case the audience should see handled.
 2. Phase 2 gates per `docs/fanout/MERGE-RUNBOOK.md`: `make bench`/`eval-bench`, model-choice
    note, reviewers, rehearsal, snapshot/restore.
 3. Wire the remaining make targets (`warm`, `bench`, `eval`, `eval-bench`, `gate`).
-4. Demo gaps: no in-app export button (export runs through Airflow) and no live flow strip
-   during an upload.
+4. Demo gap: no in-app export button (export runs through Airflow).
 5. Before loading with `STACK=1`, empty `data/inbox`: the stack's intake DAG picks up any
    file there while the load runs.
+6. Intake order matters: the inbox is read oldest file first (file time, then name), so a
+   re-send such as `SAV-2026-1001 (2).pdf` is checked after its original. `make drop-all`
+   uses `cp -p` to keep the arrival times `make data` stamps; a plain copy would reset them.

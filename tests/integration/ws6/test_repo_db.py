@@ -211,3 +211,28 @@ def test_extraction_roundtrip(migrated):
     with migrated.cursor() as cur:
         cur.execute("SELECT model, valid FROM extractions WHERE doc_id = %s", (doc_id,))
         assert cur.fetchone() == ("golden-recorded", True)
+
+
+def test_an_unfinished_document_is_found_by_its_file_hash(migrated):
+    repo = Repo(migrated)
+    doc_id, bronze = _register_and_document(repo, DocStatus.RECEIVED)
+    assert repo.unfinished_document(bronze.sha256) == (doc_id, bronze.file_id)
+    repo.set_status(doc_id, DocStatus.AUTO_PASSED, None)
+    assert repo.unfinished_document(bronze.sha256) is None
+    assert repo.unfinished_document("0" * 64) is None
+
+
+def test_discard_removes_a_received_document_and_frees_its_file_hash(migrated):
+    repo = Repo(migrated)
+    doc_id, bronze = _register_and_document(repo, DocStatus.RECEIVED)
+    repo.discard_document(doc_id, bronze.file_id)
+    assert repo.get_document(doc_id) is None
+    assert repo.register_file(bronze) is True
+
+
+def test_discard_never_removes_a_finished_document(migrated):
+    repo = Repo(migrated)
+    doc_id, bronze = _register_and_document(repo, DocStatus.NEEDS_REVIEW)
+    repo.discard_document(doc_id, bronze.file_id)
+    assert repo.get_document(doc_id) is not None
+    assert repo.register_file(bronze) is False

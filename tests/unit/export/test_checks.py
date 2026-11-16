@@ -31,6 +31,14 @@ def test_duplicate_vendor_reference_blocks_batch(mapping, golden, clean_doc):
     assert any("appears twice" in p for p in problems)
 
 
+def test_duplicate_reference_with_different_spacing_blocks_batch(mapping, golden, clean_doc):
+    number = clean_doc.invoice.invoice_number
+    spaced = clean_doc.invoice.model_copy(update={"invoice_number": number.replace("-", " - ")})
+    twin = replace(clean_doc, doc_id=uuid4(), invoice=spaced)
+    problems = _check(mapping, golden.master.coding, (clean_doc, twin))
+    assert any("appears twice" in p for p in problems)
+
+
 def test_reconcile_blocks_total_mismatch(mapping, golden, mismatch_doc):
     problems = _check(mapping, golden.master.coding, (mismatch_doc,))
     assert any("net" in p and "tax" in p and "gross" in p for p in problems)

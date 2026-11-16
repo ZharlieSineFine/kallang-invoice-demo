@@ -7,7 +7,7 @@ knowing what a terminal is.
 
 Everything below builds on what already exists: the WS7 Streamlit app (Upload, Queue,
 Review, Trace, Dashboard, Batches), per-field boxes in Postgres, findings with evidence,
-the Airflow grid view, WS1's 50-document synthetic set, and the export CSV + manifest.
+the Airflow grid view, WS1's 54-document synthetic set, and the export CSV + manifest.
 
 ---
 
@@ -35,11 +35,12 @@ evaluation report (build plan §8). No slide decks; the live app is the deck.
 3. **Technical toggle** (one switch in the sidebar): reveals raw artifacts — extraction
    JSON, findings, rule versions, model digest, prompt version, SQL — next to the friendly
    views.
-4. **Inbox batch view.** A thumbnail grid of the 36-document "yesterday" batch (build plan §5.4): page-1 image,
+4. **Inbox batch view.** A thumbnail grid of the 50 documents in the recorded full run
+   (`data/generated/invoices/`, each file named by its invoice number): page-1 image,
    type badge (A/B/C, credit note, statement), vendor, amount, and outcome color once
    processed. Clicking a card jumps to that document's review/trace.
    *Optional flourish (stretch):* WS1 renders a display-only `batch-overview.pdf`
-   (36 documents, mixed types, multi-page) purely as a visual "here is the pile of invoices
+   (50 documents, mixed types, multi-page) purely as a visual "here is the pile of invoices
    we received" artifact. The pipeline still processes one file per invoice — multi-invoice
    splitting is explicitly out of scope (build plan §13) — and the overview PDF is shown,
    not ingested.
@@ -58,8 +59,8 @@ existing `ap` database and `data/` artifacts.
 ## 3. The storyboard (what each step shows, and its proof artifact)
 
 ### Step 0 — The inbox (Question: "what arrived?")
-- Screen: batch grid of 20 documents (12 A, 6 B, 2 C + anomalies per plan §5.4) with type
-  badges and amounts.
+- Screen: batch grid of the 50 full-run documents (39 digital PDFs, 11 image-only scans,
+  anomalies included) with type badges and amounts.
 - Proof artifact: the files themselves in `data/`; every card links to its page-1 image.
 
 ### Step 1 — Read (Question: "can the system even read these?")
@@ -109,13 +110,44 @@ existing `ap` database and `data/` artifacts.
 
 | # | Screen | Time |
 |---|---|---|
-| 1 | Dashboard: yesterday's 20 processed, colored by outcome | 1:00 |
-| 2 | Upload a clean invoice → watch the flow strip light up stage by stage → AUTO_PASSED | 2:00 |
+| 1 | Recorded: drop the 50 into the inbox → Airflow takes them oldest first (sped up, labeled) → dashboard colored by outcome | 1:00 |
+| 2 | Live: drop the 4 from `live-demo/` → two digital PDFs read from the text layer (pdfplumber), two scans read by Tesseract OCR → all AUTO_PASSED | 2:00 |
 | 3 | The 1,080/1,090 twin: check step → correction → R02 clears → approve | 2:00 |
 | 4 | Two holds: bank-account swap (R08) and hidden instructions (R09) | 1:30 |
 | 5 | Export → CSV appears → row traced to the page box → second run exports nothing | 1:30 |
 | 6 | Trace: one CSV cell → file → page → box → model + rule versions | 1:00 |
 | 7 | Accuracy dashboard, labeled synthetic | 0:30 |
+
+### Recording the run (decided 2026-11-13)
+
+The demo has two parts: a recorded full run of 50 documents, then 4 uploaded live.
+
+- **Full run (recorded).** The 50 in `data/generated/invoices/` take about 25 minutes at
+  ~26 s each on gemma4:12b. That is too long to watch, so this part is recorded and the
+  processing stretch is sped up, with the speed-up labeled on screen (for example "sped up
+  20×, real time 25 min"). Every number on screen still comes from the run itself.
+- **Live demo.** The 4 in `data/generated/live-demo/` are clean invoices: two digital PDFs
+  (VTR-2026-9001, PWS-2026-9002) and two image-only scans (MEL-2026-9003, GSH-2026-9004), so
+  the only difference on screen is how the words were read. They are kept out of the full
+  run on purpose: once processed, the same file is skipped at intake and a new copy with the
+  same number is held by R05, so they could not be shown fresh afterward.
+
+Steps:
+
+1. `make data`: writes both folders and stamps each file's time with its arrival order (the
+   4 after the 50). A repeated invoice number gets ` (2)` on the later arrival.
+2. `make up`, then `make reset`: empty database, empty `data/inbox`.
+3. Start recording. `make drop-all` copies the 50 into `data/inbox` (keeping the times), then
+   `make intake` starts the run instead of waiting for the 5-minute schedule. Intake reads
+   the inbox oldest first, so each re-send comes after its original and R05 catches it.
+4. When all 50 are done, stop the speed-up. Live: `make drop-live`, then `make intake`.
+
+While the model reads an invoice, the Queue shows it as a "Processing…" card (the page
+refreshes every 3 s), so both parts show work in progress, not only finished invoices.
+
+`make demo-data RESET=1` rehearses both parts without Airflow, in the same order, scores
+each folder against the answer key in `data/generated/answer-key/`, and records the replay
+cache.
 
 ## 5. How it is built (work breakdown)
 

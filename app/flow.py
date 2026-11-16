@@ -47,11 +47,12 @@ def _count(docs: Sequence[DocumentSummary], *statuses: DocStatus) -> int:
     return sum(doc.status in statuses for doc in docs)
 
 
-def _read(docs: Sequence[DocumentSummary]) -> StageOutcome:
+def _read(docs: Sequence[DocumentSummary], in_progress: int) -> StageOutcome:
     manual = _count(docs, DocStatus.MANUAL_ENTRY)
     if manual:
         return StageOutcome("Read", StageTone.FLAGGED, f"{manual} for manual entry")
-    return StageOutcome("Read", StageTone.PASSED, f"{len(docs)} read")
+    reading = f", {in_progress} in progress" if in_progress else ""
+    return StageOutcome("Read", StageTone.PASSED, f"{len(docs)} read{reading}")
 
 
 def _extract(docs: Sequence[DocumentSummary]) -> StageOutcome:
@@ -90,13 +91,15 @@ def _export(docs: Sequence[DocumentSummary]) -> StageOutcome:
 def batch_outcomes(docs: Sequence[DocumentSummary]) -> tuple[StageOutcome, ...]:
     if not docs:
         return tuple(StageOutcome(name, StageTone.IDLE, "no documents") for name in STAGES)
+    # A document the model is still reading has been received, but has no outcome yet.
+    done = [doc for doc in docs if not doc.is_processing]
     return (
         StageOutcome("Intake", StageTone.PASSED, f"{len(docs)} received"),
-        _read(docs),
-        _extract(docs),
-        _check(docs),
-        _review(docs),
-        _export(docs),
+        _read(done, len(docs) - len(done)),
+        _extract(done),
+        _check(done),
+        _review(done),
+        _export(done),
     )
 
 

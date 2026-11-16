@@ -1,4 +1,8 @@
-"""The document queue: every document, its status, value, and open findings."""
+"""The document queue: every document, its status, value, and open findings.
+
+The page body refreshes itself every few seconds, so a document the pipeline is reading shows
+up as a "Processing…" card and turns into its outcome without a reload.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,8 @@ from app.backend import Backend
 from app.flow import render_flow_strip
 from app.inbox import render_grid
 from invoiceflow.contracts import DocStatus
+
+QUEUE_REFRESH_SECONDS = 3
 
 _STATUS_ORDER = [
     DocStatus.NEEDS_REVIEW,
@@ -55,12 +61,28 @@ def render(backend: Backend | None = None) -> None:
     backend = backend or ui.get_backend()
     st.title("Queue")
     ui.show_flash()
-    docs = backend.list_documents()
-    if not docs:
+    _live_queue(backend)
+
+
+@st.fragment(run_every=QUEUE_REFRESH_SECONDS)
+def _live_queue(backend: Backend) -> None:
+    all_docs = backend.list_documents()
+    if not all_docs:
         st.info("No documents yet. Upload one, or run `make db-dev && make fixtures`.")
         return
 
-    render_flow_strip(docs)
+    render_flow_strip(all_docs)
+    processing = [doc for doc in all_docs if doc.is_processing]
+    if processing:
+        st.subheader("Being read now")
+        render_grid(processing)
+    docs = [doc for doc in all_docs if not doc.is_processing]
+    if not docs:
+        return
+    _finished_queue(docs, len(all_docs))
+
+
+def _finished_queue(docs, received: int) -> None:
     options = [status for status in _STATUS_ORDER if any(d.status is status for d in docs)]
     chosen = st.multiselect(
         "Statuses",
@@ -72,7 +94,7 @@ def render(backend: Backend | None = None) -> None:
     filtered = [doc for doc in docs if doc.status in chosen]
 
     cols = st.columns(4)
-    cols[0].metric("Documents", len(docs))
+    cols[0].metric("Documents", received)
     cols[1].metric("Needs review", sum(d.status is DocStatus.NEEDS_REVIEW for d in docs))
     cols[2].metric("On hold", sum(d.status is DocStatus.ON_HOLD for d in docs))
     cols[3].metric("Approved", sum(d.status is DocStatus.APPROVED for d in docs))

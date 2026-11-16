@@ -21,7 +21,7 @@ from invoiceflow.normalize.amounts import normalize_amount, normalize_percent, p
 from invoiceflow.normalize.currency import infer_currency, normalize_currency
 from invoiceflow.normalize.dates import normalize_date
 from invoiceflow.normalize.ids import normalized_labeled_id
-from invoiceflow.normalize.text import clean_text, normalize_text
+from invoiceflow.normalize.text import clean_reference, clean_text, normalize_text
 
 _INTEGER = re.compile(r"^(\d+)(?:\.0*)?$")
 
@@ -172,7 +172,7 @@ def to_normalized(extraction: InvoiceExtraction, vendor: Vendor | None) -> Norma
 
     invoice = NormalizedInvoice(
         document_type=extraction.document_type,
-        invoice_number=_text(extraction.invoice_number),
+        invoice_number=clean_reference(extraction.invoice_number),
         invoice_date=_date(extraction.invoice_date, "invoice_date", locale, ambiguous, problems),
         due_date=_date(extraction.due_date, "due_date", locale, ambiguous, problems),
         currency=_currency(extraction, vendor),

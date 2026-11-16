@@ -1,9 +1,10 @@
 """`make demo-data`: the parts of the demo load that can be tested without a model.
 
-The script in ``scripts/demo_data.py`` runs the generated "yesterday" batch through the real
-pipeline. This module selects the documents, compares what fired against what the generator
-planted, and turns pipeline output into evaluation samples, so the demo's accuracy figures
-measure the model instead of comparing the answer key with itself.
+The script in ``scripts/demo_data.py`` runs every generated document through the real pipeline,
+in the order they reach the inbox, as a rehearsal of the recorded demo. This module reads the
+documents, compares what fired against what the generator planted, and turns pipeline output
+into evaluation samples, so the demo's accuracy figures measure the model instead of comparing
+the answer key with itself.
 """
 
 from __future__ import annotations
@@ -21,8 +22,8 @@ _DUPLICATE_RULE = "R05"
 
 @dataclass(frozen=True)
 class DemoDoc:
-    name: str
-    set_name: str
+    name: str  # the file name without .pdf: the invoice number, plus " (2)" on a repeat
+    folder: str  # "invoices" for the full run, "live-demo" for the four uploaded live
     path: Path
     truth_path: Path
     doc_id: UUID
@@ -37,6 +38,7 @@ class Score:
     expected: tuple[str, ...]
     actual: tuple[str, ...]
     skipped: bool = False
+    folder: str = ""
 
     @property
     def missed(self) -> tuple[str, ...]:
@@ -53,15 +55,16 @@ class Score:
         return not self.missed and not self.extra
 
 
-def load_manifest(root: Path, set_name: str) -> tuple[DemoDoc, ...]:
+def load_manifest(root: Path) -> tuple[DemoDoc, ...]:
+    """Every document, in the order the manifest lists them: the order they arrive."""
     manifest = root / "manifest.json"
     if not manifest.is_file():
         raise SystemExit(f"no generated documents at {manifest}: run `make data` first")
     documents = json.loads(manifest.read_text(encoding="utf-8"))["documents"]
     return tuple(
         DemoDoc(
-            name=doc["id"],
-            set_name=doc["set"],
+            name=Path(doc["file"]).stem,
+            folder=Path(doc["file"]).parent.name,
             path=root / doc["file"],
             truth_path=root / doc["truth"],
             doc_id=UUID(doc["doc_id"]),
@@ -69,7 +72,6 @@ def load_manifest(root: Path, set_name: str) -> tuple[DemoDoc, ...]:
             expected=tuple(doc["expected_checks"]),
         )
         for doc in documents
-        if doc["set"] == set_name
     )
 
 
@@ -99,11 +101,21 @@ def eval_sample(name: str, truth: InvoiceTruth, result) -> EvalSample:
 
 def _difference(score: Score) -> str:
     parts = [f"missed {rule}" for rule in score.missed] + [f"extra {rule}" for rule in score.extra]
-    return f"  {score.name:<14} {score.status:<13} {', '.join(parts)}"
+    return f"  {score.name:<22} {score.status:<13} {', '.join(parts)}"
+
+
+def _folder_board(folder: str, scores: tuple[Score, ...]) -> list[str]:
+    label = f"{folder}/: " if folder else ""
+    matched = sum(score.exact for score in scores)
+    total = f"{label}{matched} of {len(scores)} documents matched the checks the generator planted"
+    return [total, *(_difference(score) for score in scores if not score.exact)]
 
 
 def render_scoreboard(scores: tuple[Score, ...]) -> str:
-    matched = sum(score.exact for score in scores)
-    lines = [f"{matched} of {len(scores)} documents matched the checks the generator planted"]
-    lines.extend(_difference(score) for score in scores if not score.exact)
-    return "\n".join(lines)
+    """One total per folder, in the order the folders arrive, each followed by its differences."""
+    folders = dict.fromkeys(score.folder for score in scores)
+    return "\n".join(
+        line
+        for folder in folders
+        for line in _folder_board(folder, tuple(s for s in scores if s.folder == folder))
+    )

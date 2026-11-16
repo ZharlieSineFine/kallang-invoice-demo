@@ -127,6 +127,10 @@ class EventRow:
     payload: dict[str, Any] = field(default_factory=dict)
 
 
+# Statuses a document has while intake is still working on it (saved before the model runs).
+PROCESSING_STATUSES = frozenset({DocStatus.RECEIVED, DocStatus.PARSED, DocStatus.EXTRACTED})
+
+
 @dataclass(frozen=True)
 class DocumentSummary:
     doc_id: UUID
@@ -147,6 +151,11 @@ class DocumentSummary:
     extraction_valid: bool | None = None
     printed_title: str | None = None
     file_name: str | None = None
+    file_path: str | None = None  # the stored upload (bronze), shown until page images exist
+
+    @property
+    def is_processing(self) -> bool:
+        return self.status in PROCESSING_STATUSES
 
     @property
     def label(self) -> str:

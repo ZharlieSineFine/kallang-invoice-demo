@@ -259,3 +259,29 @@ def test_trace_page_handles_no_documents(fake_backend):
     fake_backend.bundles = {}
     at = _run(trace, fake_backend)
     assert any("No documents to trace" in info.value for info in at.info)
+
+
+def test_picking_another_invoice_on_the_demo_page_sticks(fake_backend, clean_bundle):
+    from app.pages import story
+
+    at = _run(story, fake_backend)
+    at.button(key="story_next").click().run(timeout=30)  # the Read step
+    clean_id = clean_bundle.document.doc_id
+    assert at.selectbox(key="story_document").value != clean_id
+
+    at.selectbox(key="story_document").set_value(clean_id).run(timeout=30)
+    assert not at.exception
+    assert at.selectbox(key="story_document").value == clean_id
+    assert at.session_state["selected_doc_id"] == clean_id
+
+    at.run(timeout=30)  # and it stays picked on the next refresh
+    assert at.selectbox(key="story_document").value == clean_id
+
+
+def test_picking_another_document_on_the_review_page_sticks(fake_backend, clean_bundle):
+    at = _run(review, fake_backend)
+    first = at.selectbox(key="review_document").value
+    other = next(doc_id for doc_id in fake_backend.bundles if doc_id != first)
+    at.selectbox(key="review_document").set_value(other).run(timeout=30)
+    assert at.selectbox(key="review_document").value == other
+    assert at.session_state["selected_doc_id"] == other

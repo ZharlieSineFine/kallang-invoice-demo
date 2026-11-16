@@ -66,7 +66,6 @@ class StatementRow:
 @dataclass(frozen=True)
 class DocumentPlan:
     document_id: str
-    set_name: str
     template: str
     doc_type: DocType
     vendor_id: str | None
@@ -147,6 +146,10 @@ SCAFFOLD_1010 = (
     _line("Safety inspection", "1", "lot", "60.00"),
 )
 CATERING_1200 = (_line("Event catering package", "1", "lot", "1200.00"),)
+CATERING_1450 = (
+    _line("Event catering package", "1", "lot", "1200.00"),
+    _line("Beverage station", "1", "lot", "250.00"),
+)
 PRINTING_650 = (_line("Event signage and print", "1", "lot", "650.00"),)
 CREW_2160 = (_line("Event crew", "3", "crew", "180.00", "4"),)
 CLEAN_A_VARIANTS = (
@@ -170,16 +173,25 @@ A2_VARIANTS = (
 SECURITY_2280 = (_line("Security services", "120", "hr", "19.00"),)
 SECURITY_3520 = (_line("Security services", "160", "hr", "22.00"),)
 SECURITY_2640 = (_line("Security services", "120", "hr", "22.00"),)
+SECURITY_1760 = (_line("Security services", "80", "hr", "22.00"),)
 CLEANING_2280 = (
     _line("Cleaning services", "120", "hr", "18.00"),
     _line("Consumables", "1", "lot", "120.00"),
 )
 CLEANING_650 = (_line("Cleaning services", "1", "lot", "650.00"),)
+CLEANING_1870 = (
+    _line("Cleaning services", "90", "hr", "18.00"),
+    _line("Consumables", "1", "lot", "250.00"),
+)
 CLEANING_1450 = (
     _line("Cleaning services", "60", "hr", "18.00"),
     _line("Floor scrubbing", "1", "lot", "370.00"),
 )
 MAINT_1800 = (_line("M&E maintenance", "1", "lot", "1800.00"),)
+MAINT_2150 = (
+    _line("M&E maintenance", "1", "lot", "1800.00"),
+    _line("Pump servicing", "1", "lot", "350.00"),
+)
 MAINT_2350 = (
     _line("M&E maintenance", "1", "lot", "1800.00"),
     _line("Chiller servicing", "1", "lot", "550.00"),
@@ -221,7 +233,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
     return [
         DocumentPlan(
             "pre-a-01",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -235,7 +246,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-02",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V005",
@@ -249,7 +259,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-03",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -265,7 +274,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-04",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V005",
@@ -281,7 +289,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-05",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -297,7 +304,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-06",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V012",
@@ -312,7 +318,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-07",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -327,7 +332,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-08",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V006",
@@ -343,7 +347,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-09",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V005",
@@ -359,7 +362,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-10",
-            "pre",
             "A2",
             DocType.SIMPLIFIED_TAX_INVOICE,
             "V002",
@@ -372,7 +374,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-11",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V009",
@@ -386,7 +387,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-a-12",
-            "pre",
             "A1",
             DocType.TAX_INVOICE,
             "V010",
@@ -404,7 +404,6 @@ def _pre_a(seed: int, seeds: dict[str, VendorSeed]) -> list[DocumentPlan]:
 def _pre_b(seed: int) -> list[DocumentPlan]:
     b01 = DocumentPlan(
         "pre-b-01",
-        "pre",
         "B1",
         DocType.TAX_INVOICE,
         "V003",
@@ -427,7 +426,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         b02,
         DocumentPlan(
             "pre-b-03",
-            "pre",
             "B1",
             DocType.TAX_INVOICE,
             "V011",
@@ -441,7 +439,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-04",
-            "pre",
             "B2",
             DocType.TAX_INVOICE,
             "V004",
@@ -454,7 +451,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-05",
-            "pre",
             "B1",
             DocType.TAX_INVOICE,
             "V008",
@@ -467,7 +463,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-06",
-            "pre",
             "B2",
             DocType.TAX_INVOICE,
             "V003",
@@ -482,7 +477,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-07",
-            "pre",
             "B2",
             DocType.TAX_INVOICE,
             "V004",
@@ -497,7 +491,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-08",
-            "pre",
             "B1",
             DocType.TAX_INVOICE,
             "V009",
@@ -510,7 +503,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-09",
-            "pre",
             "B1",
             DocType.TAX_INVOICE,
             "V007",
@@ -523,7 +515,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-10",
-            "pre",
             "B2",
             DocType.TAX_INVOICE,
             "V011",
@@ -538,7 +529,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-11",
-            "pre",
             "B2",
             DocType.TAX_INVOICE,
             "V006",
@@ -551,7 +541,6 @@ def _pre_b(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-b-12",
-            "pre",
             "B1",
             DocType.TAX_INVOICE,
             "V008",
@@ -569,7 +558,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
     return [
         DocumentPlan(
             "pre-c-01",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V001",
@@ -590,7 +578,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-03",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V003",
@@ -603,7 +590,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-04",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             None,
@@ -619,7 +605,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-05",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V005",
@@ -633,7 +618,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-06",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V009",
@@ -646,7 +630,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-07",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V001",
@@ -660,7 +643,6 @@ def _pre_c(seed: int, first_a: DocumentPlan) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-c-08",
-            "pre",
             "C1",
             DocType.TAX_INVOICE,
             "V004",
@@ -678,7 +660,6 @@ def _pre_notes(seed: int) -> list[DocumentPlan]:
     return [
         DocumentPlan(
             "pre-cn-01",
-            "pre",
             "CN",
             DocType.CREDIT_NOTE,
             "V001",
@@ -694,7 +675,6 @@ def _pre_notes(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-cn-02",
-            "pre",
             "CN",
             DocType.CREDIT_NOTE,
             "V003",
@@ -709,7 +689,6 @@ def _pre_notes(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-soa-01",
-            "pre",
             "SOA",
             DocType.STATEMENT,
             "V001",
@@ -725,7 +704,6 @@ def _pre_notes(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "pre-usd-01",
-            "pre",
             "A1",
             DocType.INVOICE,
             "V012",
@@ -748,21 +726,19 @@ def _live(seed: int) -> list[DocumentPlan]:
     return [
         DocumentPlan(
             "live-01",
-            "live",
             "A1",
             DocType.TAX_INVOICE,
             "V006",
             "PCE-2026-7001",
             _date(2026, 11, 4),
             _date(2026, 12, 4),
-            CATERING_1200,
+            CATERING_1450,  # pre-b-11 is V006's 1,200 six days earlier
             "4500012347",
             "National Stadium",
             "4 Nov 2026",
         ),
         DocumentPlan(
             "live-02",
-            "live",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -778,7 +754,6 @@ def _live(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "live-03",
-            "live",
             "A1",
             DocType.TAX_INVOICE,
             "V005",
@@ -794,7 +769,6 @@ def _live(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "live-04",
-            "live",
             "A2",
             DocType.SIMPLIFIED_TAX_INVOICE,
             "V009",
@@ -816,7 +790,6 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
     return [
         DocumentPlan(
             "bench-a-01",
-            "benchmark",
             "A1",
             DocType.TAX_INVOICE,
             "V001",
@@ -830,7 +803,6 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "bench-a-02",
-            "benchmark",
             "A1",
             DocType.TAX_INVOICE,
             "V005",
@@ -844,7 +816,6 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "bench-a-03",
-            "benchmark",
             "A2",
             DocType.SIMPLIFIED_TAX_INVOICE,
             "V002",
@@ -857,7 +828,6 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "bench-a-04",
-            "benchmark",
             "A2",
             DocType.SIMPLIFIED_TAX_INVOICE,
             "V006",
@@ -870,60 +840,55 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "bench-b-01",
-            "benchmark",
             "B1",
             DocType.TAX_INVOICE,
             "V003",
             "KSS-2026-8101",
             _date(2026, 10, 27),
             _date(2026, 11, 26),
-            SECURITY_2280,
+            SECURITY_1760,  # pre-b-01 is V003's 2,280 a week earlier
             venue="SIS",
             service_period="27 Oct 2026",
         ),
         DocumentPlan(
             "bench-b-02",
-            "benchmark",
             "B2",
             DocType.TAX_INVOICE,
             "V004",
             "CWF-2026-8102",
             _date(2026, 10, 28),
             _date(2026, 11, 27),
-            CLEANING_2280,
+            CLEANING_1870,  # pre-b-07 is V004's 2,280 three days earlier
             venue="National Stadium",
             service_period="28 Oct 2026",
         ),
         DocumentPlan(
             "bench-b-03",
-            "benchmark",
             "B1",
             DocType.TAX_INVOICE,
             "V008",
             "CAM-2026-8103",
             _date(2026, 10, 29),
             _date(2026, 11, 28),
-            MAINT_1800,
+            MAINT_2150,  # pre-b-05 is V008's 1,800 six days earlier
             venue="OCBC Aquatic Centre",
             service_period="29 Oct 2026",
         ),
         DocumentPlan(
             "bench-c-01",
-            "benchmark",
             "C1",
             DocType.TAX_INVOICE,
             "V001",
             "SAV-2026-8201",
             _date(2026, 10, 27),
             _date(2026, 11, 26),
-            AV_1080,
+            LIGHTING_1040,  # bench-a-01 is V001's 1,080 the same day
             "4500012345",
             "National Stadium",
             "27-29 Oct 2026",
         ),
         DocumentPlan(
             "bench-c-02",
-            "benchmark",
             "C1",
             DocType.TAX_INVOICE,
             "V003",
@@ -936,7 +901,6 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
         ),
         DocumentPlan(
             "bench-c-03",
-            "benchmark",
             "C1",
             DocType.TAX_INVOICE,
             "V009",
@@ -950,8 +914,85 @@ def _benchmark(seed: int) -> list[DocumentPlan]:
     ]
 
 
+def _showcase(seed: int) -> list[DocumentPlan]:
+    """The live demo's four clean invoices, kept out of the full run: two digital PDFs and
+    two scans, so the demo shows pdfplumber reading a text layer and Tesseract reading a page
+    image."""
+    del seed  # fixed content, like the live invoices
+    return [
+        DocumentPlan(
+            "showcase-pdf-1",
+            "A1",
+            DocType.TAX_INVOICE,
+            "V010",
+            "VTR-2026-9001",
+            _date(2026, 11, 5),
+            _date(2026, 12, 5),
+            RIGGING_970,
+            venue="National Stadium",
+            service_period="5-7 Nov 2026",
+        ),
+        DocumentPlan(
+            "showcase-pdf-2",
+            "B1",
+            DocType.TAX_INVOICE,
+            "V007",
+            "PWS-2026-9002",
+            _date(2026, 11, 5),
+            _date(2026, 12, 5),
+            PRINTING_650,
+            venue="Kallang Wave Mall",
+            service_period="5 Nov 2026",
+        ),
+        DocumentPlan(
+            "showcase-scan-1",
+            "C1",
+            DocType.TAX_INVOICE,
+            "V002",
+            "MEL-2026-9003",
+            _date(2026, 11, 6),
+            _date(2026, 12, 6),
+            BARRICADE_750,
+            venue="OCBC Arena",
+            service_period="6-7 Nov 2026",
+        ),
+        DocumentPlan(
+            "showcase-scan-2",
+            "C1",
+            DocType.TAX_INVOICE,
+            "V011",
+            "GSH-2026-9004",
+            _date(2026, 11, 6),
+            _date(2026, 12, 6),
+            HORT_880,
+            venue="Singapore Indoor Stadium",
+            service_period="6 Nov 2026",
+        ),
+    ]
+
+
+def is_live_demo(plan: DocumentPlan) -> bool:
+    """True for the four invoices uploaded live after the recorded full run."""
+    return plan.document_id.startswith(LIVE_DEMO_PREFIX)
+
+
+def arrival_order(plans) -> tuple[DocumentPlan, ...]:
+    """The order the documents reach the AP inbox: the full run, then the live demo's four.
+
+    Within each, the oldest invoice date comes first, and a tie keeps plan order, so an
+    original always arrives before its copy or re-send.
+    """
+    position = {plan.document_id: index for index, plan in enumerate(plans)}
+    return tuple(
+        sorted(
+            plans,
+            key=lambda plan: (is_live_demo(plan), plan.invoice_date, position[plan.document_id]),
+        )
+    )
+
+
 def build_plans(seed: int) -> tuple[DocumentPlan, ...]:
-    """Return all 50 documents in processing order (the duplicate follows its original)."""
+    """Return all 54 documents. ``arrival_order`` gives the order they reach the inbox."""
     if seed < 0:
         raise ValueError("seed must be non-negative")
     vendors = {v.vendor_id: v for v in _seed_vendors()}
@@ -963,6 +1004,7 @@ def build_plans(seed: int) -> tuple[DocumentPlan, ...]:
         *_pre_notes(seed),
         *_live(seed),
         *_benchmark(seed),
+        *_showcase(seed),
     ]
     # V999 is deliberately not in the active master; the invoice still has plausible details.
     v999 = next(v for v in _seed_vendors() if v.vendor_id == "V999")
@@ -983,15 +1025,15 @@ def _seed_vendors() -> tuple[VendorSeed, ...]:
     return load_seeds(root).vendors
 
 
+DOCUMENT_COUNT = 54
+# Plan ids of the live demo's four invoices (written to live-demo/, not invoices/).
+LIVE_DEMO_PREFIX = "showcase-"
+
+
 def _validate_plans(plans: tuple[DocumentPlan, ...]) -> None:
     ids = [p.document_id for p in plans]
-    if len(ids) != 50 or len(ids) != len(set(ids)):
-        raise ValueError(f"the demo needs 50 unique documents, got {len(ids)}")
-    counts: dict[str, int] = {}
-    for plan in plans:
-        counts[plan.set_name] = counts.get(plan.set_name, 0) + 1
-    if counts != {"pre": 36, "live": 4, "benchmark": 10}:
-        raise ValueError(f"wrong set sizes: {counts}")
+    if len(ids) != DOCUMENT_COUNT or len(ids) != len(set(ids)):
+        raise ValueError(f"the demo needs {DOCUMENT_COUNT} unique documents, got {len(ids)}")
     by_id = {p.document_id: p for p in plans}
     for plan in plans:
         if plan.copy_of:

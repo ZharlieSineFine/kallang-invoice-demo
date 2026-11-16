@@ -1,8 +1,12 @@
 """Step functions: intake (inbox -> bronze -> silver) and the export-once loop."""
 
+import os
+from contextlib import contextmanager
 from datetime import date
 from decimal import Decimal
 from uuid import UUID, uuid4
+
+import pytest
 
 from invoiceflow.contracts import (
     CodingLine,
@@ -11,6 +15,7 @@ from invoiceflow.contracts import (
     DocumentRecord,
     NormalizedInvoice,
 )
+from invoiceflow.pipeline import steps
 from invoiceflow.pipeline.golden import load_golden
 from invoiceflow.pipeline.steps import (
     Pipeline,
@@ -18,8 +23,10 @@ from invoiceflow.pipeline.steps import (
     export_approved,
     guess_mime,
     intake_document,
+    intake_in_steps,
     intake_inbox,
     list_inbox,
+    receive_document,
 )
 from invoiceflow.pipeline.stubs import golden_deps
 from invoiceflow.settings import load_config
@@ -33,6 +40,7 @@ class FakeRepo:
 
     def __init__(self):
         self.shas: set[str] = set()
+        self.files: dict[str, UUID] = {}  # sha256 -> file_id
         self.documents: dict[UUID, DocumentRecord] = {}
         self.statuses: dict[UUID, DocStatus] = {}
         self.coding: dict[UUID, tuple[CodingLine, ...]] = {}
@@ -50,7 +58,27 @@ class FakeRepo:
         if file.sha256 in self.shas:
             return False
         self.shas.add(file.sha256)
+        self.files[file.sha256] = file.file_id
         return True
+
+    def unfinished_document(self, sha256):
+        file_id = self.files.get(sha256)
+        return next(
+            (
+                (doc.doc_id, doc.file_id)
+                for doc in self.documents.values()
+                if doc.file_id == file_id and self.statuses[doc.doc_id] is DocStatus.RECEIVED
+            ),
+            None,
+        )
+
+    def discard_document(self, doc_id, file_id) -> None:
+        if self.statuses.get(doc_id) is not DocStatus.RECEIVED:
+            return
+        del self.documents[doc_id], self.statuses[doc_id]
+        sha256 = next(sha for sha, known in self.files.items() if known == file_id)
+        del self.files[sha256]
+        self.shas.discard(sha256)
 
     def create_document(self, record: DocumentRecord) -> None:
         self.documents[record.doc_id] = record
@@ -123,6 +151,23 @@ class FakeRepo:
 
     def log_event(self, actor, event_type, doc_id, payload) -> None:
         self.events.append((actor, event_type, doc_id, payload))
+
+
+class Transactions:
+    """Stands in for ``repo_transaction``: hands out one FakeRepo and counts the transactions."""
+
+    def __init__(self, repo: FakeRepo):
+        self.repo = repo
+        self.opened = 0
+        self.closed = 0
+
+    @contextmanager
+    def __call__(self):
+        self.opened += 1
+        try:
+            yield self.repo
+        finally:
+            self.closed += 1
 
 
 def _pipeline(golden) -> Pipeline:
@@ -334,5 +379,150 @@ def test_guess_mime():
     assert guess_mime("unknown.xyz") is None
 
 
+def test_list_inbox_takes_the_oldest_file_first(tmp_path):
+    # A re-sent invoice named "SAV-2026-1001 (2).pdf" sorts before "SAV-2026-1001.pdf" by
+    # name, but it arrived later, and R05 needs the original processed first.
+    later = tmp_path / "SAV-2026-1001 (2).pdf"
+    first = tmp_path / "SAV-2026-1001.pdf"
+    tie = tmp_path / "A-1.pdf"
+    for path, minute in ((later, 5), (first, 1), (tie, 1)):
+        path.write_bytes(b"%PDF")
+        os.utime(path, (60.0 * minute, 60.0 * minute))
+    assert [path.name for path in list_inbox(tmp_path)] == [
+        "A-1.pdf",
+        "SAV-2026-1001.pdf",
+        "SAV-2026-1001 (2).pdf",
+    ]
+
+
 def test_list_inbox_missing_dir_returns_empty(tmp_path):
     assert list_inbox(tmp_path / "nope") == ()
+
+
+# ---- two-step intake: the review app sees the document while the model reads it ----------
+
+
+def _in_steps(path, repo, tmp_path, golden, transactions=None):
+    return intake_in_steps(
+        path,
+        transaction=transactions or Transactions(repo),
+        store=LocalBlobStore(tmp_path),
+        pipeline=_pipeline(golden),
+        today=TODAY,
+        run_id="r",
+    )
+
+
+def test_receive_saves_a_received_document_before_the_model_runs(golden, clean, tmp_path):
+    repo = FakeRepo()
+    received = receive_document(
+        clean.pdf_path, repo=repo, store=LocalBlobStore(tmp_path), pipeline=_pipeline(golden)
+    )
+    assert received.duplicate is False
+    assert repo.statuses[received.doc_id] is DocStatus.RECEIVED
+    assert repo.saved["parsed"] == []
+    assert any(event[1] == "intake.received" for event in repo.events)
+
+
+def test_no_transaction_is_open_while_the_model_runs(golden, clean, tmp_path, monkeypatch):
+    repo = FakeRepo()
+    transactions = Transactions(repo)
+    seen = {}
+    real = steps.process_document
+
+    def spy(path, **kwargs):
+        seen["status"] = repo.statuses[kwargs["doc_id"]]
+        seen["open"] = transactions.opened - transactions.closed
+        return real(path, **kwargs)
+
+    monkeypatch.setattr(steps, "process_document", spy)
+    result = _in_steps(clean.pdf_path, repo, tmp_path, golden, transactions)
+
+    assert seen == {"status": DocStatus.RECEIVED, "open": 0}
+    assert transactions.opened == 2  # received, then the outcome
+    assert result.status is DocStatus.AUTO_PASSED
+    assert repo.statuses[result.doc_id] is DocStatus.AUTO_PASSED
+    assert repo.saved["parsed"] and repo.saved["findings"]
+
+
+def test_a_failed_document_leaves_no_processing_card(golden, clean, tmp_path, monkeypatch):
+    repo = FakeRepo()
+
+    def fail(path, **kwargs):
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(steps, "process_document", fail)
+    with pytest.raises(RuntimeError, match="model unavailable"):
+        _in_steps(clean.pdf_path, repo, tmp_path, golden)
+
+    assert repo.documents == {}
+    assert repo.shas == set()  # so the retry is not mistaken for a duplicate
+    failed = [event for event in repo.events if event[1] == "intake.failed"]
+    assert failed and "model unavailable" in failed[0][3]["error"]
+
+    monkeypatch.undo()
+    retry = _in_steps(clean.pdf_path, repo, tmp_path, golden)
+    assert retry.skipped is False
+    assert retry.status is DocStatus.AUTO_PASSED
+
+
+def test_a_run_killed_mid_document_is_resumed_not_skipped(golden, clean, tmp_path):
+    repo = FakeRepo()
+    placeholder = receive_document(
+        clean.pdf_path, repo=repo, store=LocalBlobStore(tmp_path), pipeline=_pipeline(golden)
+    )  # ... and the process dies before the outcome is saved
+
+    result = _in_steps(clean.pdf_path, repo, tmp_path, golden)
+
+    assert result.skipped is False
+    assert result.doc_id == placeholder.doc_id
+    assert repo.statuses[result.doc_id] is DocStatus.AUTO_PASSED
+    assert len(repo.documents) == 1
+    assert any(event[1] == "intake.resumed" for event in repo.events)
+
+
+def test_a_finished_file_is_still_skipped_as_a_duplicate(golden, clean, tmp_path):
+    repo = FakeRepo()
+    first = _in_steps(clean.pdf_path, repo, tmp_path, golden)
+    second = _in_steps(clean.pdf_path, repo, tmp_path, golden)
+    assert first.skipped is False
+    assert second.skipped is True
+    assert second.reason == "sha256 already ingested"
+    assert any(event[1] == "intake.duplicate_file" for event in repo.events)
+
+
+def test_intake_records_when_it_cleans_an_invoice_number(golden, clean, tmp_path, monkeypatch):
+    """Layer 3: the audit trail says what the system changed and why."""
+    from dataclasses import replace
+
+    real = steps.process_document
+
+    def spaced(path, **kwargs):
+        result = real(path, **kwargs)
+        printed = result.extraction.extraction
+        number = printed.invoice_number
+        slip = number.replace("-", "- ", 1)  # what OCR did to GSH-2026-9004
+        extraction = result.extraction.model_copy(
+            update={"extraction": printed.model_copy(update={"invoice_number": slip})}
+        )
+        return replace(result, extraction=extraction)
+
+    monkeypatch.setattr(steps, "process_document", spaced)
+    repo = FakeRepo()
+    result = _in_steps(clean.pdf_path, repo, tmp_path, golden)
+
+    cleaned = [event for event in repo.events if event[1] == "normalize.cleaned"]
+    assert len(cleaned) == 1
+    _, _, doc_id, payload = cleaned[0]
+    number = result.process.context.invoice.invoice_number
+    assert doc_id == result.doc_id
+    assert payload["field"] == "invoice_number"
+    assert payload["printed"] == number.replace("-", "- ", 1)
+    assert payload["cleaned"] == number
+    assert "hyphen" in payload["reason"]
+
+
+def test_intake_records_nothing_when_no_value_was_cleaned(golden, clean, tmp_path):
+    repo = FakeRepo()
+    _in_steps(clean.pdf_path, repo, tmp_path, golden)
+    assert not [event for event in repo.events if event[1] == "normalize.cleaned"]

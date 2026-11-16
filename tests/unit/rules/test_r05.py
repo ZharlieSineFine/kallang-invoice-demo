@@ -81,3 +81,19 @@ def test_r05_ignores_a_statement_that_lists_earlier_invoices(clean_ctx, rules_co
     )
     ctx = clean_ctx.model_copy(update={"invoice": invoice, "prior_invoices": (prior,)})
     assert R05(rules_config).check(ctx) == ()
+
+
+def test_r05_catches_a_duplicate_number_written_with_different_spacing(clean_ctx, rules_config):
+    number = clean_ctx.invoice.invoice_number
+    spaced = number.replace("-", " - ", 1).lower()  # e.g. "sav - 2026-0412"
+    prior = _prior(invoice_number=spaced, total=Decimal("1.00"))
+    ctx = clean_ctx.model_copy(update={"prior_invoices": (prior,)})
+    flagged = [f for f in R05(rules_config).check(ctx) if f.field == "invoice_number"]
+    assert flagged and flagged[0].severity is Severity.HOLD
+
+
+def test_r05_does_not_match_a_number_that_differs_in_a_character(clean_ctx, rules_config):
+    number = clean_ctx.invoice.invoice_number
+    prior = _prior(invoice_number=number[:-1] + "X", total=Decimal("1.00"))
+    ctx = clean_ctx.model_copy(update={"prior_invoices": (prior,)})
+    assert not [f for f in R05(rules_config).check(ctx) if f.field == "invoice_number"]

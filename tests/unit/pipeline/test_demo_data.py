@@ -23,20 +23,26 @@ def _manifest(tmp_path):
     documents = [
         {
             "id": "pre-a-03",
-            "set": "pre",
             "doc_id": DOC,
             "file_id": FILE,
-            "file": "docs/pre-a-03/pre-a-03.pdf",
-            "truth": "docs/pre-a-03/truth.json",
+            "file": "invoices/SAV-2026-1003.pdf",
+            "truth": "answer-key/SAV-2026-1003.json",
             "expected_checks": ["R02"],
         },
         {
-            "id": "live-01",
-            "set": "live",
+            "id": "pre-c-02",
             "doc_id": "e3b44d80-6038-5ce2-877d-d71b775fdcd2",
             "file_id": "47f81e0e-22a9-5063-a5fe-2b32ed004036",
-            "file": "docs/live-01/live-01.pdf",
-            "truth": "docs/live-01/truth.json",
+            "file": "invoices/SAV-2026-1001 (2).pdf",
+            "truth": "answer-key/SAV-2026-1001 (2).json",
+            "expected_checks": ["R05"],
+        },
+        {
+            "id": "showcase-pdf-1",
+            "doc_id": "e3b44d80-6038-5ce2-877d-d71b775fdcd3",
+            "file_id": "47f81e0e-22a9-5063-a5fe-2b32ed004037",
+            "file": "live-demo/VTR-2026-9001.pdf",
+            "truth": "answer-key/VTR-2026-9001.json",
             "expected_checks": [],
         },
     ]
@@ -44,18 +50,20 @@ def _manifest(tmp_path):
     return tmp_path
 
 
-def test_load_manifest_selects_a_set_and_keeps_order(tmp_path):
-    docs = load_manifest(_manifest(tmp_path), "pre")
-    assert [doc.name for doc in docs] == ["pre-a-03"]
+def test_load_manifest_returns_every_document_in_arrival_order(tmp_path):
+    docs = load_manifest(_manifest(tmp_path))
+    assert [doc.name for doc in docs] == ["SAV-2026-1003", "SAV-2026-1001 (2)", "VTR-2026-9001"]
+    assert [doc.folder for doc in docs] == ["invoices", "invoices", "live-demo"]
     assert docs[0].doc_id == UUID(DOC)
     assert docs[0].file_id == UUID(FILE)
     assert docs[0].expected == ("R02",)
-    assert docs[0].path == tmp_path / "docs/pre-a-03/pre-a-03.pdf"
+    assert docs[0].path == tmp_path / "invoices/SAV-2026-1003.pdf"
+    assert docs[1].truth_path == tmp_path / "answer-key/SAV-2026-1001 (2).json"
 
 
 def test_load_manifest_explains_what_to_run_when_data_is_missing(tmp_path):
     with pytest.raises(SystemExit, match="make data"):
-        load_manifest(tmp_path, "pre")
+        load_manifest(tmp_path)
 
 
 def test_score_separates_missed_and_extra_checks():
@@ -83,6 +91,19 @@ def test_scoreboard_totals_and_lists_only_the_differences():
     assert "missed R02" in text
     assert "extra R11" in text
     assert "ok " not in text
+
+
+def test_scoreboard_has_one_total_per_folder():
+    text = render_scoreboard(
+        (
+            Score(name="a", status="AUTO_PASSED", expected=(), actual=(), folder="invoices"),
+            Score(name="b", status="ON_HOLD", expected=(), actual=("R08",), folder="invoices"),
+            Score(name="c", status="AUTO_PASSED", expected=(), actual=(), folder="live-demo"),
+        )
+    )
+    assert "invoices/: 1 of 2 documents matched" in text
+    assert "live-demo/: 1 of 1 documents matched" in text
+    assert text.index("invoices/") < text.index("  b ") < text.index("live-demo/")
 
 
 def test_guard_refuses_to_wipe_existing_documents_without_reset():

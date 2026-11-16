@@ -156,6 +156,7 @@ def make_bundle(fixture: GoldenFixture) -> DocumentBundle:
         extraction_valid=fixture.extraction.valid,
         printed_title="Tax Invoice",
         file_name="invoice.pdf",
+        file_path=str(fixture.pdf_path),
     )
     page = PageRow(
         page_no=fixture.page.page_no,
