@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.backend import _validate_coding  # noqa: E402
+from app.fields import printed_value  # noqa: E402
 from app.formatting import normalize_field_value  # noqa: E402
 from app.models import (  # noqa: E402
     BatchSummary,
@@ -320,35 +321,46 @@ class FakeBackend:
         )
 
     def confirm(self, doc_id, field, reviewer):
+        """Like the real backend: accepts a header or line value, and clears its flag."""
         bundle = self.bundles[doc_id]
-        row = bundle.field(field)
-        if row is None:
-            raise ValueError(f"{field} is not a header field")
+        value = printed_value(bundle, field)
         self.calls.append(("confirm", (doc_id, field, reviewer)))
-        self._review(bundle, ReviewAction.CONFIRM, reviewer, field, row.value_raw, row.value_raw)
-        return ReviewOutcome(doc_id=doc_id, status=bundle.document.status, message="Confirmed")
+        bundle = self._review(bundle, ReviewAction.CONFIRM, reviewer, field, value, value)
+        kept = tuple(
+            f for f in bundle.findings if not (f.field == field and f.severity is Severity.FLAG)
+        )
+        if kept == bundle.findings:
+            return ReviewOutcome(doc_id=doc_id, status=bundle.document.status, message="Checked")
+        held = any(f.severity is Severity.HOLD for f in kept)
+        status = DocStatus.ON_HOLD if held else DocStatus.NEEDS_REVIEW
+        document = replace(bundle.document, status=status, finding_count=len(kept))
+        self._store(bundle, findings=kept, document=document)
+        return ReviewOutcome(doc_id=doc_id, status=status, message="Accepted as printed")
 
     def correct(self, doc_id, field, raw_value, reviewer):
         bundle = self.bundles[doc_id]
         row = bundle.field(field)
-        if row is None:
+        if row is None and field not in HEADER_FIELDS:
             raise ValueError(f"{field} is not a header field")
         normalized = normalize_field_value(field, raw_value)
         if normalized is None:
             raise ValueError(f"{field} cannot be empty")
         self.calls.append(("correct", (doc_id, field, raw_value, reviewer)))
         changed = replace(
-            row,
+            row or FieldRow(name=field, value_raw=None, value_norm=None),
             value_raw=raw_value,
             value_norm=normalized,
             source=ValueSource.REVIEWER,
             confidence=Confidence.HIGH,
             match_type=MatchType.EXACT,
         )
-        fields = tuple(changed if item.name == field else item for item in bundle.fields)
+        if row is None:
+            fields = (*bundle.fields, changed)
+        else:
+            fields = tuple(changed if item.name == field else item for item in bundle.fields)
         bundle = self._store(bundle, fields=fields)
         bundle = self._review(
-            bundle, ReviewAction.CORRECT, reviewer, field, row.value_raw, raw_value
+            bundle, ReviewAction.CORRECT, reviewer, field, row.value_raw if row else None, raw_value
         )
         outcome = self._rerun(bundle, reviewer)
         return replace(outcome, message=f"Corrected {field}. {outcome.message}")

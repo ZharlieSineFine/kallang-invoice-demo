@@ -193,3 +193,68 @@ def test_inclusive_subtotal_is_not_a_total_mismatch(rules_config):
 def test_exclusive_invoice_still_compares_subtotal_plus_gst(rules_config):
     found = recompute_findings(_inclusive_state(rules_config, note=False))
     assert [(finding.rule_id, finding.field) for finding in found] == [("R03", "total")]
+
+
+# ---- "Correct as printed": the reviewer accepts a flagged value -------------------------
+
+from datetime import UTC, datetime  # noqa: E402
+
+from app.models import ReviewRow  # noqa: E402
+from app.recheck import accepted_fields  # noqa: E402
+from invoiceflow.contracts import Finding, ReviewAction  # noqa: E402
+
+
+def _review(action: ReviewAction, field: str | None, minute: int) -> ReviewRow:
+    return ReviewRow(
+        action=action,
+        reviewer="r",
+        field=field,
+        old_value=None,
+        new_value=None,
+        comment=None,
+        created_at=datetime(2026, 11, 16, 9, minute, tzinfo=UTC),
+    )
+
+
+def test_an_accepted_field_stays_clear_when_the_arithmetic_is_recomputed(
+    mismatch_bundle, rules_config
+):
+    state = RecheckInput.from_bundle(mismatch_bundle, rules_config)
+    result = recheck(state, accepted=frozenset({"subtotal"}))
+    assert result.findings == ()
+    assert result.reasons == ()
+    assert result.status is DocStatus.AUTO_PASSED  # the backend still waits for approval
+
+
+def test_accepting_a_field_never_clears_a_hold(clean_bundle, rules_config):
+    hold = Finding(
+        rule_id="R08",
+        rule_version="v1",
+        severity=Severity.HOLD,
+        scope=Scope.DOCUMENT,
+        field="bank_account",
+        message="The bank account differs from the vendor master.",
+    )
+    state = RecheckInput.from_bundle(clean_bundle, rules_config)
+    result = recheck(state, carried=(hold,), accepted=frozenset({"bank_account"}))
+    assert [finding.rule_id for finding in result.findings] == ["R08"]
+    assert result.status is DocStatus.ON_HOLD
+
+
+def test_accepted_fields_are_those_whose_latest_review_is_a_confirmation():
+    reviews = (
+        _review(ReviewAction.CONFIRM, "subtotal", 1),
+        _review(ReviewAction.CONFIRM, "total", 2),
+        _review(ReviewAction.CORRECT, "total", 3),  # corrected afterward: acceptance is void
+        _review(ReviewAction.CONFIRM, "line_items[0].amount", 4),
+        _review(ReviewAction.APPROVE, None, 5),
+    )
+    assert accepted_fields(reviews) == frozenset({"subtotal", "line_items[0].amount"})
+
+
+def test_editing_the_line_items_voids_an_accepted_line_value():
+    reviews = (
+        _review(ReviewAction.CONFIRM, "line_items[0].amount", 1),
+        _review(ReviewAction.CORRECT, "line_items", 2),
+    )
+    assert accepted_fields(reviews) == frozenset()

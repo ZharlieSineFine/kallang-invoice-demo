@@ -101,7 +101,7 @@ def test_review_correct_clears_r02_then_approve_sets_approved(fake_backend, mism
     at = _set_doc(_run(review, fake_backend), doc_id)
     at.run(timeout=30)
     at.get_by_key("review_field").set_value("subtotal").run()
-    at.get_by_key("correction_value").set_value("1,080.00").run()
+    at.get_by_key(f"fix_value_{doc_id}_subtotal").set_value("1,080.00").run()
     at.get_by_key("btn_correct").click().run(timeout=30)
     assert any(call[0] == "correct" for call in fake_backend.calls)
     after = fake_backend.bundles[doc_id]

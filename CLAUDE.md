@@ -43,7 +43,17 @@ rehearsal prep. All data is synthetic.
   `normalize.cleaned` event, and the Review page and Demo Step 4 show an amber "Changed
   automatically by the system" box ABOVE the values table (user asked 2026-11-16: system-made
   changes must come first and catch the reviewer's eye), with the changed row highlighted. Not a finding on purpose: the evaluator counts every finding as a check that fired.
-- `uv run pytest`: 926 passed (2026-11-16).
+- Review page fix panel (2026-11-16, user chose "option (a)"): each finding card has a "Fix
+  this field" button and the page opens on the first flagged field. The panel shows the value
+  read on the invoice and has two actions: "Save correction" (the system misread it: store my
+  value, rerun checks) and "Correct as printed" (records CONFIRM and clears that field's FLAG,
+  reviewer recorded). `recheck.accepted_fields` keeps a confirmed field's FLAG cleared on later
+  rechecks until the field is corrected; a HOLD is never cleared this way, only by "Release the
+  hold" (shown only when ON_HOLD). Line values are `line_items[i].attr`; missing header values
+  can be typed in; coding findings point to the Coding table, master-data findings say so.
+  Code: `app/fix_panel.py`, `app/fields.py`.
+- `uv run pytest -m "not ollama"`: 953 passed (2026-11-16). `scripts/demo_boxes.py` has 4
+  old ruff errors from 2026-11-04, not fixed.
 
 ## Read these first (in order)
 

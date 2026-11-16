@@ -19,11 +19,12 @@ from decimal import Decimal
 from typing import Any
 
 from app.formatting import parse_decimal
-from app.models import DocumentBundle, FindingRow
+from app.models import DocumentBundle, FindingRow, ReviewRow
 from invoiceflow.contracts import (
     DocStatus,
     DocType,
     Finding,
+    ReviewAction,
     Scope,
     Severity,
     money,
@@ -174,6 +175,28 @@ def _resolved(finding: FindingRow, resolved_fields: frozenset[str]) -> bool:
     )
 
 
+def _field_matches(field_name: str | None, names: frozenset[str]) -> bool:
+    name = field_name or ""
+    return any(name == other or name.startswith((f"{other}[", f"{other}.")) for other in names)
+
+
+def accepted_fields(reviews: Sequence[ReviewRow]) -> frozenset[str]:
+    """Fields a reviewer accepted as printed ("Correct as printed") and has not changed since.
+
+    ``reviews`` come oldest first. A later correction of the field voids the acceptance; so
+    does editing the line items, for an accepted line value.
+    """
+    latest: dict[str, ReviewAction] = {}
+    for review in reviews:
+        if review.field is None:
+            continue
+        if review.action is ReviewAction.CORRECT and review.field == "line_items":
+            for name in [name for name in latest if name.startswith("line_items[")]:
+                latest[name] = ReviewAction.CORRECT
+        latest[review.field] = review.action
+    return frozenset(name for name, action in latest.items() if action is ReviewAction.CONFIRM)
+
+
 def carried_findings(
     previous: Sequence[FindingRow],
     *,
@@ -217,6 +240,7 @@ def recheck(
     *,
     today: date | None = None,
     carried: tuple[Finding, ...] = (),
+    accepted: frozenset[str] = frozenset(),
 ) -> RecheckResult:
     """Return findings for the current values and the status the router would choose.
 
@@ -226,7 +250,13 @@ def recheck(
     del today  # only R02/R03 here; the real recheck uses it
     if state.document_type in _NOT_INVOICES:
         return RecheckResult((), DocStatus.NOT_INVOICE, ())
-    findings = (*recompute_findings(state), *carried)
+    # A flag on a value the reviewer accepted as printed stays cleared, even when the
+    # arithmetic is recomputed. A hold is never cleared this way: it needs a release.
+    findings = tuple(
+        finding
+        for finding in (*recompute_findings(state), *carried)
+        if not (finding.severity is Severity.FLAG and _field_matches(finding.field, accepted))
+    )
     reasons = tuple(
         f"{f.rule_id}: {f.message}"
         for f in findings

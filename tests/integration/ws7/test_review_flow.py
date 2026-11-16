@@ -332,3 +332,48 @@ def test_batches_and_master_reads(conn, backend, docs):
     assert batches[0].batch_id == "B-INT"
     assert batches[0].doc_ids == (docs["SAV-2026-0412"].doc_id,)
     assert backend.export_status()["exported"] == 1
+
+
+def test_correct_as_printed_clears_the_flag_and_later_rechecks_respect_it(conn, backend, docs):
+    doc = _mismatch(docs)
+    outcome = backend.confirm(doc.doc_id, "subtotal", "integration.reviewer")
+    assert not [f for f in outcome.findings if f.field == "subtotal"]
+    assert outcome.status is DocStatus.NEEDS_REVIEW  # a person still approves it
+    assert "subtotal" in outcome.message
+
+    # Another correction reruns the checks; R02 on the accepted subtotal must not come back.
+    later = backend.correct(doc.doc_id, "total", "1,188.20", "integration.reviewer")
+    assert not [f for f in later.findings if f.field == "subtotal"]
+    reviews = [review.action.value for review in backend.document(doc.doc_id).reviews]
+    assert reviews == ["CONFIRM", "CORRECT"]
+
+
+def test_correct_as_printed_never_clears_a_hold(conn, backend, docs):
+    doc = _mismatch(docs)
+    _hold_on_bank_account(conn, doc.doc_id)
+    outcome = backend.confirm(doc.doc_id, "bank_account", "integration.reviewer")
+    assert outcome.status is DocStatus.ON_HOLD
+    assert "R08" in {finding.rule_id for finding in outcome.findings}
+
+
+def test_a_line_item_value_can_be_accepted_as_printed(conn, backend, docs):
+    doc = _mismatch(docs)
+    outcome = backend.confirm(doc.doc_id, "line_items[0].amount", "integration.reviewer")
+    assert outcome.doc_id == doc.doc_id
+    review = backend.document(doc.doc_id).reviews[-1]
+    assert (review.action.value, review.field) == ("CONFIRM", "line_items[0].amount")
+
+
+def test_a_value_the_model_did_not_read_can_be_typed_in(conn, backend, docs):
+    """e.g. R03 "GST registration number is missing": the reviewer reads it off the image."""
+    from invoiceflow.contracts import HEADER_FIELDS
+
+    doc = _mismatch(docs)
+    stored = {field.name for field in backend.document(doc.doc_id).fields}
+    missing = next(
+        name for name in ("supplier_gst_reg_no", "po_number", *HEADER_FIELDS) if name not in stored
+    )
+    backend.correct(doc.doc_id, missing, "M2-1234567-8", "integration.reviewer")
+    row = backend.document(doc.doc_id).field(missing)
+    assert row is not None and row.value_raw == "M2-1234567-8"
+    assert row.source.value == "REVIEWER"

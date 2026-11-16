@@ -18,6 +18,7 @@ from psycopg import Connection
 
 from app import queries, repo
 from app.evaluation import latest_evaluation
+from app.fields import printed_value
 from app.formatting import normalize_field_value
 from app.models import (
     BatchSummary,
@@ -28,8 +29,9 @@ from app.models import (
     ReviewOutcome,
     TraceData,
 )
-from app.recheck import RecheckInput, carried_findings, recheck
+from app.recheck import RecheckInput, accepted_fields, carried_findings, recheck
 from invoiceflow.contracts import (
+    HEADER_FIELDS,
     CodingLine,
     CodingSource,
     Confidence,
@@ -40,6 +42,7 @@ from invoiceflow.contracts import (
     NormalizedLineItem,
     Review,
     ReviewAction,
+    Severity,
     ValueSource,
 )
 from invoiceflow.settings import load_config
@@ -223,7 +226,7 @@ class PostgresBackend:
         carried = carried_findings(
             bundle.findings, resolved_fields=resolved_fields, release_holds=release_holds
         )
-        result = recheck(state, carried=carried)
+        result = recheck(state, carried=carried, accepted=accepted_fields(bundle.reviews))
         # A person changed this invoice, so a clean recheck waits for their approval. Only an
         # invoice nobody touched may pass, and reach the export, on its own.
         is_clean = result.status is DocStatus.AUTO_PASSED
@@ -264,38 +267,54 @@ class PostgresBackend:
         return bundle
 
     def confirm(self, doc_id: UUID, field: str, reviewer: str) -> ReviewOutcome:
+        """ "Correct as printed": the reviewer checked the value against the invoice and it is
+        right. A flag on the field clears and stays cleared on later rechecks; a hold does not
+        (it needs a release with a comment)."""
         with self._write() as conn:
             bundle = self._bundle_or_raise(conn, doc_id)
-            row = bundle.field(field)
-            if row is None:
-                raise ValueError(f"{field} is not a header field on this document")
+            value = printed_value(bundle, field)
             self._review(
                 conn,
                 doc_id=doc_id,
                 reviewer=reviewer,
                 action=ReviewAction.CONFIRM,
                 field=field,
-                old_value=row.value_raw,
-                new_value=row.value_raw,
+                old_value=value,
+                new_value=value,
             )
             repo.log_event(conn, reviewer, "review.confirmed", doc_id, {"field": field})
+            flagged = any(
+                finding.field == field and finding.severity is Severity.FLAG
+                for finding in bundle.findings
+            )
+            if not flagged:
+                return ReviewOutcome(
+                    doc_id=doc_id,
+                    status=bundle.document.status,
+                    message=f"Marked {field} as checked.",
+                    findings=bundle.findings,
+                )
+            outcome = self._rerun(conn, doc_id, reviewer)
             return ReviewOutcome(
-                doc_id=doc_id,
-                status=bundle.document.status,
-                message=f"Confirmed {field}",
-                findings=bundle.findings,
+                doc_id=outcome.doc_id,
+                status=outcome.status,
+                message=f"Accepted {field} as printed; its flag is cleared. {outcome.message}",
+                findings=outcome.findings,
+                run_id=outcome.run_id,
             )
 
     def correct(self, doc_id: UUID, field: str, raw_value: str, reviewer: str) -> ReviewOutcome:
         with self._write() as conn:
             bundle = self._bundle_or_raise(conn, doc_id)
             row = bundle.field(field)
-            if row is None:
+            if row is None and field not in HEADER_FIELDS:
                 raise ValueError(f"{field} is not a header field on this document")
+            # No row: the model did not read this value, and the reviewer types it in.
+            old_value = row.value_raw if row is not None else None
             normalized = normalize_field_value(field, raw_value)
             if normalized is None:
                 raise ValueError(f"{field} cannot be empty")
-            if normalized == row.value_norm:
+            if row is not None and normalized == row.value_norm:
                 return ReviewOutcome(
                     doc_id=doc_id,
                     status=bundle.document.status,
@@ -308,8 +327,8 @@ class PostgresBackend:
                 name=field,
                 value_raw=raw_value,
                 value_norm=normalized,
-                page_no=row.page_no,
-                bbox=row.bbox,
+                page_no=row.page_no if row is not None else None,
+                bbox=row.bbox if row is not None else None,
                 match_type=MatchType.EXACT,
                 match_score=100.0,
                 confidence=Confidence.HIGH,
@@ -321,7 +340,7 @@ class PostgresBackend:
                 reviewer=reviewer,
                 action=ReviewAction.CORRECT,
                 field=field,
-                old_value=row.value_raw,
+                old_value=old_value,
                 new_value=raw_value,
             )
             repo.log_event(
@@ -329,7 +348,7 @@ class PostgresBackend:
                 reviewer,
                 "review.corrected",
                 doc_id,
-                {"field": field, "old": row.value_raw, "new": raw_value},
+                {"field": field, "old": old_value, "new": raw_value},
             )
             outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({field}))
             return ReviewOutcome(

@@ -1,4 +1,5 @@
-"""Review screen: boxes, zoom, corrections, actions, editable lines and coding."""
+"""Review screen: boxes and zoom, findings that lead to their field, the fix panel, the
+invoice decision, and editable lines and coding (the panel lives in ``app.fix_panel``)."""
 
 from __future__ import annotations
 
@@ -10,19 +11,25 @@ import pandas as pd
 import streamlit as st
 
 from app import ui
-from app.backend import Backend, CodingUpdate, subtotal_hint
+from app.backend import Backend, CodingUpdate
 from app.boxes import crop_region, draw_boxes, page_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
+from app.fix_panel import (
+    FIELD_KEY,
+    default_field,
+    render_decision,
+    render_findings,
+    render_fix_panel,
+)
 from app.formatting import (
     confidence_label,
-    format_money,
     parse_decimal,
     source_label,
     status_tone,
 )
 from app.models import DocumentBundle
 from invoiceflow.contracts import (
-    DocStatus,
+    HEADER_FIELDS,
     NormalizedLineItem,
 )
 
@@ -39,6 +46,10 @@ _EDITABLE_LINE_COLUMNS = [
 
 def _field_options(bundle: DocumentBundle) -> list[str]:
     options = [field.name for field in bundle.fields]
+    # A finding can point at a value the model did not read (e.g. a missing GST number).
+    for finding in bundle.findings:
+        if finding.field in HEADER_FIELDS and finding.field not in options:
+            options.append(finding.field)
     for index, item in enumerate(bundle.line_items):
         if item.description:
             options.append(f"line_items[{index}].description")
@@ -83,71 +94,6 @@ def _draw(bundle: DocumentBundle, selected: str | None) -> None:
         st.image(crop, caption=f"Zoom: {box.label}", width=min(560, crop.width))
     elif selected:
         st.caption(f"No box is stored for `{selected}` on page {page_no}.")
-
-
-def _render_findings(bundle: DocumentBundle) -> None:
-    st.subheader("Open findings")
-    if not bundle.findings:
-        st.success("No open findings.")
-        return
-    for finding in bundle.findings:
-        st.markdown(ui.finding_card_html(finding), unsafe_allow_html=True)
-
-
-def _render_actions(
-    backend: Backend, bundle: DocumentBundle, doc_id: UUID, selected: str | None, reviewer: str
-) -> None:
-    st.subheader("Actions")
-    header_names = {field.name for field in bundle.fields}
-    correctable = selected if selected in header_names else None
-    current = bundle.field(correctable) if correctable else None
-
-    left, middle, right = st.columns(3)
-    if left.button("Confirm field", key="btn_confirm", disabled=correctable is None):
-        ui.run_action(backend.confirm, doc_id, correctable, reviewer)
-    if middle.button("Approve", key="btn_approve", type="primary"):
-        ui.run_action(backend.approve, doc_id, reviewer, st.session_state.get("approve_comment"))
-    if right.button("Reject", key="btn_reject"):
-        ui.run_action(backend.reject, doc_id, reviewer, st.session_state.get("reject_comment"))
-
-    st.markdown("**Correct a field**")
-    if current is None:
-        st.caption("Choose a header field above to correct it. Edit line items in the table.")
-    else:
-        raw = st.text_input(
-            "Corrected value",
-            value=current.value_raw or "",
-            key="correction_value",
-            help=f"Stored normalized as {current.value_norm or '—'}",
-        )
-        if correctable == "subtotal":
-            hint = subtotal_hint(bundle)
-            if hint is not None:
-                st.caption(
-                    f"Line items add up to {format_money(hint)}. A subtotal of that amount "
-                    "clears R02."
-                )
-        if st.button("Correct & rerun checks", key="btn_correct"):
-            if correctable is None:
-                ui.flash("Choose a header field first.", "error")
-                st.rerun()
-            ui.run_action(backend.correct, doc_id, correctable, raw, reviewer)
-
-    st.markdown("**Release a hold**")
-    comment = st.text_area(
-        "Release comment (required)",
-        key="hold_comment",
-        placeholder="Why can this hold be released?",
-    )
-    if st.button(
-        "Release hold",
-        key="btn_release",
-        disabled=bundle.document.status is not DocStatus.ON_HOLD,
-    ):
-        ui.run_action(backend.release_hold, doc_id, reviewer, comment)
-
-    with st.expander("Approval comment"):
-        st.text_area("Comment", key="approve_comment", placeholder="Optional for approve/reject")
 
 
 def _render_fields(bundle: DocumentBundle) -> None:
@@ -363,11 +309,19 @@ def render(backend: Backend | None = None) -> None:
             f"extraction `{bundle.extraction.extraction_id}`"
         )
     reviewer = ui.reviewer_name()
+    options = _field_options(bundle)
+    # Open each invoice on the first field a finding asks a person to look at.
+    if st.session_state.get("review_field_doc") != doc_id or (
+        st.session_state.get(FIELD_KEY) not in options
+    ):
+        st.session_state[FIELD_KEY] = default_field(bundle, options)
+        st.session_state["review_field_doc"] = doc_id
     selected = st.selectbox(
         "Field to inspect",
-        _field_options(bundle),
-        key="review_field",
-        help="Choosing a field highlights its box and zooms in on it.",
+        options,
+        key=FIELD_KEY,
+        help="Choosing a field highlights its box and zooms in on it. "
+        "The Fix this field buttons choose a flagged field for you.",
     )
 
     top = st.columns(4)
@@ -380,8 +334,10 @@ def render(backend: Backend | None = None) -> None:
     with left:
         _draw(bundle, selected)
     with right:
-        _render_findings(bundle)
-        _render_actions(backend, bundle, doc_id, selected, reviewer)
+        render_findings(bundle, options, selected)
+        render_fix_panel(backend, bundle, selected, reviewer)
+        st.divider()
+        render_decision(backend, bundle, reviewer)
 
     st.divider()
     _render_fields(bundle)
