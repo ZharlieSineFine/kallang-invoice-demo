@@ -136,3 +136,12 @@ The integrator decides, applies the change on `main`, updates the contract tests
   process was killed, so the retry resumes it instead of losing the invoice.
 - **Impact:** no migration and no `SCHEMA_VERSION` bump; `DocStatus.RECEIVED` already exists.
   `intake_document` keeps its single-transaction behavior for `make e2e` and the fixtures.
+
+### CR-009 — add `watchdog` for Streamlit file watching
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (user, 2026-11-16)
+- **What changes:** `pyproject.toml` gains `watchdog>=6.0.0`; `uv.lock` updated.
+- **Why:** with watchdog, the review app notices code changes and offers "Always rerun", so
+  a demo rehearsal does not need a full Streamlit restart after each change.
+- **Impact:** a development convenience; no code imports it. No migration.
