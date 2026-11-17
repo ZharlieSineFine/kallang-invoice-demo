@@ -9,8 +9,8 @@ not yet run on Windows. Note anything that differs at the bottom of this file.
 | Comes with `git clone` | Stays on each machine |
 |---|---|
 | All code, config, docs, tests | `.env` (your own settings) |
-| `data/generated/`: the 54 invoices, answer key, manifest | The database contents |
-| `data/live-demo-new/`: the 5 invoices kept back for the live demo | |
+| `data/generated/`: the 57 invoices, answer key, manifest | The database contents |
+| `data/live-demo/`: the 6 invoices kept back for the live demo | |
 | `data/llm_cache/`: the recorded model answers (replay) | Page images, parsed text, exports (`data/bronze`, `silver`, `parsed`, …) |
 
 The database and page images are rebuilt by running the invoices through the pipeline
@@ -97,7 +97,7 @@ ollama pull gemma4:12b
 make demo-data RESET=1
 ```
 
-About 25–30 minutes for all 54 on the Mac.
+About 25–30 minutes for all 57 on the Mac.
 
 ## 7. Open the review app
 
@@ -115,7 +115,7 @@ installed, code changes show "Source file changed" in the page corner; click
 make up            # Airflow on http://localhost:8080, review app on http://localhost:8501
 make drop-all      # the 50 for the recorded run, in arrival order
 make intake        # start now instead of waiting up to 5 minutes
-make drop-live     # afterward: the 5 live-demo invoices in data/live-demo-new
+make drop-live     # afterward: the 6 live-demo invoices in data/live-demo
 make intake
 make down          # stop everything
 ```
@@ -160,10 +160,11 @@ a pull that changes the invoices or the pipeline, rerun step 6.
 
 ## The live demo, and running it again
 
-`make demo-ready` (with `LLM_MODE=replay`) loads the 54. The 5 invoices in
-`data/live-demo-new/` are never loaded by it: upload them during the demo (Upload page, then
-`make intake-local`, or `make drop-live` and `make intake` on the full stack). Afterward,
-`make erase-live` removes those 5 again and keeps the 54, so the demo can be run again.
+`make demo-ready` (with `LLM_MODE=replay`) loads the 57. The 6 invoices in
+`data/live-demo/` are never loaded by it: upload them during the demo (Upload page, then
+`make intake-local`, or `make drop-live` and `make intake` on the full stack). PCE-2026-9606
+auto-passes and carries the "Random audit sample" label. Afterward, `make erase-live` removes
+those 6 again and keeps the 57, so the demo can be run again.
 `make erase-live DRY=1` only shows what it would remove.
 
 ## Differences found on Windows

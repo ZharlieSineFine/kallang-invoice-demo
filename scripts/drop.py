@@ -2,9 +2,8 @@
 """`make drop-all` / `make drop-live`: copy a generated folder into data/inbox.
 
 Usage:
-    uv run python scripts/drop.py invoices     # the 50 for the recorded full run
-    uv run python scripts/drop.py live-demo    # the 4 from the first live demo (now in the 54)
-    uv run python scripts/drop.py live-demo-new  # the 5 kept back for the live demo
+    uv run python scripts/drop.py invoices     # the 57 the demo database holds
+    uv run python scripts/drop.py live-demo    # the 6 kept back for the live demo (data/live-demo)
 
 Each file gets its arrival time from the manifest, so invoice_intake takes them in the order
 they arrived, on any machine (git does not keep file times).

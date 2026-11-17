@@ -1,7 +1,7 @@
 """`make erase-live`: remove the live-demo invoices, keep every other invoice.
 
 Usage:
-    uv run python scripts/erase_live.py                    # the 5 in data/live-demo-new/
+    uv run python scripts/erase_live.py                    # the 6 in data/live-demo/
     uv run python scripts/erase_live.py --dry-run          # only show what would go
     uv run python scripts/erase_live.py --folder data/hidden-text-samples
 

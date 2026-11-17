@@ -1,4 +1,5 @@
-"""The 50-document composition, seeded content, and anomaly assignment."""
+"""The 57-document composition (50 full run, 4 live demo, 3 over the auto-pass limit), seeded
+content, and anomaly assignment."""
 
 from __future__ import annotations
 
@@ -12,14 +13,18 @@ from generator.plans import (
     arrival_order,
     build_plans,
     is_live_demo,
+    is_over_limit,
     plan_by_id,
 )
 from invoiceflow.contracts import DocType
+from invoiceflow.rules import Router
+from invoiceflow.settings import load_config
 
 
-def test_fifty_for_the_full_run_and_four_for_the_live_demo(plans):
-    assert len(plans) == 54
+def test_fifty_for_the_full_run_four_for_the_live_demo_and_three_over_the_limit(plans):
+    assert len(plans) == 57
     assert sum(is_live_demo(plan) for plan in plans) == 4
+    assert sum(is_over_limit(plan) for plan in plans) == 3
     assert not hasattr(plans[0], "set_name")
 
 
@@ -31,9 +36,28 @@ def test_live_demo_invoices_show_both_ways_of_reading_a_page(plans):
     assert all(not plan.anomalies and not plan.expected_rules for plan in live)
 
 
+def _group(plan) -> str:
+    return "live" if is_live_demo(plan) else "over" if is_over_limit(plan) else "run"
+
+
 def test_live_demo_invoices_arrive_after_the_full_run(plans):
-    # Uploaded after the recorded run, so they must never look older than it.
-    assert [is_live_demo(plan) for plan in arrival_order(plans)] == [False] * 50 + [True] * 4
+    # Uploaded after the recorded run, so they must never look older than it. The three over
+    # the limit came later still, so the first 54 keep their arrival times.
+    groups = [_group(plan) for plan in arrival_order(plans)]
+    assert groups == ["run"] * 50 + ["live"] * 4 + ["over"] * 3
+
+
+def test_the_three_over_the_limit_are_clean_and_at_least_the_limit(plans):
+    limit = Router(load_config("rules")).auto_pass_limit
+    over = [plan for plan in plans if is_over_limit(plan)]
+    assert [plan.invoice_number for plan in over] == [
+        "SAV-2026-9701",
+        "MEL-2026-9702",
+        "BLP-2026-9703",
+    ]
+    assert all(not plan.anomalies and not plan.expected_rules for plan in over)
+    assert all(_total(plan) >= limit for plan in over)
+    assert all(plan.template != "C1" for plan in over)  # digital, so they read cleanly
 
 
 def test_only_planted_repeats_share_an_invoice_number(plans):
@@ -170,7 +194,7 @@ def test_negative_seed_is_refused():
 
 def test_plan_lookup_matches(plans):
     lookup = plan_by_id(42)
-    assert len(lookup) == 54
+    assert len(lookup) == 57
     assert lookup["live-02"].anomalies == ("total_edited",)
 
 
@@ -188,7 +212,7 @@ def _total(plan):
 
 
 def test_only_planted_duplicates_share_a_vendor_and_total_within_a_week(plans):
-    # R05 holds a vendor's second invoice for the same total within 7 days. All 54 go through
+    # R05 holds a vendor's second invoice for the same total within 7 days. All 57 go through
     # one inbox, so any such pair must be a planted duplicate, or the answer key is wrong.
     invoices = [
         p

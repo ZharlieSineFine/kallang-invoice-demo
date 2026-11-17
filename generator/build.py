@@ -7,13 +7,12 @@ Usage::
 
 The default output is ``data/generated/`` (git-ignored):
 
-- ``invoices/``: the 50 documents for the recorded full run, named by invoice number. When a
+- ``invoices/``: all 57 documents the demo database holds, named by invoice number. When a
   number repeats (the planted re-send and duplicate file), the later arrival gets `` (2)``.
   Each file's time is its arrival time, so an inbox that takes the oldest file first
-  processes them in order.
-- ``live-demo/``: the 4 clean invoices uploaded live after the full run (two digital PDFs, two
-  scans), named the same way and timed after the 50.
-- ``answer-key/``: what each of the 54 documents prints and which checks should fire, same
+  processes them in order: the 50 of the recorded full run, the 4 first shown live, then the
+  3 at or above the auto-pass value limit (CR-012, added 2026-11-17).
+- ``answer-key/``: what each of the 57 documents prints and which checks should fire, same
   names, plus the page image each scan was made from.
 - ``manifest.json`` (in arrival order) and ``master.json``.
 
@@ -37,7 +36,7 @@ from uuid import NAMESPACE_URL, uuid5
 if __package__ in {None, ""}:  # direct execution: python generator/build.py
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generator.plans import DocumentPlan, arrival_order, build_plans, is_live_demo
+from generator.plans import DocumentPlan, arrival_order, build_plans
 from generator.render import file_sha256, write_pdf, write_scan
 from generator.seeds import Seeds, load_seeds
 from generator.truth import build_master, build_truth, totals_for
@@ -45,8 +44,7 @@ from invoiceflow.settings import repo_root
 
 BUILD_TIME = datetime(2026, 11, 4, tzinfo=UTC)
 SCHEMA_VERSION = "ws1-v2"
-INVOICE_DIR = "invoices"  # the 50 for the recorded full run
-LIVE_DEMO_DIR = "live-demo"  # the 4 uploaded live afterward
+INVOICE_DIR = "invoices"  # all 57; the 6 for the live demo live in data/live-demo/
 ANSWER_KEY_DIR = "answer-key"
 # Arrival times are one minute apart, starting here; only their order matters.
 FIRST_ARRIVAL = datetime(2026, 11, 6, 9, 0, tzinfo=UTC)
@@ -80,10 +78,6 @@ def file_names(plans) -> dict[str, str]:
     return names
 
 
-def invoice_folder(plan: DocumentPlan) -> str:
-    return LIVE_DEMO_DIR if is_live_demo(plan) else INVOICE_DIR
-
-
 def build_document(
     plan: DocumentPlan,
     *,
@@ -94,7 +88,7 @@ def build_document(
     seeds: Seeds,
     built: dict[str, Path],
 ) -> dict[str, object]:
-    invoice_dir = out / invoice_folder(plan)
+    invoice_dir = out / INVOICE_DIR
     key_dir = out / ANSWER_KEY_DIR
     truth_path = key_dir / f"{name}.json"
     truth = build_truth(plan, seeds)
@@ -173,7 +167,7 @@ def build(*, seed: int = 42, out: Path | None = None) -> dict[str, object]:
     target = (out or (root / "data" / "generated")).resolve()
     if target.exists():
         shutil.rmtree(target)
-    for folder in (INVOICE_DIR, LIVE_DEMO_DIR, ANSWER_KEY_DIR):
+    for folder in (INVOICE_DIR, ANSWER_KEY_DIR):
         (target / folder).mkdir(parents=True)
 
     seeds = load_seeds(root)

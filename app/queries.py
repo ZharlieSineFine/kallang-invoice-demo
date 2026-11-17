@@ -17,6 +17,7 @@ from psycopg.rows import dict_row
 
 from app.formatting import percent
 from app.models import (
+    AuditSummary,
     BatchSummary,
     CheckCount,
     CodingRow,
@@ -86,7 +87,12 @@ SELECT d.doc_id,
        ext.valid AS extraction_valid,
        fc.open_rules,
        COALESCE(fc.finding_count, 0) AS finding_count,
-       fc.max_rank
+       fc.max_rank,
+       EXISTS (SELECT 1 FROM events ae
+               WHERE ae.doc_id = d.doc_id AND ae.type = 'audit.selected') AS audit_sample,
+       (SELECT ae.payload->>'result' FROM events ae
+        WHERE ae.doc_id = d.doc_id AND ae.type = 'audit.completed'
+        ORDER BY ae.ts DESC, ae.event_id DESC LIMIT 1) AS audit_result
 FROM documents d
 JOIN bronze_files b ON b.file_id = d.file_id
 LEFT JOIN vendors v ON v.vendor_id = d.vendor_id
@@ -173,6 +179,8 @@ def _summary(row: dict[str, Any]) -> DocumentSummary:
         printed_title=row["printed_title"],
         file_name=row["file_name"],
         file_path=row["file_path"],
+        is_audit_sample=bool(row.get("audit_sample")),
+        audit_result=row.get("audit_result"),
     )
 
 
@@ -764,6 +772,45 @@ def discarded_copies(conn: Connection) -> tuple[DiscardedCopy, ...]:
     )
 
 
+# The random audit (CR-012): invoices picked at intake that are still stored, and each one's
+# latest audit result (a person may record it again; the latest counts).
+_AUDITS = """
+WITH picked AS (
+    SELECT DISTINCT e.doc_id FROM events e
+    JOIN documents d ON d.doc_id = e.doc_id
+    WHERE e.type = 'audit.selected'
+), latest AS (
+    SELECT DISTINCT ON (e.doc_id) e.doc_id, e.payload FROM events e
+    JOIN picked p ON p.doc_id = e.doc_id
+    WHERE e.type = 'audit.completed'
+    ORDER BY e.doc_id, e.ts DESC, e.event_id DESC
+)
+"""
+
+
+def audit_summary(conn: Connection, percent: Decimal | None) -> AuditSummary:
+    with conn.cursor() as cur:
+        cur.execute(
+            _AUDITS + "SELECT (SELECT count(*) FROM picked), (SELECT count(*) FROM latest),"
+            " (SELECT count(*) FROM latest WHERE payload->>'result' = 'error')"
+        )
+        picked, checked, with_error = cur.fetchone()
+        cur.execute(
+            _AUDITS + "SELECT f.field, count(*) FROM latest,"
+            " jsonb_array_elements_text(latest.payload->'fields') AS f(field)"
+            " WHERE latest.payload->>'result' = 'error'"
+            " GROUP BY f.field ORDER BY count(*) DESC, f.field"
+        )
+        fields = tuple((str(field), int(count)) for field, count in cur.fetchall())
+    return AuditSummary(
+        percent=percent,
+        picked=int(picked),
+        checked=int(checked),
+        with_error=int(with_error),
+        error_fields=fields,
+    )
+
+
 def latest_document_time(conn: Connection) -> datetime | None:
     with conn.cursor() as cur:
         cur.execute("SELECT max(updated_at) FROM documents")
@@ -772,6 +819,7 @@ def latest_document_time(conn: Connection) -> datetime | None:
 
 
 __all__ = [
+    "audit_summary",
     "average_seconds_per_invoice",
     "batches",
     "coding_lines",

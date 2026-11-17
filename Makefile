@@ -22,7 +22,7 @@ GOLDEN_ENV :=
 endif
 
 .PHONY: help setup doctor up down down-dev logs db-dev fixtures skeleton golden test lint fmt \
-        data warm demo-data demo-ready live-set erase-live intake-local drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
+        data warm demo-data demo-ready demo-add live-set erase-live intake-local drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
         check-dags
 
 help: ## show this help
@@ -97,13 +97,16 @@ warm: ## load the model and keep it loaded (WS3)
 demo-data: ## rehearse the demo: every generated invoice through the real pipeline, oldest first, scored, replay cache recorded (RESET=1 wipes existing documents, STACK=1 targets the full stack)
 	@$(UV) run python scripts/demo_data.py $(if $(RESET),--reset) $(if $(STACK),--stack)
 
-demo-ready: ## reset and load the 54 demo invoices (LLM_MODE=replay uses the recorded answers); the 5 in data/live-demo-new stay unseen
+demo-ready: ## reset and load the 57 demo invoices (LLM_MODE=replay uses the recorded answers); the 6 in data/live-demo stay unseen
 	@$(UV) run python scripts/demo_data.py --reset
 
-live-set: ## (re)build the 5 live-demo invoices in data/live-demo-new (never loaded by demo-data)
+demo-add: ## load only the generated invoices not in the database yet (keeps reviews and exports); records their model answers
+	@$(UV) run python scripts/demo_data.py --add-new
+
+live-set: ## (re)build the 6 live-demo invoices in data/live-demo (never loaded by demo-data)
 	@$(UV) run python -m generator.live_set
 
-erase-live: ## remove the live-demo invoices (data/live-demo-new, or FOLDER=...) from the database and data/, keeping the 54; DRY=1 only shows
+erase-live: ## remove the live-demo invoices (data/live-demo, or FOLDER=...) from the database and data/, keeping the 57; DRY=1 only shows
 	@$(UV) run python scripts/erase_live.py $(if $(FOLDER),--folder $(FOLDER)) $(if $(DRY),--dry-run)
 
 drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
@@ -111,11 +114,11 @@ drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@cp tests/fixtures/golden/$(N)/invoice.pdf data/inbox/$(N).pdf
 	@echo "dropped $(N) into data/inbox/$(N).pdf (invoice_intake picks it up)"
 
-drop-all: ## copy the 50 full-run invoices into data/inbox in arrival order (times from the manifest)
+drop-all: ## copy the 57 demo invoices into data/inbox in arrival order (times from the manifest)
 	@$(UV) run python scripts/drop.py invoices
 
-drop-live: ## copy the 5 live-demo invoices (data/live-demo-new) into data/inbox
-	@$(UV) run python scripts/drop.py live-demo-new
+drop-live: ## copy the 6 live-demo invoices (data/live-demo) into data/inbox
+	@$(UV) run python scripts/drop.py live-demo
 
 intake-local: ## process data/inbox (e.g. Upload page files) into the dev database without Airflow
 	@$(UV) run python scripts/intake_local.py

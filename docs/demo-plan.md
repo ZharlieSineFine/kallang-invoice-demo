@@ -120,6 +120,10 @@ existing `ap` database and `data/` artifacts.
 
 ### Recording the run (decided 2026-11-13)
 
+> **Superseded 2026-11-17.** The database now holds all 57 generated invoices (one folder,
+> `data/generated/invoices/`, including the 4 below and 3 over the auto-pass limit), and the
+> live demo uses the 6 new invoices in `data/live-demo/`. See `docs/windows-setup.md`.
+
 The demo has two parts: a recorded full run of 50 documents, then 4 uploaded live.
 
 - **Full run (recorded).** The 50 in `data/generated/invoices/` take about 25 minutes at

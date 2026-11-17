@@ -554,3 +554,57 @@ def test_drain_inbox_with_nothing_waiting(tmp_path):
     from invoiceflow.pipeline.steps import drain_inbox
 
     assert drain_inbox(lambda path: path, tmp_path / "missing", tmp_path / "done") == ()
+
+
+def _audit_pipeline(golden, percent: str) -> Pipeline:
+    pipeline = _pipeline(golden)
+    rules = {**pipeline.rules_config, "audit": {"sample_percent": percent, "seed": "t"}}
+    return Pipeline(deps=pipeline.deps, master=pipeline.master, rules_config=rules)
+
+
+def _audit_events(repo):
+    return [event for event in repo.events if event[1] == "audit.selected"]
+
+
+def test_a_picked_auto_passed_invoice_is_logged_for_audit(golden, clean, tmp_path):
+    repo = FakeRepo()
+    result = intake_document(
+        clean.pdf_path,
+        repo=repo,
+        store=LocalBlobStore(tmp_path),
+        pipeline=_audit_pipeline(golden, "100"),
+        today=TODAY,
+        run_id="test-run",
+    )
+    assert result.status is DocStatus.AUTO_PASSED  # the audit never changes the status
+    ((_, _, doc_id, payload),) = _audit_events(repo)
+    assert doc_id == result.doc_id
+    assert payload == {"sample_percent": "100", "sha256": clean.sha256}
+
+
+def test_an_invoice_the_draw_skips_is_not_logged(golden, clean, tmp_path):
+    repo = FakeRepo()
+    intake_document(
+        clean.pdf_path,
+        repo=repo,
+        store=LocalBlobStore(tmp_path),
+        pipeline=_audit_pipeline(golden, "0"),
+        today=TODAY,
+        run_id="test-run",
+    )
+    assert not _audit_events(repo)
+
+
+def test_only_auto_passed_invoices_are_audited(golden, tmp_path):
+    flagged = golden.by_invoice_number("SAV-2026-0413")
+    repo = FakeRepo()
+    result = intake_document(
+        flagged.pdf_path,
+        repo=repo,
+        store=LocalBlobStore(tmp_path),
+        pipeline=_audit_pipeline(golden, "100"),
+        today=TODAY,
+        run_id="test-run",
+    )
+    assert result.status is not DocStatus.AUTO_PASSED
+    assert not _audit_events(repo)

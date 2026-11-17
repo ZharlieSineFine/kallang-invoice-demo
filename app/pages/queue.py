@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 
 from app import ui
+from app.audit import AUDIT_LABEL
 from app.backend import Backend
 from app.duplicates import render_discarded_copies
 from app.flow import render_flow_strip
@@ -43,6 +44,7 @@ def _frame(docs) -> pd.DataFrame:
                 "findings": doc.finding_count,
                 "worst": doc.highest_severity.value if doc.highest_severity else "—",
                 "total": float(doc.total) if doc.total is not None else None,
+                "audit": AUDIT_LABEL if doc.is_audit_sample else "",
                 "replay": doc.is_replay,
                 "received": format_time(doc.received_at) if doc.received_at else "—",
             }

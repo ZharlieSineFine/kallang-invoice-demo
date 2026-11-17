@@ -263,6 +263,19 @@ class FakeBackend:
     def discarded_copies(self):
         return self.copies
 
+    audit = None  # AuditSummary; None shows an empty audit
+
+    def audit_summary(self):
+        from decimal import Decimal
+
+        from app.models import AuditSummary
+
+        return self.audit or AuditSummary(percent=Decimal("10"))
+
+    def record_audit(self, doc_id, reviewer, found_error, fields=()):
+        self.calls.append(("record_audit", (doc_id, reviewer, found_error, tuple(fields))))
+        return "Audit recorded."
+
     def export_status(self):
         return {"exported": 1, "approved_not_exported": self.ready}
 

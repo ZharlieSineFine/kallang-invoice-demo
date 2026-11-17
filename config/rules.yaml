@@ -7,6 +7,17 @@ canary: KALLANG-INTERNAL-CANARY-9f3a
 
 routing:
   auto_approve_clean: true   # false in a pilot: people see every invoice first
+  # At or above this SGD total, a person approves even when every check passes (CR-012).
+  # Credit notes count by size; foreign invoices by their SGD total.
+  auto_pass_limit_sgd: "5000.00"   # no demo invoice reaches it (largest auto-passed: 2,877.60)
+
+# Random audit sample of auto-passed invoices (CR-012): a person checks the picked ones
+# against the page, and the share with an error estimates the auto-pass error rate. A picked
+# invoice stays AUTO_PASSED and exports as usual. The seed decides which files are picked;
+# in production keep it secret, so nobody can tell from a file whether it will be audited.
+audit:
+  sample_percent: "10"
+  seed: "kallang-demo-10"   # chosen so the live set's PCE-2026-9606 is picked, the other five not
 
 severities:                  # INFO | FLAG | HOLD | MANUAL
   R01: FLAG    # value not found on the page

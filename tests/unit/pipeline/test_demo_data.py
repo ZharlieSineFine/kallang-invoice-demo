@@ -13,6 +13,7 @@ from invoiceflow.pipeline.demo_data import (
     drop_live_set,
     eval_sample,
     load_manifest,
+    not_yet_stored,
     render_scoreboard,
     require_empty_or_reset,
 )
@@ -214,5 +215,23 @@ def test_the_live_set_is_not_in_the_demo_data_manifest():
     from invoiceflow.settings import repo_root
 
     docs = load_manifest(repo_root() / "data" / "generated")
-    assert len(docs) == 54
+    assert len(docs) == 57
     assert all(doc.folder != LIVE_SET_FOLDER for doc in docs)
+
+
+def test_only_files_not_stored_yet_are_loaded(tmp_path):
+    """`make demo-add`: a file already stored (or an exact copy of one) is left out, so the
+    add never logs a second discarded duplicate."""
+    import hashlib
+
+    root = _manifest(tmp_path)
+    for folder, name, body in (
+        ("invoices", "SAV-2026-1003.pdf", b"one"),
+        ("invoices", "SAV-2026-1001 (2).pdf", b"two"),
+        ("live-demo", "VTR-2026-9001.pdf", b"three"),
+    ):
+        (root / folder).mkdir(exist_ok=True)
+        (root / folder / name).write_bytes(body)
+    stored = {hashlib.sha256(b"one").hexdigest(), hashlib.sha256(b"two").hexdigest()}
+    new = not_yet_stored(load_manifest(root), stored)
+    assert [doc.name for doc in new] == ["VTR-2026-9001"]

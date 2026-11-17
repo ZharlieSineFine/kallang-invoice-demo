@@ -181,3 +181,26 @@ The integrator decides, applies the change on `main`, updates the contract tests
   (`tests/integration/ws2/test_no_false_hidden_text.py`): the comparison hides no word on any
   of the 54 demo invoices, so prompts, and the replay cache, are unchanged. The smallest real
   text on the 54 is 7.6 pt. No migration.
+
+### CR-012 — auto-pass value limit and a random audit of auto-passed invoices
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (user, 2026-11-17: 10% audit; limit S$5,000, raised from S$2,500 the
+  same day so all 31 auto-passed demo invoices stay auto-passed)
+- **What changes:** `config/rules.yaml` `routing` gains `auto_pass_limit_sgd: "5000.00"`:
+  `rules.Router` sends a clean invoice at or above it to `NEEDS_REVIEW` with the reason
+  "At or above the S$5,000.00 auto-pass limit: …" (credit notes by size, foreign invoices by
+  their SGD total). A new `audit` block (`sample_percent: "10"`, `seed`) drives
+  `rules.audit.AuditSample`: intake (`pipeline.steps._save_outcome`) logs `audit.selected`
+  for an auto-passed invoice the draw picks. The draw hashes the seed with the file's
+  fingerprint, so a reload picks the same files. A person's check is logged as
+  `audit.completed` (`result` passed or error, `fields`). `RoutingDecision` is unchanged.
+- **Why:** reviewer corrections only measure the invoices people see; auto-passed invoices
+  reach SAP without a person. The value limit keeps large amounts with a person, and the
+  audit sample measures the auto-pass error rate (user's design, 2026-11-17).
+- **Impact:** a picked invoice stays `AUTO_PASSED` and exports as usual; the audit is a label
+  and a result, never a hold. None of the first 54 reaches the limit (the largest auto-passed
+  is S$2,877.60), so all 31 stay auto-passed, and seed `kallang-demo-10` picks 2 of them for the
+  audit: GSH-2026-9004 and KSS-2026-8101. Three clean invoices of S$5,000+ were added to show the
+  limit (now in `data/generated/invoices/`, the set is 57): each goes to NEEDS_REVIEW. In the live set it picks PCE-2026-9606 only. The evaluation
+  scores findings, not statuses, so its figures are unchanged. No migration.

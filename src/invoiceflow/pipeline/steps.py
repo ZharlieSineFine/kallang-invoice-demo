@@ -38,6 +38,7 @@ from invoiceflow.export.models import ExportDocument
 from invoiceflow.normalize.text import REFERENCE_CLEANUP_REASON, reference_cleanup
 from invoiceflow.pipeline.deps import build_deps
 from invoiceflow.pipeline.stages import PipelineDeps, ProcessResult, process_document
+from invoiceflow.rules.audit import AuditSample
 from invoiceflow.settings import data_dir, load_config, singapore_today
 from invoiceflow.storage import LocalBlobStore
 
@@ -242,6 +243,7 @@ def _save_outcome(
     repo.log_event(
         ACTOR, "intake.completed", received.doc_id, {"status": status.value, "run_id": run_id}
     )
+    _pick_for_audit(repo, received, status, result.context.rules_config)
     return IntakeResult(
         doc_id=received.doc_id,
         file_id=received.file_id,
@@ -249,6 +251,16 @@ def _save_outcome(
         status=status,
         process=result,
     )
+
+
+def _pick_for_audit(repo, received: Received, status: DocStatus, rules_config) -> None:
+    """CR-012: a random share of auto-passed invoices is picked for a person to check. The
+    invoice keeps its status and exports as usual; the event is the audit label."""
+    sample = AuditSample.from_config(rules_config)
+    if status is not DocStatus.AUTO_PASSED or sample is None or not sample.picks(received.sha256):
+        return
+    payload = {"sample_percent": str(sample.percent), "sha256": received.sha256}
+    repo.log_event(ACTOR, "audit.selected", received.doc_id, payload)
 
 
 def _log_cleanups(repo, doc_id: UUID, result: ProcessResult) -> None:

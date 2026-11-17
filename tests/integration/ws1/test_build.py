@@ -1,4 +1,4 @@
-"""Integration: build all 54 documents, check determinism, text layers, and truth data."""
+"""Integration: build all 57 documents, check determinism, text layers, and truth data."""
 
 from __future__ import annotations
 
@@ -46,34 +46,30 @@ def truths(built):
     return result
 
 
-def test_build_writes_fifty_four_documents_under_two_minutes(built, manifest):
+def test_build_writes_fifty_seven_documents_under_two_minutes(built, manifest):
     out, _, elapsed = built
-    assert len(manifest["documents"]) == 54
-    assert manifest["counts"] == {"digital": 41, "scanned": 13}
-    assert manifest["folders"] == {"invoices": 50, "live-demo": 4}
+    assert len(manifest["documents"]) == 57
+    assert manifest["counts"] == {"digital": 44, "scanned": 13}
+    assert manifest["folders"] == {"invoices": 57}
     assert elapsed < 120, f"build took {elapsed:.1f}s"
     assert (out / "manifest.json").is_file()
     assert (out / "master.json").is_file()
-    assert len(list(out.glob("answer-key/*.json"))) == 54
+    assert len(list(out.glob("answer-key/*.json"))) == 57
 
 
-def test_files_are_named_by_invoice_number_in_two_folders(built, manifest):
+def test_all_57_are_named_by_invoice_number_in_one_folder(built, manifest):
     out = built[0]
     assert sorted(p.name for p in out.iterdir()) == [
         "answer-key",
         "invoices",
-        "live-demo",
         "manifest.json",
         "master.json",
     ]
     pdfs = sorted(p.name for p in (out / "invoices").iterdir())
-    assert len(pdfs) == 50 and all(name.endswith(".pdf") for name in pdfs)
-    assert sorted(p.name for p in (out / "live-demo").iterdir()) == [
-        "GSH-2026-9004.pdf",
-        "MEL-2026-9003.pdf",
-        "PWS-2026-9002.pdf",
-        "VTR-2026-9001.pdf",
-    ]
+    assert len(pdfs) == 57 and all(name.endswith(".pdf") for name in pdfs)
+    later = {"GSH-2026-9004", "MEL-2026-9003", "PWS-2026-9002", "VTR-2026-9001"}
+    over = {"SAV-2026-9701", "MEL-2026-9702", "BLP-2026-9703"}
+    assert {f"{name}.pdf" for name in later | over} <= set(pdfs)
     for row in manifest["documents"]:
         name = Path(row["file"]).stem
         assert name in {row["invoice_number"], f"{row['invoice_number']} (2)"}, row["id"]
@@ -89,11 +85,11 @@ def test_a_repeated_invoice_number_marks_the_later_arrival(rows):
 def test_file_times_follow_the_arrival_order(built, manifest):
     out = built[0]
     documents = manifest["documents"]
-    assert [row["arrival"] for row in documents] == list(range(1, 55))
+    assert [row["arrival"] for row in documents] == list(range(1, 58))
     times = [(out / row["file"]).stat().st_mtime for row in documents]
-    assert times == sorted(times) and len(set(times)) == 54
+    assert times == sorted(times) and len(set(times)) == 57
     folders = [Path(row["file"]).parent.name for row in documents]
-    assert folders == ["invoices"] * 50 + ["live-demo"] * 4
+    assert folders == ["invoices"] * 57
 
 
 def test_manifest_rows_carry_id_type_template_anomalies_and_checks(manifest):
@@ -143,7 +139,7 @@ def test_master_data_has_twelve_active_vendors(built):
 def test_every_digital_pdf_has_extractable_text(built, manifest):
     root = built[0]
     digital = [row for row in manifest["documents"] if row["text_layer"]]
-    assert len(digital) == 41
+    assert len(digital) == 44
     for row in digital:
         path = root / row["file"]
         with pdfplumber.open(path) as document:
@@ -326,8 +322,8 @@ def test_same_seed_rebuilds_byte_identically(tmp_path, built):
 
 def test_a_different_seed_changes_files_but_not_the_shape(tmp_path, manifest):
     other = build(seed=43, out=tmp_path / "seed-43")
-    assert other["counts"] == {"digital": 41, "scanned": 13}
-    assert len(other["documents"]) == 54
+    assert other["counts"] == {"digital": 44, "scanned": 13}
+    assert len(other["documents"]) == 57
     assert {row["sha256"] for row in other["documents"]} != {
         row["sha256"] for row in manifest["documents"]
     }

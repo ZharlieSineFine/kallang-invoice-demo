@@ -11,6 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from app import ui
+from app.audit import render_audit
 from app.backend import Backend, CodingUpdate
 from app.boxes import crop_region, draw_boxes, page_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
@@ -312,6 +313,7 @@ def render(backend: Backend | None = None) -> None:
             f"extraction `{bundle.extraction.extraction_id}`"
         )
     reviewer = ui.reviewer_name()
+    render_audit(backend, bundle, reviewer)
     options = _field_options(bundle)
     # Open each invoice on the first field a finding asks a person to look at.
     if st.session_state.get("review_field_doc") != doc_id or (

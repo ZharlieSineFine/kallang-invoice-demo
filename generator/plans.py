@@ -971,13 +971,81 @@ def _showcase(seed: int) -> list[DocumentPlan]:
     ]
 
 
+def _over_limit(seed: int) -> list[DocumentPlan]:
+    """Three clean invoices of S$5,000 or more (CR-012): every check passes, and the auto-pass
+    value limit still sends each to a person. Amounts no other invoice from the vendor uses,
+    so the duplicate check stays quiet. Added 2026-11-17, after the other 54. Every line is
+    quantity x unit price: a days column made the model misread two lines (R02) in the first
+    version, and on SAV-2026-9701 the model read "16 hr" as 1 after two "1 lot" lines, so
+    its lines are all lots. A flagged invoice never reaches the limit."""
+    del seed  # fixed content, like the live invoices
+    return [
+        DocumentPlan(
+            "over-limit-1",
+            "B1",
+            DocType.TAX_INVOICE,
+            "V001",
+            "SAV-2026-9701",
+            _date(2026, 11, 9),
+            _date(2026, 12, 9),
+            (
+                _line("LED video wall package", "1", "lot", "3700.00"),
+                _line("Line-array sound system", "1", "lot", "1450.00"),
+                _line("AV technical crew", "1", "lot", "720.00"),
+            ),
+            venue="Singapore Indoor Stadium",
+            service_period="9-10 Nov 2026",
+        ),
+        DocumentPlan(
+            "over-limit-2",
+            "B1",
+            DocType.TAX_INVOICE,
+            "V002",
+            "MEL-2026-9702",
+            _date(2026, 11, 10),
+            _date(2026, 12, 10),
+            (
+                _line("Crowd barricades (3-day hire)", "120", "pcs", "37.50"),
+                _line("Transport and set-up", "1", "lot", "980.00"),
+            ),
+            venue="National Stadium",
+            service_period="10-12 Nov 2026",
+        ),
+        DocumentPlan(
+            "over-limit-3",
+            "B1",
+            DocType.TAX_INVOICE,
+            "V005",
+            "BLP-2026-9703",
+            _date(2026, 11, 11),
+            _date(2026, 12, 11),
+            (
+                _line("Stage lighting rig", "1", "lot", "4200.00"),
+                _line("Lighting operators", "20", "hr", "55.00"),
+            ),
+            venue="OCBC Arena",
+            service_period="11 Nov 2026",
+        ),
+    ]
+
+
 def is_live_demo(plan: DocumentPlan) -> bool:
     """True for the four invoices uploaded live after the recorded full run."""
     return plan.document_id.startswith(LIVE_DEMO_PREFIX)
 
 
+def is_over_limit(plan: DocumentPlan) -> bool:
+    """True for the three clean invoices at or above the auto-pass value limit."""
+    return plan.document_id.startswith(OVER_LIMIT_PREFIX)
+
+
+def _arrival_group(plan: DocumentPlan) -> int:
+    return 2 if is_over_limit(plan) else 1 if is_live_demo(plan) else 0
+
+
 def arrival_order(plans) -> tuple[DocumentPlan, ...]:
-    """The order the documents reach the AP inbox: the full run, then the live demo's four.
+    """The order the documents reach the AP inbox: the full run, the live demo's four, then
+    the three over the value limit (added later, so the first 54 keep their times).
 
     Within each, the oldest invoice date comes first, and a tie keeps plan order, so an
     original always arrives before its copy or re-send.
@@ -986,13 +1054,17 @@ def arrival_order(plans) -> tuple[DocumentPlan, ...]:
     return tuple(
         sorted(
             plans,
-            key=lambda plan: (is_live_demo(plan), plan.invoice_date, position[plan.document_id]),
+            key=lambda plan: (
+                _arrival_group(plan),
+                plan.invoice_date,
+                position[plan.document_id],
+            ),
         )
     )
 
 
 def build_plans(seed: int) -> tuple[DocumentPlan, ...]:
-    """Return all 54 documents. ``arrival_order`` gives the order they reach the inbox."""
+    """Return all 57 documents. ``arrival_order`` gives the order they reach the inbox."""
     if seed < 0:
         raise ValueError("seed must be non-negative")
     vendors = {v.vendor_id: v for v in _seed_vendors()}
@@ -1005,6 +1077,7 @@ def build_plans(seed: int) -> tuple[DocumentPlan, ...]:
         *_live(seed),
         *_benchmark(seed),
         *_showcase(seed),
+        *_over_limit(seed),  # last, so every earlier scan keeps its noise seed (plan index)
     ]
     # V999 is deliberately not in the active master; the invoice still has plausible details.
     v999 = next(v for v in _seed_vendors() if v.vendor_id == "V999")
@@ -1025,9 +1098,11 @@ def _seed_vendors() -> tuple[VendorSeed, ...]:
     return load_seeds(root).vendors
 
 
-DOCUMENT_COUNT = 54
-# Plan ids of the live demo's four invoices (written to live-demo/, not invoices/).
+DOCUMENT_COUNT = 57
+# Plan ids of the four first shown live; they arrive after the full run (now part of the 57).
 LIVE_DEMO_PREFIX = "showcase-"
+# Plan ids of the three over the auto-pass value limit; they arrive last.
+OVER_LIMIT_PREFIX = "over-limit-"
 
 
 def _validate_plans(plans: tuple[DocumentPlan, ...]) -> None:

@@ -10,12 +10,11 @@
     "IBMPlexMono-Bold.ttf"
   ],
   "counts": {
-    "digital": 41,
+    "digital": 44,
     "scanned": 13
   },
   "folders": {
-    "invoices": 50,
-    "live-demo": 4
+    "invoices": 57
   },
   "documents": [
     {
@@ -1267,11 +1266,11 @@
       "expected_checks": [],
       "doc_id": "5f9bf7a6-dfea-56b9-9a51-9ad96666f071",
       "file_id": "724570de-845b-5662-ba7a-e6ea050725f9",
-      "file": "live-demo/VTR-2026-9001.pdf",
+      "file": "invoices/VTR-2026-9001.pdf",
       "truth": "answer-key/VTR-2026-9001.json",
       "files": {
         "truth": "answer-key/VTR-2026-9001.json",
-        "pdf": "live-demo/VTR-2026-9001.pdf"
+        "pdf": "invoices/VTR-2026-9001.pdf"
       },
       "sha256": "5b413e72d33ff1efd886fbd938c9c0eef73e59bbb79e26b84430d0fa1aa5c663",
       "text_layer": true,
@@ -1290,11 +1289,11 @@
       "expected_checks": [],
       "doc_id": "d63475dc-0608-51c3-9699-2a419486ebcf",
       "file_id": "c79d0cc4-8cd1-51c3-849d-235979166eed",
-      "file": "live-demo/PWS-2026-9002.pdf",
+      "file": "invoices/PWS-2026-9002.pdf",
       "truth": "answer-key/PWS-2026-9002.json",
       "files": {
         "truth": "answer-key/PWS-2026-9002.json",
-        "pdf": "live-demo/PWS-2026-9002.pdf"
+        "pdf": "invoices/PWS-2026-9002.pdf"
       },
       "sha256": "d134585445abc3f4b7b75f9845e4b19ea10625acf587095e920e8057d0d629ec",
       "text_layer": true,
@@ -1313,12 +1312,12 @@
       "expected_checks": [],
       "doc_id": "2dca022e-6d18-5a9b-a621-7059366a6ef8",
       "file_id": "c73fd4bc-4f2c-5d7a-a359-45852012e172",
-      "file": "live-demo/MEL-2026-9003.pdf",
+      "file": "invoices/MEL-2026-9003.pdf",
       "truth": "answer-key/MEL-2026-9003.json",
       "files": {
         "truth": "answer-key/MEL-2026-9003.json",
         "jpg": "answer-key/MEL-2026-9003.jpg",
-        "pdf": "live-demo/MEL-2026-9003.pdf"
+        "pdf": "invoices/MEL-2026-9003.pdf"
       },
       "sha256": "63fe4ec1ac6d2f32d3659c4a4eb57e66e5bd79a047db62892f4f51a6179ffdd9",
       "text_layer": false,
@@ -1337,12 +1336,12 @@
       "expected_checks": [],
       "doc_id": "95218336-d7fe-5d41-bd2e-ce414c92e678",
       "file_id": "30a5c7a9-46dd-57d2-b6b9-3cc5f23ddc16",
-      "file": "live-demo/GSH-2026-9004.pdf",
+      "file": "invoices/GSH-2026-9004.pdf",
       "truth": "answer-key/GSH-2026-9004.json",
       "files": {
         "truth": "answer-key/GSH-2026-9004.json",
         "jpg": "answer-key/GSH-2026-9004.jpg",
-        "pdf": "live-demo/GSH-2026-9004.pdf"
+        "pdf": "invoices/GSH-2026-9004.pdf"
       },
       "sha256": "2d7eadf27375457b46e8958af8f137b164290dccbee870c61de8eb7c5891cb72",
       "text_layer": false,
@@ -1352,6 +1351,75 @@
       "total": "959.20",
       "arrival": 54,
       "received_at": "2026-11-06T09:53:00Z"
+    },
+    {
+      "id": "over-limit-1",
+      "doc_type": "TAX_INVOICE",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "doc_id": "cf363114-dbf3-5849-82ee-5a613223d06d",
+      "file_id": "37bc5e05-fd44-5d51-a49d-6bd5408443af",
+      "file": "invoices/SAV-2026-9701.pdf",
+      "truth": "answer-key/SAV-2026-9701.json",
+      "files": {
+        "truth": "answer-key/SAV-2026-9701.json",
+        "pdf": "invoices/SAV-2026-9701.pdf"
+      },
+      "sha256": "677ba9d234519b02d2de0a3acbf1ba03207b9b75e39fc999ed96922cdab2bf5e",
+      "text_layer": true,
+      "vendor_id": "V001",
+      "invoice_number": "SAV-2026-9701",
+      "currency": "SGD",
+      "total": "6398.30",
+      "arrival": 55,
+      "received_at": "2026-11-06T09:54:00Z"
+    },
+    {
+      "id": "over-limit-2",
+      "doc_type": "TAX_INVOICE",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "doc_id": "8ae0393f-5643-5ac1-9cc2-262d6471ec00",
+      "file_id": "bdcdbf2f-8681-56c5-8e47-19466b0c5a0b",
+      "file": "invoices/MEL-2026-9702.pdf",
+      "truth": "answer-key/MEL-2026-9702.json",
+      "files": {
+        "truth": "answer-key/MEL-2026-9702.json",
+        "pdf": "invoices/MEL-2026-9702.pdf"
+      },
+      "sha256": "003820fcb62dc36add90b764be2863535a9503ead04607f265d49a899b542b25",
+      "text_layer": true,
+      "vendor_id": "V002",
+      "invoice_number": "MEL-2026-9702",
+      "currency": "SGD",
+      "total": "5973.20",
+      "arrival": 56,
+      "received_at": "2026-11-06T09:55:00Z"
+    },
+    {
+      "id": "over-limit-3",
+      "doc_type": "TAX_INVOICE",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "doc_id": "a6a8ead3-adf9-558c-a6fb-5c2fccc92e0e",
+      "file_id": "ee3dbe28-3314-57c4-b816-a237892ca430",
+      "file": "invoices/BLP-2026-9703.pdf",
+      "truth": "answer-key/BLP-2026-9703.json",
+      "files": {
+        "truth": "answer-key/BLP-2026-9703.json",
+        "pdf": "invoices/BLP-2026-9703.pdf"
+      },
+      "sha256": "0c5e2c398122db1a87dd77805d0aef0fcf060b31f517a083c46d799bdebc7edc",
+      "text_layer": true,
+      "vendor_id": "V005",
+      "invoice_number": "BLP-2026-9703",
+      "currency": "SGD",
+      "total": "5777.00",
+      "arrival": 57,
+      "received_at": "2026-11-06T09:56:00Z"
     }
   ]
 }

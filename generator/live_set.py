@@ -1,15 +1,17 @@
-"""The 5 live-demo invoices: new, never processed before the live demo.
+"""The 6 live-demo invoices: new, never processed before the live demo.
 
 Usage::
 
-    uv run python -m generator.live_set      # writes data/live-demo-new/
+    uv run python -m generator.live_set      # writes data/live-demo/
 
 They come from vendors in the vendor master, with invoice numbers, dates, lines, and amounts
 the 54 demo invoices never use, and they are kept out of ``data/generated/`` and its
-manifest, so ``make demo-data`` never loads them. Three should pass on their own (two digital,
+manifest, so ``make demo-data`` never loads them. Four should pass on their own (three digital,
 one scan); one hides an instruction under a white box, which only the OCR comparison sees
-(R09); one prints a total that does not add up (R02). ``make erase-live`` removes them from
-the database again, keeping the 54.
+(R09); one prints a total that does not add up (R02). The sixth passes and is the one the
+audit seed in ``config/rules.yaml`` picks for the random audit (CR-012), so the demo can show
+an auto-passed invoice that a person still checks. ``make erase-live`` removes them from the
+database again, keeping the 54.
 """
 
 from __future__ import annotations
@@ -139,6 +141,20 @@ def live_plans() -> tuple[DocumentPlan, ...]:
             anomalies=("total_edited",),
             total_override=Decimal("2416.72"),  # 2,208.00 + 198.72 GST = 2,406.72
         ),
+        # Passes, under the auto-pass limit, and picked for the random audit. S$1,417.00 is
+        # an amount PrimeCater's other invoices never use, so the duplicate check stays quiet.
+        _plan(
+            "live-new-06",
+            "B1",
+            "V006",
+            "PCE-2026-9606",
+            (
+                _line("Event buffet catering", "120", "pax", "9.50"),
+                _line("Beverage station", "1", "lot", "160.00"),
+            ),
+            "Kallang Theatre",
+            "15 Nov 2026",
+        ),
     )
 
 
@@ -164,7 +180,7 @@ def _write(plan: DocumentPlan, seeds: Seeds, out: Path) -> _Written:
 
 
 def build_live_set(*, seeds: Seeds, out: Path = LIVE_SET_DIR) -> dict[str, object]:
-    """Write the 5 PDFs, their answer keys, and ``manifest.json`` into ``out`` (replaced)."""
+    """Write the 6 PDFs, their answer keys, and ``manifest.json`` into ``out`` (replaced)."""
     if out.exists():
         shutil.rmtree(out)
     (out / ANSWER_KEY_DIR).mkdir(parents=True)

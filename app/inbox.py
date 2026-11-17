@@ -14,6 +14,7 @@ import streamlit as st
 from PIL import Image
 
 from app import ui
+from app.audit import AUDIT_LABEL
 from app.models import DocumentSummary
 from invoiceflow.contracts import DocStatus, DocType
 from invoiceflow.parse.images import render_pdf_page
@@ -61,6 +62,7 @@ class InboxCard:
     tone: str
     outcome: str
     rules: tuple[str, ...] = ()
+    audit: bool = False  # picked for the random audit of auto-passed invoices (CR-012)
 
 
 def _template_label(template: str) -> str:
@@ -106,6 +108,7 @@ def inbox_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
         tone=_TONES.get(doc.status, "other"),
         outcome=doc.status.value.replace("_", " ").capitalize(),
         rules=doc.open_rules,
+        audit=doc.is_audit_sample,
     )
 
 
@@ -142,6 +145,13 @@ def _card_html(card: InboxCard) -> str:
         f"{escape(card.type_label)}</div>"
         f'<div style="font-weight:600;font-size:0.85rem;">{escape(card.vendor)}</div>'
         f'<div style="font-size:0.9rem;">{escape(card.amount)}</div>'
+        + (
+            '<div style="background:#f1e8fd;color:#5b2a9e;border-radius:6px;'
+            'padding:0.1rem 0.5rem;font-size:0.75rem;font-weight:600;margin-top:0.3rem;">'
+            f"{escape(AUDIT_LABEL)}</div>"
+            if card.audit
+            else ""
+        )
     )
 
 

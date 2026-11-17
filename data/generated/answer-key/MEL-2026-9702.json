@@ -1,0 +1,122 @@
+{
+  "document_id": "over-limit-2",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "MEL-2026-9702",
+    "invoice_date": "10/11/2026",
+    "due_date": "10/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_address": "3 Imaginary Road #08-01, Singapore 399998",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "10-12 Nov 2026",
+    "subtotal": "5,480.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "493.20",
+    "total": "5,973.20",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-234567-8",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Crowd barricades (3-day hire)",
+        "quantity": "120",
+        "unit": "pcs",
+        "days": null,
+        "unit_price": "37.50",
+        "amount": "4,500.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Transport and set-up",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "980.00",
+        "amount": "980.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "MEL-2026-9702",
+    "invoice_date": "2026-11-10",
+    "due_date": "2026-12-10",
+    "currency": "SGD",
+    "supplier_name": "Marina Event Logistics Pte. Ltd.",
+    "supplier_uen": "209900234M",
+    "supplier_gst_reg_no": "209900234M",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "5480.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "493.20",
+    "total": "5973.20",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0002345678",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Crowd barricades (3-day hire)",
+        "quantity": "120",
+        "unit": "pcs",
+        "days": null,
+        "unit_price": "37.50",
+        "amount": "4500.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Transport and set-up",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "980.00",
+        "amount": "980.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V002",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "630100",
+      "cost_center": "KG1100",
+      "tax_code": "TX",
+      "net_amount": "5480.00",
+      "tax_amount": "493.20",
+      "description": "Repairs and consumables, National Stadium",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

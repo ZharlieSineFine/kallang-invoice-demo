@@ -73,6 +73,19 @@
       "sha256": "e0e198dcc2f360d0e0575734abda167eda79cbdb118516097cdd0e82c70aeefd",
       "text_layer": true,
       "total": "2416.72"
+    },
+    {
+      "id": "live-new-06",
+      "invoice_number": "PCE-2026-9606",
+      "vendor_id": "V006",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "file": "PCE-2026-9606.pdf",
+      "truth": "answer-key/PCE-2026-9606.json",
+      "sha256": "e86585ae2d388eccb2de3aad2ee5feba02ba69cb69a69ab875d9f10ce3920211",
+      "text_layer": true,
+      "total": "1417.00"
     }
   ]
 }

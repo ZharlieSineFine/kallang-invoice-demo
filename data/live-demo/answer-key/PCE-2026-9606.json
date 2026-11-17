@@ -1,0 +1,122 @@
+{
+  "document_id": "live-new-06",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "PCE-2026-9606",
+    "invoice_date": "16/11/2026",
+    "due_date": "16/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "PrimeCater Event Catering Pte. Ltd.",
+    "supplier_address": "62 Demo Drive #01-02, Singapore 399994",
+    "supplier_uen": "209900678V",
+    "supplier_gst_reg_no": "209900678V",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Kallang Theatre",
+    "service_period": "15 Nov 2026",
+    "subtotal": "1,300.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "117.00",
+    "total": "1,417.00",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "UOB Bank",
+    "bank_account": "000-678901-2",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Event buffet catering",
+        "quantity": "120",
+        "unit": "pax",
+        "days": null,
+        "unit_price": "9.50",
+        "amount": "1,140.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Beverage station",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "160.00",
+        "amount": "160.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "PCE-2026-9606",
+    "invoice_date": "2026-11-16",
+    "due_date": "2026-12-16",
+    "currency": "SGD",
+    "supplier_name": "PrimeCater Event Catering Pte. Ltd.",
+    "supplier_uen": "209900678V",
+    "supplier_gst_reg_no": "209900678V",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "Kallang Theatre",
+    "subtotal": "1300.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "117.00",
+    "total": "1417.00",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0006789012",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Event buffet catering",
+        "quantity": "120",
+        "unit": "pax",
+        "days": null,
+        "unit_price": "9.50",
+        "amount": "1140.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Beverage station",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "160.00",
+        "amount": "160.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V006",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "640100",
+      "cost_center": "KG2100",
+      "tax_code": "TX",
+      "net_amount": "1300.00",
+      "tax_amount": "117.00",
+      "description": "Catering",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENDOR_DEFAULT"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

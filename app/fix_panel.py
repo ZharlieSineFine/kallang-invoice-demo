@@ -48,7 +48,11 @@ def _select(field: str) -> None:
 def render_findings(bundle: DocumentBundle, options: Sequence[str], selected: str | None) -> None:
     st.subheader("Open findings")
     if not bundle.findings:
-        st.success("No open findings.")
+        doc = bundle.document
+        if doc.status is DocStatus.NEEDS_REVIEW and doc.status_reason:
+            st.info(doc.status_reason)  # e.g. the auto-pass value limit (CR-012)
+        else:
+            st.success("No open findings.")
         return
     for index, finding in enumerate(bundle.findings):
         st.markdown(ui.finding_card_html(finding), unsafe_allow_html=True)

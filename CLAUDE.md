@@ -14,8 +14,10 @@ rehearsal prep. All data is synthetic.
   technical toggle, inbox grid, compliance cards, CSV trace) is committed, and the real-data
   fixes are committed as `c122ff3`. The two-folder dataset and the "Processing…" card were
   uncommitted as of 2026-11-13 (check `git status`).
-- Dataset: `make data` writes 50 invoices for the recorded full run (`invoices/`) and 4 for
-  the live demo (`live-demo/`: two digital PDFs, two scans), named by invoice number.
+- Dataset (two folders since 2026-11-17, user's choice): `make data` writes all 57 the demo
+  database holds to `data/generated/invoices/` (the 50 of the full run, the 4 first shown live,
+  the 3 over the limit), named by invoice number; `make live-set` writes the 6 for the live
+  demo to `data/live-demo/`, never processed before the demo.
 - `make demo-data RESET=1` runs the 50, then the 4, through gemma4:12b (~27 min, ~30 s per
   invoice) and scores them against the generator's planted checks. Live run 2026-11-13: 47
   of 54 matched; header accuracy 96.97% on 53 (the byte-identical copy is skipped). All 7
@@ -73,22 +75,37 @@ rehearsal prep. All data is synthetic.
   light gray, same color as the background); font limit raised to 3 pt. 9 planted samples in
   `data/hidden-text-samples/` (VTR-2026-9101..9109, git-ignored) are all caught;
   `tests/integration/ws2/test_no_false_hidden_text.py` shows no false alarms on the 54.
-- Live demo (user's design, 2026-11-17): the database holds all 54 (`LLM_MODE=replay make
-  demo-ready`). Five NEW invoices in `data/live-demo-new/` (`generator/live_set.py`, tracked in
+- Over the limit (user, 2026-11-17): 3 clean invoices of S$5,000+ (in `data/generated/invoices/`)
+  (SAV-2026-9701 S$6,398.30, MEL-2026-9702 S$5,973.20, BLP-2026-9703 S$5,777.00), arriving after
+  the 54, so the set is now 57 and the first 54 are byte-identical. Every check passes and the
+  value limit sends each to NEEDS_REVIEW. Lines are all `qty x price`: a days column, and a
+  "16 hr" line after two "1 lot" lines, made gemma misread (R02) in earlier versions.
+  `make demo-add` loads generated files not stored yet without a reset (no report rewrite).
+- Live demo (user's design, 2026-11-17): the database holds all 57 (`LLM_MODE=replay make
+  demo-ready`). Six NEW invoices in `data/live-demo/` (`generator/live_set.py`, tracked in
   git, not in the 54's manifest) are never processed before the demo: CAM-2026-9601,
   PWS-2026-9602 (digital, pass), CWF-2026-9603 (scan, passes), VTR-2026-9604 (hidden text under
-  a white box, R09 hold, only the OCR comparison sees it), KSS-2026-9605 (total off by 10, R02).
-  Dry-run 2026-11-17 with the live model, nothing persisted: all five as planned. After the
+  a white box, R09 hold, only the OCR comparison sees it), KSS-2026-9605 (total off by 10, R02),
+  PCE-2026-9606 (passes, and the audit seed picks it: the user's design, to show the audit live).
+  Dry-run 2026-11-17 with the live model, nothing persisted: all six as planned. After the
   demo, `make erase-live` (`store/erase.py`) removes just them (rows, files, inbox copies, cache
   answers; a batch that included one is removed and its other invoices go back to ready) and
   keeps the 54. The audit log is append-only, so their history stays there. `make drop-live`
-  copies the five into the inbox; `make intake-local` processes the inbox without Airflow.
+  copies the six into the inbox; `make intake-local` processes the inbox without Airflow.
+- Value limit and random audit (CR-012, user chose 10% and S$5,000, 2026-11-17): a clean
+  invoice at or above `routing.auto_pass_limit_sgd` goes to a person. No demo invoice reaches
+  S$5,000, so the 54 keep 31 auto-passed (the user wants 31 shown, 2 of them audited). Intake picks 10% of
+  auto-passed invoices (`rules/audit.py`, seed `kallang-demo-10` in `config/rules.yaml`,
+  chosen so only PCE-2026-9606 of the live set is picked); a picked one stays AUTO_PASSED,
+  exports as usual, and carries "Random audit sample" (`app/audit.py`: inbox card, Queue
+  column, Review label and audit buttons, Demo Step 8 "Monitoring auto-passed invoices").
+  Changing the seed or the live set means rechecking `test_the_audit_seed_picks_only_the_sixth`.
 - Discarded duplicates: Demo Step 1 and the Queue page count a byte-identical copy as
   "duplicate invoice discarded" and offer "Check the discarded copy" (`app/duplicates.py`):
   the copy's name, time and SHA-256 (from the `intake.duplicate_file` event) beside the kept
   original's, a link to it in Review, a download, and the `shasum` / `certutil` commands.
   The user declined an in-app drop-a-file checker (2026-11-17).
-- `uv run pytest -m "not ollama"`: 1095 passed (2026-11-17), about 2.5 minutes. The 4 ruff
+- `uv run pytest -m "not ollama"`: 1135 passed (2026-11-17), about 2.5 minutes. The 4 ruff
   errors in `scripts/demo_boxes.py` (2026-11-04) are not fixed.
 
 ## Read these first (in order)

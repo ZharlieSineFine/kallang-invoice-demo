@@ -1,4 +1,4 @@
-"""False-alarm test: on the 54 demo invoices the OCR comparison hides nothing a person can
+"""False-alarm test: on the 57 demo invoices the OCR comparison hides nothing a person can
 read. Only SHC-2026-7004's planted instruction is hidden, and the trick checks already
 catch it."""
 
@@ -14,9 +14,7 @@ from invoiceflow.parse import DocumentParser, ParseConfig
 from invoiceflow.settings import repo_root
 
 GENERATED = repo_root() / "data" / "generated"
-INVOICES = sorted((GENERATED / "invoices").glob("*.pdf")) + sorted(
-    (GENERATED / "live-demo").glob("*.pdf")
-)
+INVOICES = sorted((GENERATED / "invoices").glob("*.pdf"))
 
 
 def _hidden(path: Path, config: ParseConfig, root: Path) -> list[str]:
@@ -25,8 +23,8 @@ def _hidden(path: Path, config: ParseConfig, root: Path) -> list[str]:
     return [word.text for _, word in document.hidden_words]
 
 
-def test_all_54_demo_invoices_are_there():
-    assert len(INVOICES) == 54
+def test_all_57_demo_invoices_are_there():
+    assert len(INVOICES) == 57
 
 
 @pytest.mark.parametrize("path", INVOICES, ids=lambda path: path.name)

@@ -16,6 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from app import ui
+from app.audit import render_audit_monitor
 from app.backend import Backend
 from app.boxes import BoxSpec, draw_boxes, page_boxes, word_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
@@ -457,6 +458,8 @@ def _accuracy(ctx: Context) -> str:
         )
     if ui.technical_view():
         st.code(_json(raw), language="json")
+    st.divider()
+    render_audit_monitor(ctx.backend.audit_summary())
     label = "synthetic" if evaluation.synthetic else "real"
     return f"Measured on {samples} {label} documents, set “{evaluation.set_name}”."
 

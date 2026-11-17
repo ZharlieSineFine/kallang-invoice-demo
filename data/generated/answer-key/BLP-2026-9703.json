@@ -1,0 +1,122 @@
+{
+  "document_id": "over-limit-3",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "B1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "BLP-2026-9703",
+    "invoice_date": "11/11/2026",
+    "due_date": "11/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "BrightLite Productions Pte. Ltd.",
+    "supplier_address": "9 Mock Crescent #03-08, Singapore 399995",
+    "supplier_uen": "209900567T",
+    "supplier_gst_reg_no": "209900567T",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "service_period": "11 Nov 2026",
+    "subtotal": "5,300.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "477.00",
+    "total": "5,777.00",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "OCBC Bank",
+    "bank_account": "000-567890-1",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Stage lighting rig",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "4,200.00",
+        "amount": "4,200.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Lighting operators",
+        "quantity": "20",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "55.00",
+        "amount": "1,100.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "BLP-2026-9703",
+    "invoice_date": "2026-11-11",
+    "due_date": "2026-12-11",
+    "currency": "SGD",
+    "supplier_name": "BrightLite Productions Pte. Ltd.",
+    "supplier_uen": "209900567T",
+    "supplier_gst_reg_no": "209900567T",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "OCBC Arena",
+    "subtotal": "5300.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "477.00",
+    "total": "5777.00",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0005678901",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Stage lighting rig",
+        "quantity": "1",
+        "unit": "lot",
+        "days": null,
+        "unit_price": "4200.00",
+        "amount": "4200.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Lighting operators",
+        "quantity": "20",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "55.00",
+        "amount": "1100.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V005",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610100",
+      "cost_center": "KG1400",
+      "tax_code": "TX",
+      "net_amount": "5300.00",
+      "tax_amount": "477.00",
+      "description": "Event production, OCBC Arena",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [],
+  "expected_rules": []
+}

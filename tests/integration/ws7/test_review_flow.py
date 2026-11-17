@@ -483,3 +483,40 @@ def test_a_discarded_copy_is_shown_beside_the_original_it_matched(conn, backend)
     assert copy.sha256 == copy.kept_sha256 == stored  # padding trimmed, so the two compare
     assert copy.is_identical
     assert copy.original.doc_id == doc_id
+
+
+def _auto_passed(backend):
+    return next(doc for doc in backend.list_documents() if doc.status is DocStatus.AUTO_PASSED)
+
+
+def test_an_audit_pick_labels_the_invoice_without_changing_it(conn, backend):
+    doc = _auto_passed(backend)
+    assert backend.audit_summary().picked == 0
+    repo.log_event(conn, "pipeline", "audit.selected", doc.doc_id, {"sample_percent": "10"})
+    labeled = backend.document(doc.doc_id).document
+    assert labeled.is_audit_sample and labeled.audit_result is None
+    assert labeled.status is DocStatus.AUTO_PASSED
+    assert backend.audit_summary().picked == 1
+
+
+def test_audit_results_are_counted_and_the_latest_counts(conn, backend):
+    doc = _auto_passed(backend)
+    repo.log_event(conn, "pipeline", "audit.selected", doc.doc_id, {"sample_percent": "10"})
+    backend.record_audit(doc.doc_id, "integration.reviewer", True, ("total", "payment_terms"))
+    summary = backend.audit_summary()
+    assert (summary.picked, summary.checked, summary.with_error) == (1, 1, 1)
+    assert summary.error_fields == (("payment_terms", 1), ("total", 1))
+    backend.record_audit(doc.doc_id, "integration.reviewer", False)
+    summary = backend.audit_summary()
+    assert (summary.checked, summary.with_error, summary.error_fields) == (1, 0, ())
+    assert backend.document(doc.doc_id).document.audit_result == "passed"
+    assert backend.document(doc.doc_id).document.status is DocStatus.AUTO_PASSED
+
+
+def test_only_a_picked_invoice_can_be_audited(conn, backend):
+    doc = _auto_passed(backend)
+    with pytest.raises(ValueError, match="not picked"):
+        backend.record_audit(doc.doc_id, "integration.reviewer", False)
+    repo.log_event(conn, "pipeline", "audit.selected", doc.doc_id, {"sample_percent": "10"})
+    with pytest.raises(ValueError, match="Choose the fields"):
+        backend.record_audit(doc.doc_id, "integration.reviewer", True)

@@ -153,6 +153,8 @@ class DocumentSummary:
     printed_title: str | None = None
     file_name: str | None = None
     file_path: str | None = None  # the stored upload (bronze), shown until page images exist
+    is_audit_sample: bool = False  # picked for the random audit of auto-passed invoices
+    audit_result: str | None = None  # "passed" or "error" once a person has checked it
 
     @property
     def is_processing(self) -> bool:
@@ -163,6 +165,17 @@ class DocumentSummary:
         number = self.invoice_number or "no invoice number"
         vendor = self.vendor_name or self.supplier_name or "unknown vendor"
         return f"{number} — {vendor} ({self.status.value})"
+
+
+@dataclass(frozen=True)
+class AuditSummary:
+    """The random audit of auto-passed invoices (CR-012), counted from the audit events."""
+
+    percent: Decimal | None  # the configured share; None when no audit is configured
+    picked: int = 0
+    checked: int = 0
+    with_error: int = 0
+    error_fields: tuple[tuple[str, int], ...] = ()  # (field, audits that found it wrong)
 
 
 @dataclass(frozen=True)

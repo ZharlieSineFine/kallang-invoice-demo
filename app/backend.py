@@ -22,6 +22,7 @@ from app.evaluation import latest_evaluation
 from app.fields import printed_value
 from app.formatting import normalize_field_value
 from app.models import (
+    AuditSummary,
     BatchSummary,
     CodingRow,
     DiscardedCopy,
@@ -47,6 +48,7 @@ from invoiceflow.contracts import (
     Severity,
     ValueSource,
 )
+from invoiceflow.rules.audit import AuditSample
 from invoiceflow.settings import load_config
 
 
@@ -90,6 +92,23 @@ class Backend(Protocol):
     def discarded_copies(self) -> tuple[DiscardedCopy, ...]: ...
 
     def run_export(self) -> ExportOutcome: ...
+
+    def audit_summary(self) -> AuditSummary: ...
+
+    def record_audit(
+        self, doc_id: UUID, reviewer: str, found_error: bool, fields: Sequence[str] = ()
+    ) -> AuditOutcome: ...
+
+
+@dataclass(frozen=True)
+class AuditOutcome:
+    message: str
+
+
+_AUDIT_MESSAGES = {
+    "passed": "Audit recorded: every field matched the page.",
+    "error": "Audit recorded: the error counts toward the auto-pass error rate.",
+}
 
 
 @dataclass(frozen=True)
@@ -226,6 +245,28 @@ class PostgresBackend:
     def discarded_copies(self) -> tuple[DiscardedCopy, ...]:
         with self._read() as conn:
             return queries.discarded_copies(conn)
+
+    def audit_summary(self) -> AuditSummary:
+        sample = AuditSample.from_config(self._rules_config)
+        with self._read() as conn:
+            return queries.audit_summary(conn, sample.percent if sample else None)
+
+    def record_audit(
+        self, doc_id: UUID, reviewer: str, found_error: bool, fields: Sequence[str] = ()
+    ) -> AuditOutcome:
+        """CR-012: a person's check of an invoice picked for the random audit. It is saved
+        in the history only; the invoice's status and export do not change."""
+        chosen = list(dict.fromkeys(fields))
+        if found_error and not chosen:
+            raise ValueError("Choose the fields that were wrong, then record the error.")
+        result = "error" if found_error else "passed"
+        with self._write() as conn:
+            bundle = self._bundle_or_raise(conn, doc_id)
+            if not bundle.document.is_audit_sample:
+                raise ValueError("This invoice was not picked for the random audit.")
+            payload = {"result": result, "fields": chosen}
+            repo.log_event(conn, reviewer, "audit.completed", doc_id, payload)
+        return AuditOutcome(_AUDIT_MESSAGES[result])
 
     def run_export(self) -> ExportOutcome:
         """The same export the Airflow ``sap_export`` DAG runs, from the app."""

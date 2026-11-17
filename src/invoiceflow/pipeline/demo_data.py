@@ -9,9 +9,11 @@ the answer key with itself.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -26,7 +28,7 @@ _DUPLICATE_RULE = "R05"
 @dataclass(frozen=True)
 class DemoDoc:
     name: str  # the file name without .pdf: the invoice number, plus " (2)" on a repeat
-    folder: str  # "invoices" for the full run, "live-demo" for the four uploaded live
+    folder: str  # the folder under data/generated/ ("invoices" for all 57)
     path: Path
     truth_path: Path
     doc_id: UUID
@@ -78,9 +80,9 @@ def load_manifest(root: Path) -> tuple[DemoDoc, ...]:
     )
 
 
-# The 5 invoices kept back for the live demo (generator/live_set.py). Not in the manifest
+# The 6 invoices kept back for the live demo (generator/live_set.py). Not in the manifest
 # above, so the demo data never loads them; `make erase-live` removes them again.
-LIVE_SET_FOLDER = "live-demo-new"
+LIVE_SET_FOLDER = "live-demo"
 
 
 def live_set_dir() -> Path:
@@ -102,6 +104,16 @@ def drop_live_set(folder: Path, inbox: Path) -> int:
         shutil.copyfile(folder / str(row["file"]), target)
         os.utime(target, (start + offset, start + offset))
     return len(rows)
+
+
+def not_yet_stored(docs: Sequence[DemoDoc], stored_sha256s: set[str]) -> tuple[DemoDoc, ...]:
+    """`make demo-add`: the documents whose file is not stored yet. A stored file, or an exact
+    copy of one, is left out, so adding never logs another discarded duplicate."""
+    return tuple(
+        doc
+        for doc in docs
+        if hashlib.sha256(doc.path.read_bytes()).hexdigest() not in stored_sha256s
+    )
 
 
 def load_truth(doc: DemoDoc) -> InvoiceTruth:
