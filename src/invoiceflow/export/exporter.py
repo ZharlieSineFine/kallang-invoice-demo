@@ -55,11 +55,17 @@ def export_versions() -> tuple[str, str, str]:
     )
 
 
+def numbered(documents: tuple[ExportDocument, ...]) -> tuple[tuple[int, ExportDocument], ...]:
+    """Number the invoices that have rows 1, 2, 3 in file order (the CSV's InvoiceID)."""
+    with_rows = (doc for doc in documents if doc.coding_lines)
+    return tuple(enumerate(with_rows, start=1))
+
+
 def build_rows(
     mapping: SapMapping, documents: tuple[ExportDocument, ...], export_date: date
 ) -> tuple[tuple[str, ...], ...]:
     rows: list[tuple[str, ...]] = []
-    for doc in documents:
+    for invoice_id, doc in numbered(documents):
         for line in doc.coding_lines:
             rows.append(
                 map_row(
@@ -70,6 +76,7 @@ def build_rows(
                         invoice=doc.invoice,
                         coding_line=line,
                         export_date=export_date,
+                        invoice_id=invoice_id,
                     ),
                 )
             )
@@ -85,6 +92,22 @@ def plan_rows(documents: tuple[ExportDocument, ...]) -> tuple[ExportRowPlan, ...
             plans.append(ExportRowPlan(doc_id=doc.doc_id, first_row_no=first_row, row_count=count))
             first_row += count
     return tuple(plans)
+
+
+def manifest_invoices(documents: tuple[ExportDocument, ...]) -> tuple[dict[str, Any], ...]:
+    """Which InvoiceID is which document, and where its rows sit, for tracing."""
+    plans = {plan.doc_id: plan for plan in plan_rows(documents)}
+    return tuple(
+        {
+            "invoice_id": invoice_id,
+            "doc_id": str(doc.doc_id),
+            "vendor_no": doc.vendor.sap_vendor_no,
+            "reference": doc.invoice.invoice_number,
+            "first_row": plans[doc.doc_id].first_row_no,
+            "row_count": plans[doc.doc_id].row_count,
+        }
+        for invoice_id, doc in numbered(documents)
+    )
 
 
 def _batch_total(documents: tuple[ExportDocument, ...]) -> Decimal:
@@ -124,6 +147,7 @@ def build_batch(
         prompt_version=prompt_version,
         rule_version=rule_version,
         layout=mapping.layout,
+        invoices=manifest_invoices(documents),
     )
     return PreparedBatch(
         batch_id=batch_id,

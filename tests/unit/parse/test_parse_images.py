@@ -121,7 +121,7 @@ def test_config_defaults_are_used(parser):
     assert parser.config.ocr_dpi == 300
     assert parser.config.review_dpi == 150
     assert parser.config.scanned_page_min_chars == 25
-    assert parser.config.hidden_max_font_size_pt == pytest.approx(2.0)
+    assert parser.config.hidden_max_font_size_pt == pytest.approx(3.0)
     assert parser.config.hidden_min_fill_lightness == pytest.approx(0.95)
 
 

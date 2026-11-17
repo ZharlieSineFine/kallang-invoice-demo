@@ -11,6 +11,7 @@ htmlcov/
 data/*
 !data/generated/
 !data/llm_cache/
+!data/live-demo-new/
 reports/*
 !reports/baseline.json
 .DS_Store

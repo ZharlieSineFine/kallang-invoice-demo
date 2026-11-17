@@ -1,5 +1,6 @@
 """Step functions: intake (inbox -> bronze -> silver) and the export-once loop."""
 
+import json
 import os
 from contextlib import contextmanager
 from datetime import date
@@ -283,10 +284,14 @@ def test_export_writes_the_sap_layout_from_the_mapping(tmp_path):
 
     text = store.read(summary.batch.csv_path).decode("utf-8")
     header = text.splitlines()[0]
-    assert header.startswith('"DocKey","CompanyCode","VendorNo"')
+    assert header.startswith('"InvoiceID","CompanyCode","VendorNo"')
     assert '"GrossAmount"' in header
-    assert str(doc_id) in text
+    assert text.splitlines()[1].startswith('"1",')  # InvoiceID: 1, 2, 3 within the file
+    assert str(doc_id) not in text
     assert '"100014"' in text  # the vendor's SAP number from the master
+    manifest = json.loads(store.read(summary.batch.csv_path.replace(".csv", ".manifest.json")))
+    assert manifest["invoices"][0]["invoice_id"] == 1
+    assert manifest["invoices"][0]["doc_id"] == str(doc_id)
 
 
 def test_export_records_the_manifest_with_versions(tmp_path):
@@ -526,3 +531,26 @@ def test_intake_records_nothing_when_no_value_was_cleaned(golden, clean, tmp_pat
     repo = FakeRepo()
     _in_steps(clean.pdf_path, repo, tmp_path, golden)
     assert not [event for event in repo.events if event[1] == "normalize.cleaned"]
+
+
+def test_drain_inbox_processes_oldest_first_and_moves_each_file(tmp_path):
+    from invoiceflow.pipeline.steps import drain_inbox
+
+    inbox, processed = tmp_path / "inbox", tmp_path / "processed"
+    inbox.mkdir()
+    for name, minute in (("B.pdf", 2), ("A.pdf", 3), ("C.pdf", 1)):
+        path = inbox / name
+        path.write_bytes(b"%PDF")
+        os.utime(path, (60.0 * minute, 60.0 * minute))
+    seen = []
+    results = drain_inbox(lambda path: seen.append(path.name) or path.name, inbox, processed)
+    assert seen == ["C.pdf", "B.pdf", "A.pdf"]
+    assert results == ("C.pdf", "B.pdf", "A.pdf")
+    assert sorted(p.name for p in processed.iterdir()) == ["A.pdf", "B.pdf", "C.pdf"]
+    assert list(inbox.iterdir()) == []
+
+
+def test_drain_inbox_with_nothing_waiting(tmp_path):
+    from invoiceflow.pipeline.steps import drain_inbox
+
+    assert drain_inbox(lambda path: path, tmp_path / "missing", tmp_path / "done") == ()

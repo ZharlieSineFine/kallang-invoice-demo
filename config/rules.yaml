@@ -42,8 +42,12 @@ scanned_page_min_chars: 25
 ocr_min_mean_conf: 60
 
 hidden_text:
-  max_font_size_pt: 2.0
+  max_font_size_pt: 3.0      # was 2.0; smallest real text on the 54 demo invoices is 7.6 pt
   min_fill_lightness: 0.95   # 1.0 = white
+  # Render each text-layer page, OCR it, and hide text-layer words a person cannot see,
+  # however they were hidden (covered, transparent, light gray, same color as the
+  # background). CR-011.
+  ocr_compare: true
 
 instruction_phrases:         # start from the AgentOps guardrail patterns
   - ignore previous instructions

@@ -17,12 +17,14 @@ from uuid import UUID, uuid4
 from psycopg import Connection
 
 from app import queries, repo
+from app.coding_refresh import coding_changed, keep_reviewer_choices
 from app.evaluation import latest_evaluation
 from app.fields import printed_value
 from app.formatting import normalize_field_value
 from app.models import (
     BatchSummary,
     CodingRow,
+    DiscardedCopy,
     DocumentBundle,
     DocumentSummary,
     FindingRow,
@@ -82,6 +84,40 @@ class Backend(Protocol):
     def batches(self) -> tuple[BatchSummary, ...]: ...
 
     def export_status(self) -> dict[str, int]: ...
+
+    def discarded_duplicates(self) -> int: ...
+
+    def discarded_copies(self) -> tuple[DiscardedCopy, ...]: ...
+
+    def run_export(self) -> ExportOutcome: ...
+
+
+@dataclass(frozen=True)
+class ExportOutcome:
+    """What one run of the SAP export wrote. ``problems`` names invoices held back."""
+
+    batch_id: str
+    invoices: int
+    row_count: int
+    problems: tuple[str, ...] = ()
+
+    @property
+    def blocked(self) -> bool:
+        return bool(self.problems) or self.invoices == 0
+
+    @property
+    def message(self) -> str:
+        if self.invoices == 0:
+            written = f"Nothing new to export: batch {self.batch_id} has no rows."
+        else:
+            noun = "invoice" if self.invoices == 1 else "invoices"
+            written = (
+                f"Exported {self.invoices} {noun} ({self.row_count} CSV rows) in batch "
+                f"{self.batch_id}. Each invoice exports once."
+            )
+        if not self.problems:
+            return written
+        return f"{written} Held back: " + "; ".join(self.problems)
 
 
 @dataclass(frozen=True)
@@ -183,6 +219,30 @@ class PostgresBackend:
         with self._read() as conn:
             return queries.export_status(conn)
 
+    def discarded_duplicates(self) -> int:
+        with self._read() as conn:
+            return queries.discarded_duplicates(conn)
+
+    def discarded_copies(self) -> tuple[DiscardedCopy, ...]:
+        with self._read() as conn:
+            return queries.discarded_copies(conn)
+
+    def run_export(self) -> ExportOutcome:
+        """The same export the Airflow ``sap_export`` DAG runs, from the app."""
+        from invoiceflow.pipeline.steps import export_approved
+        from invoiceflow.settings import data_dir
+        from invoiceflow.storage import LocalBlobStore
+        from invoiceflow.store.repo import Repo
+
+        with self._write() as conn:
+            summary = export_approved(repo=Repo(conn), store=LocalBlobStore(data_dir()))
+        return ExportOutcome(
+            batch_id=summary.batch.batch_id,
+            invoices=len(summary.doc_ids),
+            row_count=summary.batch.row_count,
+            problems=summary.problems,
+        )
+
     # ------------------------------------------------------------------- writes
     def _review(
         self,
@@ -258,6 +318,36 @@ class PostgresBackend:
             ),
             findings=findings,
             run_id=run_id,
+        )
+
+    def _refresh_coding(self, conn: Connection, doc_id: UUID, reviewer: str) -> None:
+        """Recompute the coding amounts from the corrected values, as intake does."""
+        from invoiceflow.coding.assign import assign
+        from invoiceflow.pipeline.stages import find_purchase_order
+        from invoiceflow.store.repo import Repo
+
+        store = Repo(conn)
+        invoice = store.stored_invoice(doc_id)
+        record = store.get_document(doc_id)
+        if invoice is None or record is None:
+            return
+        master = store.load_master()
+        vendor = master.vendor(record.vendor_id) if record.vendor_id else None
+        fresh = assign(invoice, vendor, find_purchase_order(invoice, master), master.coding)
+        current = queries.document_bundle(conn, doc_id).coding_lines
+        lines = keep_reviewer_choices(fresh, current)
+        if not coding_changed(lines, current):
+            return
+        repo.save_coding_lines(conn, doc_id, lines)
+        repo.log_event(
+            conn,
+            reviewer,
+            "coding.recomputed",
+            doc_id,
+            {
+                "net": [str(line.net_amount) for line in lines],
+                "tax": [str(line.tax_amount) for line in lines],
+            },
         )
 
     def _bundle_or_raise(self, conn: Connection, doc_id: UUID) -> DocumentBundle:
@@ -350,6 +440,7 @@ class PostgresBackend:
                 doc_id,
                 {"field": field, "old": old_value, "new": raw_value},
             )
+            self._refresh_coding(conn, doc_id, reviewer)
             outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({field}))
             return ReviewOutcome(
                 doc_id=outcome.doc_id,
@@ -386,6 +477,7 @@ class PostgresBackend:
                 doc_id,
                 {"count": len(items)},
             )
+            self._refresh_coding(conn, doc_id, reviewer)
             outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({"line_items"}))
             return ReviewOutcome(
                 doc_id=outcome.doc_id,

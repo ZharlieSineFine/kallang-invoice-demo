@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from html import escape
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 import pandas as pd
@@ -64,12 +65,24 @@ def _as_int(value: str | None) -> int | None:
     return int(value) if value and value.isdigit() else None
 
 
-def read_csv(path: Path) -> tuple[CsvRow, ...]:
+def invoice_ids(manifest: Mapping[str, Any]) -> dict[str, UUID]:
+    """InvoiceID (as printed in the CSV) -> document, from the batch manifest."""
+    entries = manifest.get("invoices") or ()
+    return {str(entry["invoice_id"]): UUID(str(entry["doc_id"])) for entry in entries}
+
+
+def _row_document(cells: Mapping[str, str], ids: Mapping[str, UUID]) -> UUID | None:
+    # Batches before CR-010 carried the document ID itself in a DocKey column.
+    return ids.get(cells.get("InvoiceID") or "") or _as_uuid(cells.get("DocKey"))
+
+
+def read_csv(path: Path, ids: Mapping[str, UUID] | None = None) -> tuple[CsvRow, ...]:
+    ids = ids or {}
     with path.open(encoding="utf-8", newline="") as handle:
         return tuple(
             CsvRow(
                 row_no=number,
-                doc_id=_as_uuid(cells.get("DocKey")),
+                doc_id=_row_document(cells, ids),
                 line_no=_as_int(cells.get("LineNo")),
                 cells=cells,
             )
@@ -139,6 +152,14 @@ def trace_cell(
         )
     if origin == "batch":
         return CellOrigin(column, value, "batch", "Set when the batch was exported.")
+    if source == "doc.invoice_id":
+        return CellOrigin(
+            column,
+            value,
+            "document",
+            "Numbers the invoices 1, 2, 3 in this file; the batch manifest records which "
+            "invoice each number is.",
+        )
     return CellOrigin(column, value, "document", "The system's document key.")
 
 
@@ -235,7 +256,7 @@ def render_csv_trace(
     if path is None or not path.is_file():
         st.warning(f"The CSV for batch {batch.batch_id} is not at {batch.csv_path}.")
         return
-    rows = read_csv(path)
+    rows = read_csv(path, invoice_ids(batch.manifest))
     if not rows:
         st.caption(f"Batch {batch.batch_id} has no rows.")
         return

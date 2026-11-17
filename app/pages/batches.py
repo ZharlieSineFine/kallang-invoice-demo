@@ -7,6 +7,8 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.export_action import render_export_action
+from app.formatting import format_time
 
 
 def render(backend: Backend | None = None) -> None:
@@ -21,8 +23,9 @@ def render(backend: Backend | None = None) -> None:
     cols[1].metric("Exported invoices", status.get("exported", 0))
     cols[2].metric("Approved, not exported", status.get("approved_not_exported", 0))
 
+    render_export_action(backend, key="batches_run_export")
     if not batches:
-        st.info("No export batches yet. Approve an invoice and run `make export` (WS6/WS8).")
+        st.info("No export batches yet. Run the SAP export above to write the CSV.")
         return
 
     st.dataframe(
@@ -30,7 +33,7 @@ def render(backend: Backend | None = None) -> None:
             [
                 {
                     "batch": batch.batch_id,
-                    "created": batch.created_at.isoformat(timespec="seconds"),
+                    "created": format_time(batch.created_at),
                     "rows": batch.row_count,
                     "total": float(batch.total),
                     "layout": batch.layout,

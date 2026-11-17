@@ -30,7 +30,7 @@ def render(backend: Backend | None = None) -> None:
     st.title("Dashboard")
     ui.show_flash()
     data = backend.dashboard()
-    render_flow_strip(backend.list_documents())
+    render_flow_strip(backend.list_documents(), discarded=backend.discarded_duplicates())
 
     cols = st.columns(4)
     cols[0].metric("Documents processed", data.total_documents)

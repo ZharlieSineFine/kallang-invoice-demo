@@ -35,6 +35,7 @@ from invoiceflow.parse.pdf import (
     visible_char_count,
 )
 from invoiceflow.parse.reading import page_texts
+from invoiceflow.parse.visibility import mark_unseen
 from invoiceflow.settings import data_dir
 
 
@@ -103,6 +104,8 @@ class DocumentParser:
         words = extract_pdf_words(page, self.config)
         # The same check the review app shows on the Demo page's Read step.
         if check_text_layer(words, page, self.config).uses_text_layer:
+            if self.config.hidden_ocr_compare:
+                words = mark_unseen(words, render_page(document, index, dpi=self.config.ocr_dpi))
             review = render_page(document, index, dpi=self.config.review_dpi)
             image_path = self._write_image(review, doc_id, page_no)
             return PageText(

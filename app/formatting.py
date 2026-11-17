@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from functools import cache
+from zoneinfo import ZoneInfo
 
 from dateutil import parser as date_parser
 
 from invoiceflow.contracts import CodingSource, Confidence, DocStatus, Severity, money
+from invoiceflow.settings import load_config
 
 MONEY_FIELDS = frozenset(
     {
@@ -92,6 +95,24 @@ def format_money(value: Decimal | None, *, currency: str = "S$") -> str:
 
 def format_date(value: date | None) -> str:
     return value.isoformat() if value else "—"
+
+
+_ZONE_LABELS = {"Asia/Singapore": "SGT"}
+
+
+@cache
+def _company_zone() -> ZoneInfo:
+    return ZoneInfo(str(load_config("company").get("timezone", "Asia/Singapore")))
+
+
+def format_time(value: datetime | None) -> str:
+    """A stored time (UTC in the database) in the company's time zone, e.g. 10:37:03 SGT."""
+    if value is None:
+        return "—"
+    zone = _company_zone()
+    local = value.astimezone(zone) if value.tzinfo is not None else value
+    label = _ZONE_LABELS.get(zone.key, zone.key)
+    return f"{local:%Y-%m-%d %H:%M:%S} {label}"
 
 
 def source_label(source: CodingSource) -> str:

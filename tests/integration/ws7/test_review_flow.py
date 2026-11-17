@@ -377,3 +377,109 @@ def test_a_value_the_model_did_not_read_can_be_typed_in(conn, backend, docs):
     row = backend.document(doc.doc_id).field(missing)
     assert row is not None and row.value_raw == "M2-1234567-8"
     assert row.source.value == "REVIEWER"
+
+
+def test_the_app_runs_the_sap_export_once(backend, monkeypatch, tmp_path):
+    monkeypatch.setenv("INVOICEFLOW_DATA", str(tmp_path))
+    ready = backend.export_status()["approved_not_exported"]
+    assert ready >= 1
+
+    first = backend.run_export()
+    assert first.invoices == ready
+    assert first.row_count >= ready
+    batch = next(item for item in backend.batches() if item.batch_id == first.batch_id)
+    assert resolve_path(batch.csv_path).is_file()
+    assert backend.export_status()["approved_not_exported"] == 0
+
+    second = backend.run_export()
+    assert second.invoices == 0
+    assert "Nothing new" in second.message
+
+
+def _with_line_four(bundle, amount: str):
+    return tuple(
+        NormalizedLineItem(
+            line_no=item.line_no,
+            description=item.description,
+            quantity=item.quantity,
+            unit=item.unit,
+            days=item.days,
+            unit_price=item.unit_price,
+            amount=Decimal(amount) if item.line_no == 4 else item.amount,
+        )
+        for item in bundle.line_items
+    )
+
+
+def test_coding_follows_a_corrected_line_amount(backend, docs):
+    doc = _mismatch(docs)
+    before = backend.document(doc.doc_id)
+    assert sum(line.net_amount for line in before.coding_lines) == Decimal("1080.00")
+
+    backend.edit_line_items(doc.doc_id, _with_line_four(before, "90.00"), "integration.reviewer")
+    after = backend.document(doc.doc_id)
+    assert sum(line.net_amount for line in after.coding_lines) == Decimal("1090.00")
+    assert any(event.type == "coding.recomputed" for event in after.events)
+
+
+def test_coding_tax_follows_a_corrected_gst_amount(backend, docs):
+    doc = _mismatch(docs)
+    backend.correct(doc.doc_id, "gst_amount", "98.10", "integration.reviewer")
+    after = backend.document(doc.doc_id)
+    assert sum(line.tax_amount for line in after.coding_lines) == Decimal("98.10")
+
+
+def test_a_reviewers_coding_survives_a_later_correction(backend, docs):
+    doc = _mismatch(docs)
+    backend.recode(
+        doc.doc_id,
+        [CodingUpdate(line_no=1, gl_account="610100", cost_center="KG1200", tax_code="TX")],
+        "integration.reviewer",
+    )
+    bundle = backend.document(doc.doc_id)
+    backend.edit_line_items(doc.doc_id, _with_line_four(bundle, "90.00"), "integration.reviewer")
+    line = backend.document(doc.doc_id).coding_lines[0]
+    assert (line.gl_account, line.cost_center) == ("610100", "KG1200")
+    assert line.coding_source.value == "REVIEWER"
+    assert line.net_amount == Decimal("1090.00")
+
+
+def test_a_correction_that_leaves_the_amounts_alone_saves_no_new_coding(conn, backend, docs):
+    doc = _mismatch(docs)
+
+    def versions():
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM coding_lines WHERE doc_id = %s", (doc.doc_id,))
+            return cur.fetchone()[0]
+
+    before = versions()
+    backend.correct(doc.doc_id, "subtotal", "1,080.00", "integration.reviewer")
+    assert versions() == before
+
+
+def test_a_discarded_duplicate_counts_only_while_its_original_is_stored(conn, backend):
+    assert backend.discarded_duplicates() == 0
+    with conn.cursor() as cur:
+        cur.execute("SELECT sha256 FROM bronze_files LIMIT 1")
+        stored = cur.fetchone()[0].strip()
+    for sha in (stored, "f" * 64):  # a copy of a stored file, and of one erased since
+        payload = {"sha256": sha, "name": "copy (2).pdf"}
+        repo.log_event(conn, "pipeline", "intake.duplicate_file", None, payload)
+    assert backend.discarded_duplicates() == 1
+
+
+def test_a_discarded_copy_is_shown_beside_the_original_it_matched(conn, backend):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT trim(b.sha256), d.doc_id FROM bronze_files b"
+            " JOIN documents d ON d.file_id = b.file_id LIMIT 1"
+        )
+        stored, doc_id = cur.fetchone()
+    payload = {"sha256": stored, "name": "copy (2).pdf"}
+    repo.log_event(conn, "pipeline", "intake.duplicate_file", None, payload)
+    (copy,) = backend.discarded_copies()
+    assert copy.name == "copy (2).pdf"
+    assert copy.arrived_at is not None
+    assert copy.sha256 == copy.kept_sha256 == stored  # padding trimmed, so the two compare
+    assert copy.is_identical
+    assert copy.original.doc_id == doc_id

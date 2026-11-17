@@ -23,10 +23,12 @@ from app.fix_panel import (
 )
 from app.formatting import (
     confidence_label,
+    format_time,
     parse_decimal,
     source_label,
     status_tone,
 )
+from app.hidden_text import hidden_markers
 from app.models import DocumentBundle
 from invoiceflow.contracts import (
     HEADER_FIELDS,
@@ -79,6 +81,7 @@ def _draw(bundle: DocumentBundle, selected: str | None) -> None:
         )
     else:
         boxes = ()
+    boxes = (*boxes, *hidden_markers(bundle, page_no))
     image = ui.load_image(page.image_path)
     if image is None:
         st.warning(f"No page image at {page.image_path or '—'}")
@@ -264,7 +267,7 @@ def _render_reviews(bundle: DocumentBundle) -> None:
         pd.DataFrame(
             [
                 {
-                    "when": review.created_at.isoformat(timespec="seconds"),
+                    "when": format_time(review.created_at),
                     "reviewer": review.reviewer,
                     "action": review.action.value,
                     "field": review.field or "—",

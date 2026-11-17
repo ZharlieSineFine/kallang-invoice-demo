@@ -22,6 +22,7 @@ from app.models import (
     CodingRow,
     CountRow,
     DashboardData,
+    DiscardedCopy,
     DocumentBundle,
     DocumentSummary,
     EventRow,
@@ -429,7 +430,7 @@ def extraction(conn: Connection, doc_id: UUID) -> ExtractionInfo | None:
             """
             SELECT extraction_id, model, model_digest, prompt_version, schema_version,
                    mode, valid, error, latency_ms, created_at, raw_output, parsed,
-                   prompt_tokens, completion_tokens
+                   prompt_tokens, completion_tokens, params
             FROM extractions
             WHERE doc_id = %s
             ORDER BY created_at DESC, extraction_id DESC
@@ -455,6 +456,7 @@ def extraction(conn: Connection, doc_id: UUID) -> ExtractionInfo | None:
             parsed=row["parsed"],
             prompt_tokens=row["prompt_tokens"],
             completion_tokens=row["completion_tokens"],
+            images_sent=(row["params"] or {}).get("n_images"),
         )
 
 
@@ -719,6 +721,49 @@ def export_status(conn: Connection) -> dict[str, int]:
     return {"exported": exported, "approved_not_exported": ready}
 
 
+# Discard events whose matching file is still stored, so erasing the live-demo set leaves
+# no stale count. bronze_files.sha256 is char(64), so it comes back padded; trim it.
+_DISCARDED_FROM = """
+    FROM events e
+    JOIN bronze_files b ON b.sha256 = e.payload->>'sha256'
+    JOIN documents d ON d.file_id = b.file_id
+    WHERE e.type = 'intake.duplicate_file'
+"""
+
+
+def discarded_duplicates(conn: Connection) -> int:
+    """Files intake discarded as byte-identical copies of a stored file."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*)" + _DISCARDED_FROM)
+        return int(cur.fetchone()[0])
+
+
+def discarded_copies(conn: Connection) -> tuple[DiscardedCopy, ...]:
+    """Each discarded copy beside the stored original it matched, for the user to check."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            "SELECT e.payload->>'name' AS name, e.ts AS arrived_at,"
+            " e.payload->>'sha256' AS sha256, trim(b.sha256) AS kept_sha256, d.doc_id"
+            + _DISCARDED_FROM
+            + " ORDER BY e.ts, e.event_id"
+        )
+        rows = cur.fetchall()
+    if not rows:
+        return ()
+    originals = {doc.doc_id: doc for doc in list_documents(conn)}
+    return tuple(
+        DiscardedCopy(
+            name=row["name"],
+            arrived_at=row["arrived_at"],
+            sha256=row["sha256"],
+            kept_sha256=row["kept_sha256"],
+            original=originals[row["doc_id"]],
+        )
+        for row in rows
+        if row["doc_id"] in originals
+    )
+
+
 def latest_document_time(conn: Connection) -> datetime | None:
     with conn.cursor() as cur:
         cur.execute("SELECT max(updated_at) FROM documents")
@@ -733,6 +778,8 @@ __all__ = [
     "corrections_by_field",
     "corrections_by_vendor",
     "dashboard",
+    "discarded_copies",
+    "discarded_duplicates",
     "document_bundle",
     "events",
     "export_status",

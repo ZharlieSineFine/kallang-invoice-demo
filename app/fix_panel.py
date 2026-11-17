@@ -19,6 +19,7 @@ from app import ui
 from app.backend import Backend, subtotal_hint
 from app.fields import line_field, printed_value, with_line_value
 from app.formatting import format_money
+from app.hidden_text import render_hidden_text
 from app.models import DocumentBundle, FindingRow
 from invoiceflow.contracts import DocStatus, Severity
 
@@ -51,6 +52,7 @@ def render_findings(bundle: DocumentBundle, options: Sequence[str], selected: st
         return
     for index, finding in enumerate(bundle.findings):
         st.markdown(ui.finding_card_html(finding), unsafe_allow_html=True)
+        render_hidden_text(bundle, finding)
         if finding.field in options:
             current = finding.field == selected
             st.button(

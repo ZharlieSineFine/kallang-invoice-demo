@@ -145,3 +145,39 @@ The integrator decides, applies the change on `main`, updates the contract tests
 - **Why:** with watchdog, the review app notices code changes and offers "Always rerun", so
   a demo rehearsal does not need a full Streamlit restart after each change.
 - **Impact:** a development convenience; no code imports it. No migration.
+
+### CR-010 — SAP CSV: `InvoiceID` (1, 2, 3 per file) replaces `DocKey`
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (user, 2026-11-17)
+- **What changes:** `config/sap_mapping.yaml`'s first column `DocKey` (`doc.doc_id`, the
+  internal UUID) becomes `InvoiceID` (`doc.invoice_id`): the invoices in one file numbered
+  1, 2, 3 in file order, every coding-line row of an invoice carrying its number.
+  `RowContext` gains `invoice_id`. The batch manifest gains `invoices`, one entry per number:
+  `invoice_id`, `doc_id`, `vendor_no`, `reference`, `first_row`, `row_count`.
+- **Why:** SAP's Import Supplier Invoices upload groups an invoice's lines by an invoice ID
+  that only has to be unique within the file (SAP KBA 3782347); an internal UUID means nothing
+  to SAP. The vendor's invoice number alone is not unique across vendors. The manifest keeps
+  the link from each row to its document, so the review app's CSV trace still works.
+- **Impact:** still 16 columns. The app traces new batches through the manifest and older
+  batches through their `DocKey` column. No migration.
+
+### CR-011 — hidden text: OCR comparison, and a 3 pt font limit
+
+- **Workstream:** integrator (Phase 2)
+- **Status:** ACCEPTED (user, 2026-11-17)
+- **What changes:** `config/rules.yaml` `hidden_text` gains `ocr_compare: true`, and
+  `max_font_size_pt` goes from 2.0 to 3.0. `ParseConfig` gains `hidden_ocr_compare`.
+  `parse.visibility` renders each text-layer page, reads it with Tesseract as black ink on
+  white paper (pixels lighter than 200 count as paper), and marks text-layer words a person
+  cannot see as hidden. Runs under 4 letters are ignored, and every run gets a second OCR
+  look on a crop, matched by position, before it counts. `parse.hidden` names the reason
+  (`tiny_font`, `white_text`, `off_page`, `not_visible`); `parse.pdf.hidden_text_for_file`
+  gives the review screen the same answer.
+- **Why:** the three trick checks missed light-gray, transparent, covered, and
+  same-color-as-background text, and a 2.5 pt font (tested 2026-11-17 on 9 planted
+  invoices: 4 of 9 caught before, 9 of 9 after). Hidden words never reach the model.
+- **Impact:** about 0.5 s more per digital page. False-alarm test
+  (`tests/integration/ws2/test_no_false_hidden_text.py`): the comparison hides no word on any
+  of the 54 demo invoices, so prompts, and the replay cache, are unchanged. The smallest real
+  text on the 54 is 7.6 pt. No migration.

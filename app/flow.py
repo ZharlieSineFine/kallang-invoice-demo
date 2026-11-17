@@ -88,13 +88,19 @@ def _export(docs: Sequence[DocumentSummary]) -> StageOutcome:
     return StageOutcome("Export", StageTone.IDLE, f"{ready} ready")
 
 
-def batch_outcomes(docs: Sequence[DocumentSummary]) -> tuple[StageOutcome, ...]:
+def _intake(kept: int, discarded: int) -> StageOutcome:
+    """A byte-identical copy of a stored file arrived too, but intake discarded it."""
+    summary = f"{kept + discarded} received" + (f", {discarded} discarded" if discarded else "")
+    return StageOutcome("Intake", StageTone.PASSED, summary)
+
+
+def batch_outcomes(docs: Sequence[DocumentSummary], discarded: int = 0) -> tuple[StageOutcome, ...]:
     if not docs:
         return tuple(StageOutcome(name, StageTone.IDLE, "no documents") for name in STAGES)
     # A document the model is still reading has been received, but has no outcome yet.
     done = [doc for doc in docs if not doc.is_processing]
     return (
-        StageOutcome("Intake", StageTone.PASSED, f"{len(docs)} received"),
+        _intake(len(docs), discarded),
         _read(done, len(docs) - len(done)),
         _extract(done),
         _check(done),
@@ -122,5 +128,8 @@ def flow_strip_html(outcomes: Sequence[StageOutcome], current: str | None = None
     return f'<div style="display:flex;gap:0.35rem;margin:0.4rem 0 0.8rem;">{stages}</div>'
 
 
-def render_flow_strip(docs: Sequence[DocumentSummary], current: str | None = None) -> None:
-    st.markdown(flow_strip_html(batch_outcomes(docs), current), unsafe_allow_html=True)
+def render_flow_strip(
+    docs: Sequence[DocumentSummary], current: str | None = None, *, discarded: int = 0
+) -> None:
+    outcomes = batch_outcomes(docs, discarded)
+    st.markdown(flow_strip_html(outcomes, current), unsafe_allow_html=True)

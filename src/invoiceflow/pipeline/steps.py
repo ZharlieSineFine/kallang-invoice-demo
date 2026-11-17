@@ -543,6 +543,18 @@ def _batch_id() -> str:
     return "export-" + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
 
 
+def drain_inbox[T](
+    process: Callable[[Path], T], inbox: Path | None = None, processed: Path | None = None
+) -> tuple[T, ...]:
+    """Process every file waiting in the inbox, oldest first, moving each one out after it
+    is done: what ``invoice_intake`` does, without Airflow (``make intake-local``)."""
+    results = []
+    for path in list_inbox(inbox if inbox is not None else inbox_dir()):
+        results.append(process(path))
+        move_processed(path, processed)
+    return tuple(results)
+
+
 def move_processed(path: Path, processed: Path | None = None) -> Path:
     """Move a processed file out of the inbox so the next run does not re-pick it."""
     destination = (processed or processed_dir()) / path.name

@@ -112,6 +112,7 @@ class ExtractionInfo:
     parsed: dict[str, Any] | None = None
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
+    images_sent: int | None = None  # page images sent with the text (params.n_images)
 
     @property
     def replay(self) -> bool:
@@ -162,6 +163,24 @@ class DocumentSummary:
         number = self.invoice_number or "no invoice number"
         vendor = self.vendor_name or self.supplier_name or "unknown vendor"
         return f"{number} — {vendor} ({self.status.value})"
+
+
+@dataclass(frozen=True)
+class DiscardedCopy:
+    """A file intake discarded because its bytes match a file already stored.
+
+    The copy's name, arrival time and fingerprint come from the discard event; the kept
+    original and its fingerprint come from the stored file it matched."""
+
+    name: str | None
+    arrived_at: datetime | None
+    sha256: str
+    kept_sha256: str
+    original: DocumentSummary
+
+    @property
+    def is_identical(self) -> bool:
+        return self.sha256 == self.kept_sha256
 
 
 @dataclass(frozen=True)

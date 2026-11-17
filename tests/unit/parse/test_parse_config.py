@@ -11,7 +11,7 @@ from invoiceflow.settings import load_config
 def test_config_values_come_from_rules_yaml():
     config = ParseConfig.from_rules(load_config("rules"))
     assert config.scanned_page_min_chars == 25
-    assert config.hidden_max_font_size_pt == pytest.approx(2.0)
+    assert config.hidden_max_font_size_pt == pytest.approx(3.0)
     assert config.hidden_min_fill_lightness == pytest.approx(0.95)
     assert config.max_file_bytes == 20 * 1024 * 1024
     assert config.max_pages == 20
@@ -24,7 +24,7 @@ def test_config_from_repo_reads_the_real_file():
 def test_missing_rules_values_fall_back():
     config = ParseConfig.from_rules({})
     assert config.scanned_page_min_chars == 25
-    assert config.hidden_max_font_size_pt == pytest.approx(2.0)
+    assert config.hidden_max_font_size_pt == pytest.approx(3.0)
 
 
 def test_config_is_frozen():
@@ -40,7 +40,7 @@ def test_invalid_rules_values_fall_back():
         }
     )
     assert config.scanned_page_min_chars == 25
-    assert config.hidden_max_font_size_pt == pytest.approx(2.0)
+    assert config.hidden_max_font_size_pt == pytest.approx(3.0)
     assert config.hidden_min_fill_lightness == pytest.approx(0.95)
 
 

@@ -15,6 +15,7 @@ def _row(mapping, clean_doc, **overrides):
         invoice=clean_doc.invoice,
         coding_line=clean_doc.coding_lines[0],
         export_date=EXPORT_DATE,
+        invoice_id=1,
     )
     values.update(overrides)
     return map_row(mapping, RowContext(**values))
@@ -37,7 +38,7 @@ def test_to_csv_writes_header_and_quotes_every_cell(mapping, clean_doc):
     lines = csv_text.split("\r\n")
     assert lines[0] == ",".join(f'"{name}"' for name in mapping.header)
     assert lines[1] == (
-        '"93fe9312-fe79-50bb-b5e7-d18e83dfaff2","KG01","100014","15.10.2026",'
+        '"1","KG01","100014","15.10.2026",'
         '"04.11.2026","SAV-2026-0412","SGD","1177.20","1","610200","KG1100",'
         '"1080.00","TX","97.20","4500012345","Equipment rental, PO 4500012345"'
     )

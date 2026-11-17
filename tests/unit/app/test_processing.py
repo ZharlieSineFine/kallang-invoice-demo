@@ -102,3 +102,10 @@ def test_a_processing_thumbnail_renders_the_stored_pdf_which_has_no_extension(go
     stored.write_bytes(golden.fixtures[0].pdf_path.read_bytes())
     data = _thumbnail(str(stored))
     assert data is not None and data[:2] == b"\xff\xd8"  # a JPEG thumbnail
+
+
+def test_the_intake_box_counts_a_discarded_duplicate(clean_bundle):
+    done = clean_bundle.document
+    summaries = {outcome.name: outcome.summary for outcome in batch_outcomes((done, done), 1)}
+    assert summaries["Intake"] == "3 received, 1 discarded"
+    assert summaries["Read"] == "2 read"

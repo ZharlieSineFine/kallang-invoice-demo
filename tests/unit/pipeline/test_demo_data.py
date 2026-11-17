@@ -10,6 +10,7 @@ import pytest
 
 from invoiceflow.pipeline.demo_data import (
     Score,
+    drop_live_set,
     eval_sample,
     load_manifest,
     render_scoreboard,
@@ -188,3 +189,30 @@ def test_drop_refuses_an_unknown_folder(tmp_path):
 
     with pytest.raises(SystemExit, match="make data"):
         drop_folder(_arrivals(tmp_path), "nope", tmp_path / "inbox")
+
+
+def test_drop_live_set_copies_the_five_in_manifest_order(tmp_path):
+    folder, inbox = tmp_path / "live", tmp_path / "inbox"
+    folder.mkdir()
+    names = ["B.pdf", "A.pdf"]
+    for name in names:
+        (folder / name).write_bytes(b"%PDF " + name.encode())
+    documents = [{"file": name} for name in names]
+    (folder / "manifest.json").write_text(json.dumps({"documents": documents}), encoding="utf-8")
+    assert drop_live_set(folder, inbox) == 2
+    by_time = sorted(inbox.iterdir(), key=lambda path: path.stat().st_mtime)
+    assert [path.name for path in by_time] == names
+
+
+def test_drop_live_set_explains_a_missing_set(tmp_path):
+    with pytest.raises(SystemExit, match="make live-set"):
+        drop_live_set(tmp_path / "missing", tmp_path / "inbox")
+
+
+def test_the_live_set_is_not_in_the_demo_data_manifest():
+    from invoiceflow.pipeline.demo_data import LIVE_SET_FOLDER
+    from invoiceflow.settings import repo_root
+
+    docs = load_manifest(repo_root() / "data" / "generated")
+    assert len(docs) == 54
+    assert all(doc.folder != LIVE_SET_FOLDER for doc in docs)

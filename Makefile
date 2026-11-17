@@ -22,7 +22,7 @@ GOLDEN_ENV :=
 endif
 
 .PHONY: help setup doctor up down down-dev logs db-dev fixtures skeleton golden test lint fmt \
-        data warm demo-data drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
+        data warm demo-data demo-ready live-set erase-live intake-local drop drop-all drop-live intake export eval eval-bench gate bench snapshot restore reset e2e \
         check-dags
 
 help: ## show this help
@@ -97,6 +97,15 @@ warm: ## load the model and keep it loaded (WS3)
 demo-data: ## rehearse the demo: every generated invoice through the real pipeline, oldest first, scored, replay cache recorded (RESET=1 wipes existing documents, STACK=1 targets the full stack)
 	@$(UV) run python scripts/demo_data.py $(if $(RESET),--reset) $(if $(STACK),--stack)
 
+demo-ready: ## reset and load the 54 demo invoices (LLM_MODE=replay uses the recorded answers); the 5 in data/live-demo-new stay unseen
+	@$(UV) run python scripts/demo_data.py --reset
+
+live-set: ## (re)build the 5 live-demo invoices in data/live-demo-new (never loaded by demo-data)
+	@$(UV) run python -m generator.live_set
+
+erase-live: ## remove the live-demo invoices (data/live-demo-new, or FOLDER=...) from the database and data/, keeping the 54; DRY=1 only shows
+	@$(UV) run python scripts/erase_live.py $(if $(FOLDER),--folder $(FOLDER)) $(if $(DRY),--dry-run)
+
 drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@mkdir -p data/inbox
 	@cp tests/fixtures/golden/$(N)/invoice.pdf data/inbox/$(N).pdf
@@ -105,8 +114,11 @@ drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 drop-all: ## copy the 50 full-run invoices into data/inbox in arrival order (times from the manifest)
 	@$(UV) run python scripts/drop.py invoices
 
-drop-live: ## copy the 4 live-demo invoices into data/inbox (run after the full run finishes)
-	@$(UV) run python scripts/drop.py live-demo
+drop-live: ## copy the 5 live-demo invoices (data/live-demo-new) into data/inbox
+	@$(UV) run python scripts/drop.py live-demo-new
+
+intake-local: ## process data/inbox (e.g. Upload page files) into the dev database without Airflow
+	@$(UV) run python scripts/intake_local.py
 
 intake: ## run invoice_intake now instead of waiting for its 5-minute schedule (needs make up)
 	$(COMPOSE_FULL) exec -T airflow-scheduler airflow dags trigger invoice_intake

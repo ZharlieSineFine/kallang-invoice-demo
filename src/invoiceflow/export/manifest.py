@@ -20,10 +20,13 @@ class Manifest:
     prompt_version: str
     rule_version: str
     layout: str = "hypothetical"
+    # One entry per InvoiceID: invoice_id, doc_id, vendor_no, reference, first_row, row_count.
+    invoices: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["total"] = format(self.total, "f")
+        data["invoices"] = [dict(entry) for entry in self.invoices]
         return data
 
     def to_json(self, *, indent: int = 2) -> str:

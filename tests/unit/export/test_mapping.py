@@ -23,6 +23,7 @@ def _ctx(mapping, clean_doc, **updates):
         invoice=clean_doc.invoice,
         coding_line=clean_doc.coding_lines[0],
         export_date=EXPORT_DATE,
+        invoice_id=1,
     )
     values.update(updates)
     return RowContext(**values)
@@ -31,7 +32,7 @@ def _ctx(mapping, clean_doc, **updates):
 def test_load_sap_mapping_shape(mapping):
     assert mapping.layout == "hypothetical"
     assert len(mapping.columns) == 16
-    assert mapping.header[0] == "DocKey"
+    assert mapping.header[0] == "InvoiceID"
     assert mapping.header[-1] == "LineText"
     assert "LineText" in mapping.free_text_names
 
@@ -41,9 +42,13 @@ def test_const_source(mapping, clean_doc):
     assert resolve_value(company.source, _ctx(mapping, clean_doc)) == "KG01"
 
 
-def test_doc_id_source(mapping, clean_doc):
-    doc_key = next(c for c in mapping.columns if c.name == "DocKey")
-    assert resolve_value(doc_key.source, _ctx(mapping, clean_doc)) == clean_doc.doc_id
+def test_invoice_id_source(mapping, clean_doc):
+    invoice_id = next(c for c in mapping.columns if c.name == "InvoiceID")
+    assert resolve_value(invoice_id.source, _ctx(mapping, clean_doc, invoice_id=3)) == 3
+
+
+def test_doc_id_is_still_a_source(mapping, clean_doc):
+    assert resolve_value("doc.doc_id", _ctx(mapping, clean_doc)) == clean_doc.doc_id
 
 
 def test_date_formatting(mapping):
@@ -58,7 +63,7 @@ def test_decimal_and_int_formatting(mapping):
 
 def test_map_row_matches_golden(mapping, clean_doc):
     assert map_row(mapping, _ctx(mapping, clean_doc)) == (
-        "93fe9312-fe79-50bb-b5e7-d18e83dfaff2",
+        "1",
         "KG01",
         "100014",
         "15.10.2026",

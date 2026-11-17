@@ -86,27 +86,52 @@ def is_off_page(
     )
 
 
+# Why a character (or word) is hidden. One function decides, so the parser's hidden flag and
+# the review screen's explanation can never disagree.
+TINY_FONT = "tiny_font"
+WHITE_TEXT = "white_text"
+OFF_PAGE = "off_page"
+# Found by the OCR comparison (parse.visibility): in the text layer, not on the printed page.
+NOT_VISIBLE = "not_visible"
+
+
+def hidden_reasons(
+    item: Mapping[str, Any], page_bbox: Sequence[float], config: ParseConfig
+) -> tuple[str, ...]:
+    """The hiding tricks one pdfplumber character or word uses; empty when it is visible."""
+    reasons: list[str] = []
+    size = _as_float(item.get("size"))
+    if size is not None and size < config.hidden_max_font_size_pt:
+        reasons.append(TINY_FONT)
+    if is_near_white(item.get("non_stroking_color"), config.hidden_min_fill_lightness):
+        reasons.append(WHITE_TEXT)
+    if _word_box_is_off_page(item, page_bbox):
+        reasons.append(OFF_PAGE)
+    return tuple(reasons)
+
+
+def word_hidden_reasons(
+    raw: Mapping[str, Any], page_bbox: Sequence[float], config: ParseConfig
+) -> tuple[str, ...]:
+    """The reasons across a word's characters (or the word itself when it has none)."""
+    chars = raw.get("chars")
+    if isinstance(chars, Sequence) and not isinstance(chars, (str, bytes)) and chars:
+        found = {reason for char in chars for reason in hidden_reasons(char, page_bbox, config)}
+        return tuple(reason for reason in (TINY_FONT, WHITE_TEXT, OFF_PAGE) if reason in found)
+    return hidden_reasons(raw, page_bbox, config)
+
+
 def char_is_hidden(
     char: Mapping[str, Any], page_bbox: Sequence[float], config: ParseConfig
 ) -> bool:
-    size = _as_float(char.get("size"))
-    if size is not None and size < config.hidden_max_font_size_pt:
-        return True
-    if is_near_white(char.get("non_stroking_color"), config.hidden_min_fill_lightness):
-        return True
-    return _word_box_is_off_page(char, page_bbox)
+    return bool(hidden_reasons(char, page_bbox, config))
 
 
 def raw_word_is_hidden(
     raw: Mapping[str, Any], page_bbox: Sequence[float], config: ParseConfig
 ) -> bool:
     """Hidden test for a pdfplumber word that has no per-character data."""
-    size = _as_float(raw.get("size"))
-    if size is not None and size < config.hidden_max_font_size_pt:
-        return True
-    if is_near_white(raw.get("non_stroking_color"), config.hidden_min_fill_lightness):
-        return True
-    return _word_box_is_off_page(raw, page_bbox)
+    return bool(hidden_reasons(raw, page_bbox, config))
 
 
 def _word_box_is_off_page(raw: Mapping[str, Any], page_bbox: Sequence[float]) -> bool:
@@ -125,11 +150,7 @@ def word_from_pdfplumber(
     text = str(raw.get("text") or "").strip()
     if not text:
         return None
-    chars = raw.get("chars")
-    if isinstance(chars, Sequence) and not isinstance(chars, (str, bytes)) and chars:
-        hidden = any(char_is_hidden(char, page_bbox, config) for char in chars)
-    else:
-        hidden = raw_word_is_hidden(raw, page_bbox, config)
+    hidden = bool(word_hidden_reasons(raw, page_bbox, config))
     bbox = normalize_box(
         _as_float(raw.get("x0")) or 0.0,
         _as_float(raw.get("top")) or 0.0,

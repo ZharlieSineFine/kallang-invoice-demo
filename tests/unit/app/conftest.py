@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.backend import _validate_coding  # noqa: E402
+from app.backend import ExportOutcome, _validate_coding  # noqa: E402
 from app.fields import printed_value  # noqa: E402
 from app.formatting import normalize_field_value  # noqa: E402
 from app.models import (  # noqa: E402
@@ -253,8 +253,25 @@ class FakeBackend:
             ),
         )
 
+    ready = 0
+    copies: tuple = ()  # DiscardedCopy rows
+    export_problems: tuple[str, ...] = ()
+
+    def discarded_duplicates(self):
+        return len(self.copies)
+
+    def discarded_copies(self):
+        return self.copies
+
     def export_status(self):
-        return {"exported": 1, "approved_not_exported": 0}
+        return {"exported": 1, "approved_not_exported": self.ready}
+
+    def run_export(self):
+        self.calls.append(("run_export", ()))
+        invoices, self.ready = self.ready, 0
+        return ExportOutcome(
+            batch_id="B-NEW", invoices=invoices, row_count=invoices, problems=self.export_problems
+        )
 
     # writes ----------------------------------------------------------------
     def _store(self, bundle: DocumentBundle, **updates) -> DocumentBundle:

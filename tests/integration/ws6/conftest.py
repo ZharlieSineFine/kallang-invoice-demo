@@ -27,3 +27,10 @@ def migrated(conn):
         apply_migrations(conn)
         truncate(conn)
         yield conn
+
+
+@pytest.fixture(autouse=True)
+def replay_recorded_answers(monkeypatch):
+    """Use the recorded model answers. Live mode (the .env default) would call the model and
+    rewrite the tracked files in data/llm_cache/ on every test run."""
+    monkeypatch.setenv("LLM_MODE", "replay")

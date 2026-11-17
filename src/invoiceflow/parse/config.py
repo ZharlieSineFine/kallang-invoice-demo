@@ -18,8 +18,9 @@ class ParseConfig:
     review_dpi: int = 150
     ocr_dpi: int = 300
     scanned_page_min_chars: int = 25
-    hidden_max_font_size_pt: float = 2.0
+    hidden_max_font_size_pt: float = 3.0
     hidden_min_fill_lightness: float = 0.95
+    hidden_ocr_compare: bool = True  # parse.visibility
 
     @classmethod
     def from_rules(cls, rules: Mapping[str, Any]) -> ParseConfig:
@@ -36,6 +37,7 @@ class ParseConfig:
             hidden_min_fill_lightness=_as_float(
                 hidden.get("min_fill_lightness"), cls.hidden_min_fill_lightness
             ),
+            hidden_ocr_compare=bool(hidden.get("ocr_compare", cls.hidden_ocr_compare)),
         )
 
     @classmethod

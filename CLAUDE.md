@@ -52,8 +52,44 @@ rehearsal prep. All data is synthetic.
   hold" (shown only when ON_HOLD). Line values are `line_items[i].attr`; missing header values
   can be typed in; coding findings point to the Coding table, master-data findings say so.
   Code: `app/fix_panel.py`, `app/fields.py`.
-- `uv run pytest -m "not ollama"`: 953 passed (2026-11-16). `scripts/demo_boxes.py` has 4
-  old ruff errors from 2026-11-04, not fixed.
+- Export from the app (2026-11-17): Demo Step 7 and the Batches page have a "Run the SAP
+  export" button (`app/export_action.py`, `PostgresBackend.run_export`), the same
+  `export_approved` the Airflow DAG runs, so the CSV no longer needs `make up`. CSVs land in
+  `data/gold/<batch_id>/` with a `.manifest.json`.
+- Coding follows corrections (2026-11-17): after Save correction or a line edit, the backend
+  reruns `coding.assign` on the corrected values (`app/coding_refresh.py`); a reviewer's own
+  GL / cost center / tax code is kept, matched on source line numbers. Before this, coding
+  kept intake's amounts and the export held MEL-2026-8003 back (net + tax != gross).
+- SAP CSV first column is `InvoiceID` (1, 2, 3 per file; CR-010, user chose it 2026-11-17),
+  not the internal UUID. The manifest's `invoices` list maps each number to its document;
+  the CSV trace reads it, and falls back to the `DocKey` column of older batches.
+- Times on screen are Singapore time (`app.formatting.format_time`, zone from
+  `config/company.yaml`); the database stores UTC.
+- Hidden text (2026-11-17): the Review page explains an R09 hidden-text hold under its card
+  (`app/hidden_text.py`): the words, why they cannot be seen, where, and what the model was
+  given; a red marker on the page image. Reasons come from `parse.hidden.hidden_reasons`, the
+  function that sets the hidden flag. The OCR comparison (`parse/visibility.py`, CR-011)
+  hides any text-layer word a person cannot see on the rendered page (covered, transparent,
+  light gray, same color as the background); font limit raised to 3 pt. 9 planted samples in
+  `data/hidden-text-samples/` (VTR-2026-9101..9109, git-ignored) are all caught;
+  `tests/integration/ws2/test_no_false_hidden_text.py` shows no false alarms on the 54.
+- Live demo (user's design, 2026-11-17): the database holds all 54 (`LLM_MODE=replay make
+  demo-ready`). Five NEW invoices in `data/live-demo-new/` (`generator/live_set.py`, tracked in
+  git, not in the 54's manifest) are never processed before the demo: CAM-2026-9601,
+  PWS-2026-9602 (digital, pass), CWF-2026-9603 (scan, passes), VTR-2026-9604 (hidden text under
+  a white box, R09 hold, only the OCR comparison sees it), KSS-2026-9605 (total off by 10, R02).
+  Dry-run 2026-11-17 with the live model, nothing persisted: all five as planned. After the
+  demo, `make erase-live` (`store/erase.py`) removes just them (rows, files, inbox copies, cache
+  answers; a batch that included one is removed and its other invoices go back to ready) and
+  keeps the 54. The audit log is append-only, so their history stays there. `make drop-live`
+  copies the five into the inbox; `make intake-local` processes the inbox without Airflow.
+- Discarded duplicates: Demo Step 1 and the Queue page count a byte-identical copy as
+  "duplicate invoice discarded" and offer "Check the discarded copy" (`app/duplicates.py`):
+  the copy's name, time and SHA-256 (from the `intake.duplicate_file` event) beside the kept
+  original's, a link to it in Review, a download, and the `shasum` / `certutil` commands.
+  The user declined an in-app drop-a-file checker (2026-11-17).
+- `uv run pytest -m "not ollama"`: 1095 passed (2026-11-17), about 2.5 minutes. The 4 ruff
+  errors in `scripts/demo_boxes.py` (2026-11-04) are not fixed.
 
 ## Read these first (in order)
 

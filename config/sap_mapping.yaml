@@ -6,7 +6,10 @@ delimiter: ","
 encoding: utf-8
 date_format: "%d.%m.%Y"
 columns:
-  - {name: DocKey,       source: doc.doc_id}
+  # InvoiceID numbers the invoices 1, 2, 3 within one file, like the invoice ID that groups
+  # lines in SAP's Import Supplier Invoices upload. The manifest maps each number to its
+  # document (CR-010; this column was DocKey = doc.doc_id before 2026-11-17).
+  - {name: InvoiceID,    source: doc.invoice_id}
   - {name: CompanyCode,  source: "const:KG01"}
   - {name: VendorNo,     source: vendor.sap_vendor_no,   required: true}
   - {name: DocumentDate, source: invoice.invoice_date,   required: true, format: date}

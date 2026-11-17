@@ -21,9 +21,13 @@ from app.boxes import BoxSpec, draw_boxes, page_boxes, word_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
 from app.compliance import card_for, card_html
 from app.csv_trace import render_csv_trace
+from app.duplicates import render_discarded_copies
+from app.export_action import render_export_action
 from app.flow import render_flow_strip
+from app.formatting import format_time
+from app.hidden_text import hidden_markers
 from app.inbox import render_grid
-from app.models import DocumentBundle, DocumentSummary
+from app.models import DiscardedCopy, DocumentBundle, DocumentSummary
 from app.read_rule import RULE_SOURCE, page_check, read_rule_html, read_summary, stored_note
 from invoiceflow.contracts import DocStatus
 
@@ -47,6 +51,11 @@ _SCENARIOS = (
 class Context:
     backend: Backend
     docs: tuple[DocumentSummary, ...]
+    copies: tuple[DiscardedCopy, ...] = ()  # byte-identical copies intake discarded
+
+    @property
+    def discarded(self) -> int:
+        return len(self.copies)
 
 
 @dataclass(frozen=True)
@@ -114,21 +123,30 @@ def _extraction_payload(bundle: DocumentBundle) -> dict:
 
 
 def _inbox(ctx: Context) -> str:
+    render_discarded_copies(ctx.copies, key="story_copy")
     render_grid(ctx.docs)
-    return _inbox_sentence(ctx.docs)
+    return _inbox_sentence(ctx.docs, ctx.discarded)
 
 
-def _inbox_sentence(docs) -> str:
-    groups = (
-        ("passed or approved", {DocStatus.AUTO_PASSED, DocStatus.APPROVED, DocStatus.EXPORTED}),
-        ("need a person", {DocStatus.NEEDS_REVIEW, DocStatus.MANUAL_ENTRY}),
-        ("on hold", {DocStatus.ON_HOLD}),
-        ("not invoices", {DocStatus.NOT_INVOICE}),
-        ("rejected", {DocStatus.REJECTED}),
+# (one, several): grammar for one document and for more.
+_INBOX_GROUPS = (
+    (("passed or approved",) * 2, {DocStatus.AUTO_PASSED, DocStatus.APPROVED, DocStatus.EXPORTED}),
+    (("needs a person", "need a person"), {DocStatus.NEEDS_REVIEW, DocStatus.MANUAL_ENTRY}),
+    (("on hold",) * 2, {DocStatus.ON_HOLD}),
+    (("not an invoice", "not invoices"), {DocStatus.NOT_INVOICE}),
+    (("rejected",) * 2, {DocStatus.REJECTED}),
+)
+
+
+def _inbox_sentence(docs, discarded: int = 0) -> str:
+    counts = [
+        (labels, sum(doc.status in statuses for doc in docs)) for labels, statuses in _INBOX_GROUPS
+    ]
+    counts.append((("duplicate invoice discarded", "duplicate invoices discarded"), discarded))
+    parts = ", ".join(
+        f"{count} {labels[0] if count == 1 else labels[1]}" for labels, count in counts if count
     )
-    counts = ((label, sum(doc.status in statuses for doc in docs)) for label, statuses in groups)
-    parts = ", ".join(f"{count} {label}" for label, count in counts if count)
-    return f"{_plural(len(docs), 'document')} arrived: {parts}."
+    return f"{_plural(len(docs) + discarded, 'document')} arrived: {parts}."
 
 
 def _read(ctx: Context) -> str:
@@ -306,7 +324,7 @@ def _check(ctx: Context) -> str:
         if words is not None:
             fields = page_boxes(words, bundle.fields, bundle.line_items, bundle.findings)
             flagged = tuple(box for box in fields if box.status == "flagged")
-            boxes = flagged + word_boxes(words, hidden_only=True)
+            boxes = flagged + hidden_markers(bundle, page.page_no)
         _show_image(page, boxes)
     with right:
         _check_cards(bundle)
@@ -346,7 +364,7 @@ def _review(ctx: Context) -> str:
             pd.DataFrame(
                 [
                     {
-                        "when": review.created_at.isoformat(timespec="seconds"),
+                        "when": format_time(review.created_at),
                         "reviewer": review.reviewer,
                         "action": review.action.value,
                         "field": review.field or "—",
@@ -368,10 +386,12 @@ def _review(ctx: Context) -> str:
 
 
 def _export(ctx: Context) -> str:
+    ui.show_flash()
+    render_export_action(ctx.backend, key="story_run_export")
     batches = ctx.backend.batches()
     filled = next((batch for batch in batches if batch.row_count > 0), None)
     if filled is None:
-        st.info("No export batch yet. Approve an invoice and run the export.")
+        st.info("No export batch yet. Run the SAP export above to write the CSV.")
         return "Nothing has been exported yet."
     st.markdown(":violet-badge[Hypothetical SAP layout]")
     render_csv_trace(
@@ -385,7 +405,7 @@ def _export(ctx: Context) -> str:
             [
                 {
                     "batch": batch.batch_id,
-                    "created": batch.created_at.isoformat(timespec="seconds"),
+                    "created": format_time(batch.created_at),
                     "rows": batch.row_count,
                     "total": float(batch.total),
                 }
@@ -497,12 +517,13 @@ def render(backend: Backend | None = None) -> None:
         return
     index = min(st.session_state.get(_STEP_KEY, 0), len(STEPS) - 1)
     step = STEPS[index]
-    render_flow_strip(docs, step.stage)
+    copies = backend.discarded_copies()
+    render_flow_strip(docs, step.stage, discarded=len(copies))
     _navigation(index)
     heading = st.empty()
     finished = tuple(doc for doc in docs if not doc.is_processing)
     if not finished:
         st.info("The first document is still being read. Its outcome appears here when done.")
         return
-    outcome = step.render(Context(backend=backend, docs=finished))
+    outcome = step.render(Context(backend=backend, docs=finished, copies=copies))
     heading.markdown(_stage_card(step.question, outcome), unsafe_allow_html=True)

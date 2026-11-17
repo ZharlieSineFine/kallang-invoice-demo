@@ -10,6 +10,7 @@ import streamlit as st
 from app import ui
 from app.backend import Backend
 from app.csv_trace import render_csv_trace
+from app.formatting import format_time
 
 
 def _frame(rows: list[dict]) -> pd.DataFrame:
@@ -65,7 +66,7 @@ def render(backend: Backend | None = None) -> None:
                         "schema": ext.schema_version,
                         "prompt": ext.prompt_version,
                         "latency_ms": ext.latency_ms,
-                        "created_at": ext.created_at.isoformat(timespec="seconds"),
+                        "created_at": format_time(ext.created_at),
                     }
                 ]
             ),
@@ -105,7 +106,7 @@ def render(backend: Backend | None = None) -> None:
             _frame(
                 [
                     {
-                        "when": review.created_at.isoformat(timespec="seconds"),
+                        "when": format_time(review.created_at),
                         "reviewer": review.reviewer,
                         "action": review.action.value,
                         "field": review.field or "—",
@@ -128,7 +129,7 @@ def render(backend: Backend | None = None) -> None:
             _frame(
                 [
                     {
-                        "when": event.ts.isoformat(timespec="seconds"),
+                        "when": format_time(event.ts),
                         "actor": event.actor,
                         "type": event.type,
                         "payload": json.dumps(event.payload, sort_keys=True),

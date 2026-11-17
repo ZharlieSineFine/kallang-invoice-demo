@@ -3,7 +3,8 @@
 
 Usage:
     uv run python scripts/drop.py invoices     # the 50 for the recorded full run
-    uv run python scripts/drop.py live-demo    # the 4 for the live demo
+    uv run python scripts/drop.py live-demo    # the 4 from the first live demo (now in the 54)
+    uv run python scripts/drop.py live-demo-new  # the 5 kept back for the live demo
 
 Each file gets its arrival time from the manifest, so invoice_intake takes them in the order
 they arrived, on any machine (git does not keep file times).
@@ -13,7 +14,7 @@ from __future__ import annotations
 
 import sys
 
-from invoiceflow.pipeline.demo_data import drop_folder
+from invoiceflow.pipeline.demo_data import LIVE_SET_FOLDER, drop_folder, drop_live_set, live_set_dir
 from invoiceflow.pipeline.steps import inbox_dir
 from invoiceflow.settings import data_dir
 
@@ -22,7 +23,10 @@ def main(argv: list[str]) -> int:
     if len(argv) != 1:
         print(__doc__)
         return 2
-    count = drop_folder(data_dir() / "generated", argv[0], inbox_dir())
+    if argv[0] == LIVE_SET_FOLDER:
+        count = drop_live_set(live_set_dir(), inbox_dir())
+    else:
+        count = drop_folder(data_dir() / "generated", argv[0], inbox_dir())
     print(f"dropped {count} invoices from {argv[0]}/ into data/inbox (oldest arrival first)")
     return 0
 

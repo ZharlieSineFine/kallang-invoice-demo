@@ -12,18 +12,18 @@ from app.csv_trace import (
 )
 
 SAP_CSV = (
-    '"DocKey","CompanyCode","VendorNo","DocumentDate","PostingDate","Reference","Currency",'
+    '"InvoiceID","CompanyCode","VendorNo","DocumentDate","PostingDate","Reference","Currency",'
     '"GrossAmount","LineNo","GLAccount","CostCenter","NetAmount","TaxCode","TaxAmount",'
     '"PONumber","LineText"\n'
-    '"{doc}","KG01","100014","15.10.2026","04.11.2026","SAV-2026-0412","SGD","1177.20","1",'
+    '"1","KG01","100014","15.10.2026","04.11.2026","SAV-2026-0412","SGD","1177.20","1",'
     '"610200","KG1100","1080.00","TX","97.20","4500012345","Equipment rental"\n'
 )
 
 
 def _sap_row(tmp_path, bundle):
     path = tmp_path / "sap.csv"
-    path.write_text(SAP_CSV.format(doc=bundle.document.doc_id), encoding="utf-8")
-    return read_csv(path)[0]
+    path.write_text(SAP_CSV, encoding="utf-8")
+    return read_csv(path, {"1": bundle.document.doc_id})[0]
 
 
 def _words(bundle):
@@ -89,7 +89,9 @@ def test_constants_and_batch_values_are_labeled_as_such(tmp_path, clean_bundle):
     sources = column_sources(tuple(row.cells))
     assert trace_cell(row, "CompanyCode", sources, clean_bundle).kind == "constant"
     assert trace_cell(row, "PostingDate", sources, clean_bundle).kind == "batch"
-    assert trace_cell(row, "DocKey", sources, clean_bundle).kind == "document"
+    origin = trace_cell(row, "InvoiceID", sources, clean_bundle)
+    assert origin.kind == "document"
+    assert "manifest" in origin.detail
 
 
 def test_an_unmapped_column_is_reported_not_guessed(tmp_path, clean_bundle):
@@ -105,3 +107,25 @@ def test_relative_words_paths_resolve_under_the_data_directory(tmp_path, monkeyp
     target.parent.mkdir(parents=True)
     target.write_text("{}", encoding="utf-8")
     assert ui.resolve_path("silver/doc/page-1.words.json") == target
+
+
+def test_a_row_finds_its_invoice_through_the_manifest(tmp_path, clean_bundle):
+    assert _sap_row(tmp_path, clean_bundle).doc_id == clean_bundle.document.doc_id
+
+
+def test_the_manifest_list_becomes_the_lookup():
+    from uuid import NAMESPACE_URL, uuid5
+
+    from app.csv_trace import invoice_ids
+
+    doc = uuid5(NAMESPACE_URL, "a")
+    manifest = {"invoices": [{"invoice_id": 1, "doc_id": str(doc)}]}
+    assert invoice_ids(manifest) == {"1": doc}
+    assert invoice_ids({}) == {}
+
+
+def test_an_older_csv_with_doc_key_still_traces(tmp_path, clean_bundle):
+    doc = clean_bundle.document.doc_id
+    path = tmp_path / "old.csv"
+    path.write_text(f'"DocKey","LineNo"\n"{doc}","1"\n', encoding="utf-8")
+    assert read_csv(path)[0].doc_id == doc

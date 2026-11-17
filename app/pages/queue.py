@@ -13,7 +13,9 @@ import streamlit as st
 
 from app import ui
 from app.backend import Backend
+from app.duplicates import render_discarded_copies
 from app.flow import render_flow_strip
+from app.formatting import format_time
 from app.inbox import render_grid
 from invoiceflow.contracts import DocStatus
 
@@ -42,9 +44,7 @@ def _frame(docs) -> pd.DataFrame:
                 "worst": doc.highest_severity.value if doc.highest_severity else "—",
                 "total": float(doc.total) if doc.total is not None else None,
                 "replay": doc.is_replay,
-                "received": doc.received_at.isoformat(timespec="seconds")
-                if doc.received_at
-                else "—",
+                "received": format_time(doc.received_at) if doc.received_at else "—",
             }
             for doc in docs
         ]
@@ -71,7 +71,9 @@ def _live_queue(backend: Backend) -> None:
         st.info("No documents yet. Upload one, or run `make db-dev && make fixtures`.")
         return
 
-    render_flow_strip(all_docs)
+    copies = backend.discarded_copies()
+    render_flow_strip(all_docs, discarded=len(copies))
+    render_discarded_copies(copies, key="queue_copy")
     processing = [doc for doc in all_docs if doc.is_processing]
     if processing:
         st.subheader("Being read now")

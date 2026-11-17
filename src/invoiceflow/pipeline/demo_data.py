@@ -78,6 +78,32 @@ def load_manifest(root: Path) -> tuple[DemoDoc, ...]:
     )
 
 
+# The 5 invoices kept back for the live demo (generator/live_set.py). Not in the manifest
+# above, so the demo data never loads them; `make erase-live` removes them again.
+LIVE_SET_FOLDER = "live-demo-new"
+
+
+def live_set_dir() -> Path:
+    from invoiceflow.settings import data_dir
+
+    return data_dir() / LIVE_SET_FOLDER
+
+
+def drop_live_set(folder: Path, inbox: Path) -> int:
+    """Copy the live-demo set into the inbox in its manifest order, oldest arrival first."""
+    manifest = folder / "manifest.json"
+    if not manifest.is_file():
+        raise SystemExit(f"no live-demo set in {folder}: run `make live-set` first")
+    rows = json.loads(manifest.read_text(encoding="utf-8"))["documents"]
+    inbox.mkdir(parents=True, exist_ok=True)
+    start = datetime.now().timestamp()
+    for offset, row in enumerate(rows):
+        target = inbox / str(row["file"])
+        shutil.copyfile(folder / str(row["file"]), target)
+        os.utime(target, (start + offset, start + offset))
+    return len(rows)
+
+
 def load_truth(doc: DemoDoc) -> InvoiceTruth:
     return InvoiceTruth.model_validate_json(doc.truth_path.read_text(encoding="utf-8"))
 

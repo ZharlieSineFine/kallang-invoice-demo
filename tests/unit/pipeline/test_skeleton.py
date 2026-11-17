@@ -98,3 +98,11 @@ def test_skeleton_cli(capsys):
     out = capsys.readouterr().out
     assert "golden-a-clean" in out and "AUTO_PASSED" in out
     assert "golden-a-total-mismatch" in out and "NEEDS_REVIEW" in out and "R02" in out
+
+
+def test_pipeline_tests_replay_the_recorded_answers():
+    # Live mode would call the model and rewrite the tracked files in data/llm_cache/.
+    from invoiceflow.contracts import LLMMode
+    from invoiceflow.extract import load_model_config
+
+    assert load_model_config().mode is LLMMode.REPLAY

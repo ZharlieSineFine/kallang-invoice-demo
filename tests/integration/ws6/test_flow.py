@@ -53,7 +53,7 @@ def test_export_twice_leaves_second_batch_empty(migrated, tmp_path):
     assert first.doc_ids == (CLEAN_DOC,)
     assert any("expected gross" in problem for problem in first.problems)
     header = store.read(first.batch.csv_path).decode("utf-8").splitlines()[0]
-    assert header.startswith('"DocKey"')
+    assert header.startswith('"InvoiceID"')
     assert second.batch.row_count == 0
     assert second.doc_ids == ()
     assert repo.approved_not_exported() == (MISMATCH_DOC,)  # held back, not lost

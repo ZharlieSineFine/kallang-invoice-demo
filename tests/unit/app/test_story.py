@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 from test_pages import _run, _run_main
@@ -20,8 +21,8 @@ def _with_batch(backend, tmp_path):
     doc = next(bundle.document for bundle in backend.bundles.values() if not bundle.findings)
     path = tmp_path / "B-001.csv"
     path.write_text(
-        "DocKey,CompanyCode,VendorNo,GrossAmount,LineNo,GLAccount,NetAmount,LineText\n"
-        f"{doc.doc_id},KG01,100014,1177.20,1,610200,1080.00,Equipment rental\n",
+        "InvoiceID,CompanyCode,VendorNo,GrossAmount,LineNo,GLAccount,NetAmount,LineText\n"
+        "1,KG01,100014,1177.20,1,610200,1080.00,Equipment rental\n",
         encoding="utf-8",
     )
     batch = BatchSummary(
@@ -34,7 +35,10 @@ def _with_batch(backend, tmp_path):
         mapping_version="1",
         doc_ids=(doc.doc_id,),
         csv_sha256="a" * 64,
-        manifest={"model": "gemma4:12b"},
+        manifest={
+            "model": "gemma4:12b",
+            "invoices": [{"invoice_id": 1, "doc_id": str(doc.doc_id)}],
+        },
     )
     empty = replace(batch, batch_id="B-002", row_count=0, total=Decimal("0"), doc_ids=())
     backend.batches = lambda: (empty, batch)
@@ -311,7 +315,43 @@ def test_inbox_sentence_accounts_for_every_document(fake_backend, clean_bundle, 
         clean_bundle, document=replace(clean_bundle.document, status=DocStatus.NOT_INVOICE)
     )
     at = _run(story, fake_backend)
-    assert "2 documents arrived: 1 need a person, 1 not invoices." in _text(at)
+    assert "2 documents arrived: 1 needs a person, 1 not an invoice." in _text(at)
+
+
+def test_a_discarded_duplicate_counts_as_arrived(fake_backend, clean_bundle, mismatch_bundle):
+    from app.models import DiscardedCopy
+
+    fake_backend.copies = (
+        DiscardedCopy("a (2).pdf", None, "a" * 64, "a" * 64, clean_bundle.document),
+    )
+    at = _run(story, fake_backend)
+    assert (
+        "3 documents arrived: 1 passed or approved, 1 needs a person, "
+        "1 duplicate invoice discarded." in _text(at)
+    )
+    assert 'data-stage="Intake"' in _text(at)
+    assert "3 received, 1 discarded" in _text(at)
+
+
+def test_the_sentence_matches_the_user_example():
+    from app.models import DocumentSummary
+    from app.pages.story import _inbox_sentence
+
+    counts = {
+        DocStatus.AUTO_PASSED: 28,
+        DocStatus.NEEDS_REVIEW: 11,
+        DocStatus.ON_HOLD: 9,
+        DocStatus.NOT_INVOICE: 1,
+    }
+    docs = [
+        DocumentSummary(doc_id=uuid4(), status=status)
+        for status, count in counts.items()
+        for _ in range(count)
+    ]
+    assert _inbox_sentence(docs, discarded=1) == (
+        "50 documents arrived: 28 passed or approved, 11 need a person, 9 on hold, "
+        "1 not an invoice, 1 duplicate invoice discarded."
+    )
 
 
 def test_story_prefers_the_clearest_example_of_a_rule(clean_bundle, mismatch_bundle):

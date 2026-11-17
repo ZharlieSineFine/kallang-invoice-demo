@@ -1,0 +1,126 @@
+{
+  "document_id": "live-new-04",
+  "doc_type": "TAX_INVOICE",
+  "template_id": "A1",
+  "set_name": "demo",
+  "printed": {
+    "document_type": "TAX_INVOICE",
+    "title": "TAX INVOICE",
+    "invoice_number": "VTR-2026-9604",
+    "invoice_date": "16/11/2026",
+    "due_date": "16/12/2026",
+    "payment_terms": "30 days",
+    "currency": "SGD",
+    "supplier_name": "VenueTech Rigging Pte. Ltd.",
+    "supplier_address": "33 Imaginary Terrace #09-01, Singapore 399990",
+    "supplier_uen": "209900012A",
+    "supplier_gst_reg_no": "209900012A",
+    "buyer_name": "The Kallang Group",
+    "buyer_address": "Kallang, Singapore",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "service_period": "13-14 Nov 2026",
+    "subtotal": "1,120.00",
+    "discount": null,
+    "gst_rate": "9%",
+    "gst_amount": "100.80",
+    "total": "1,220.80",
+    "amount_due": null,
+    "gst_inclusive_note": null,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_name": "DBS Bank",
+    "bank_account": "000-012345-6",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": "1",
+        "description": "Truss rigging",
+        "quantity": "6",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "70.00",
+        "amount": "840.00"
+      },
+      {
+        "line_no": "2",
+        "description": "Rigging crew",
+        "quantity": "8",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "35.00",
+        "amount": "280.00"
+      }
+    ]
+  },
+  "invoice": {
+    "document_type": "TAX_INVOICE",
+    "invoice_number": "VTR-2026-9604",
+    "invoice_date": "2026-11-16",
+    "due_date": "2026-12-16",
+    "currency": "SGD",
+    "supplier_name": "VenueTech Rigging Pte. Ltd.",
+    "supplier_uen": "209900012A",
+    "supplier_gst_reg_no": "209900012A",
+    "buyer_name": "The Kallang Group",
+    "po_number": null,
+    "contract_number": null,
+    "venue": "National Stadium",
+    "subtotal": "1120.00",
+    "discount": null,
+    "gst_rate_percent": "9",
+    "gst_amount": "100.80",
+    "total": "1220.80",
+    "amount_due": null,
+    "gst_inclusive": false,
+    "sgd_total": null,
+    "sgd_gst_amount": null,
+    "bank_account": "0000123456",
+    "original_invoice_ref": null,
+    "line_items": [
+      {
+        "line_no": 1,
+        "description": "Truss rigging",
+        "quantity": "6",
+        "unit": "pcs",
+        "days": "2",
+        "unit_price": "70.00",
+        "amount": "840.00"
+      },
+      {
+        "line_no": 2,
+        "description": "Rigging crew",
+        "quantity": "8",
+        "unit": "hr",
+        "days": null,
+        "unit_price": "35.00",
+        "amount": "280.00"
+      }
+    ],
+    "ambiguous_dates": []
+  },
+  "vendor_id": "V010",
+  "expected_coding": [
+    {
+      "line_no": 1,
+      "gl_account": "610200",
+      "cost_center": "KG1100",
+      "tax_code": "TX",
+      "net_amount": "1120.00",
+      "tax_amount": "100.80",
+      "description": "Equipment rental, National Stadium",
+      "source_line_nos": [
+        1,
+        2
+      ],
+      "coding_source": "VENUE"
+    }
+  ],
+  "anomalies": [
+    "hidden_instructions"
+  ],
+  "expected_rules": [
+    "R09"
+  ]
+}

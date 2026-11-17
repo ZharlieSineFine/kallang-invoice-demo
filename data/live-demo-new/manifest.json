@@ -1,0 +1,78 @@
+{
+  "seed": 42,
+  "documents": [
+    {
+      "id": "live-new-01",
+      "invoice_number": "CAM-2026-9601",
+      "vendor_id": "V008",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "file": "CAM-2026-9601.pdf",
+      "truth": "answer-key/CAM-2026-9601.json",
+      "sha256": "08eec37ab1ac3de95ed2f5ceb064409d0705d383a048e24e9c9e7af400923eee",
+      "text_layer": true,
+      "total": "1700.40"
+    },
+    {
+      "id": "live-new-02",
+      "invoice_number": "PWS-2026-9602",
+      "vendor_id": "V007",
+      "template": "B1",
+      "anomalies": [],
+      "expected_checks": [],
+      "file": "PWS-2026-9602.pdf",
+      "truth": "answer-key/PWS-2026-9602.json",
+      "sha256": "f8e220b7bdb09b02944798c0f743fe92966867a055707729f88fe5e4e1a2a8ef",
+      "text_layer": true,
+      "total": "746.65"
+    },
+    {
+      "id": "live-new-03",
+      "invoice_number": "CWF-2026-9603",
+      "vendor_id": "V004",
+      "template": "C1",
+      "anomalies": [],
+      "expected_checks": [],
+      "file": "CWF-2026-9603.pdf",
+      "truth": "answer-key/CWF-2026-9603.json",
+      "sha256": "082a81d42c859d40461b457e6f1116359dbbc99eecfe29e368c1e626d9d6c5e5",
+      "text_layer": false,
+      "total": "784.80"
+    },
+    {
+      "id": "live-new-04",
+      "invoice_number": "VTR-2026-9604",
+      "vendor_id": "V010",
+      "template": "A1",
+      "anomalies": [
+        "hidden_instructions"
+      ],
+      "expected_checks": [
+        "R09"
+      ],
+      "file": "VTR-2026-9604.pdf",
+      "truth": "answer-key/VTR-2026-9604.json",
+      "sha256": "12f0adf46d8b7834c8afdeb584bf4bf06d383557faf97e26e8121039ce61e9f0",
+      "text_layer": true,
+      "total": "1220.80"
+    },
+    {
+      "id": "live-new-05",
+      "invoice_number": "KSS-2026-9605",
+      "vendor_id": "V003",
+      "template": "B1",
+      "anomalies": [
+        "total_edited"
+      ],
+      "expected_checks": [
+        "R02"
+      ],
+      "file": "KSS-2026-9605.pdf",
+      "truth": "answer-key/KSS-2026-9605.json",
+      "sha256": "e0e198dcc2f360d0e0575734abda167eda79cbdb118516097cdd0e82c70aeefd",
+      "text_layer": true,
+      "total": "2416.72"
+    }
+  ]
+}

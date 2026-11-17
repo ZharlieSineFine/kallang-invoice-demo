@@ -58,6 +58,7 @@ class RowContext:
     invoice: NormalizedInvoice
     coding_line: CodingLine
     export_date: date
+    invoice_id: int  # 1, 2, 3 within one file
 
 
 def load_sap_mapping(config: dict[str, Any]) -> SapMapping:
@@ -86,6 +87,8 @@ def load_sap_mapping(config: dict[str, Any]) -> SapMapping:
 def _doc_field(ctx: RowContext, field: str) -> Any:
     if field == "doc_id":
         return ctx.doc_id
+    if field == "invoice_id":
+        return ctx.invoice_id
     raise KeyError(field)
 
 
