@@ -2,3 +2,11 @@
 [client]
 showSidebarNavigation = false
 toolbarMode = "minimal"
+
+# Always light. With no theme set, Streamlit follows the browser or macOS appearance, so a Mac
+# in dark mode showed a black app (2026-11-19).
+[theme]
+base = "light"
+# Main buttons (Next, Approve, Save correction, export) in the blue the app's own boxes use,
+# instead of Streamlit's default red.
+primaryColor = "#1565c0"

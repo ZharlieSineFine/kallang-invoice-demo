@@ -8,6 +8,7 @@ import pytest
 
 from app.formatting import (
     confidence_label,
+    display_value,
     format_date,
     format_money,
     normalize_field_value,
@@ -45,7 +46,7 @@ def test_parse_decimal_rejects_text():
 
 def test_normalize_money_date_rate_and_text():
     assert normalize_field_value("subtotal", "1,080.00") == "1080.00"
-    assert normalize_field_value("gst_rate", "9%") == "9.00"
+    assert normalize_field_value("gst_rate", "9%") == "9"  # was "9.00" before option A
     assert normalize_field_value("invoice_date", "15/10/2026") == "2026-10-15"
     assert normalize_field_value("invoice_number", " SAV-1 ") == "SAV-1"
     assert normalize_field_value("invoice_number", "   ") is None
@@ -91,3 +92,25 @@ def test_md_escape_keeps_dollar_signs_literal():
         "The line items add up to S\\$1,080.00, but the subtotal reads S\\$1,090.00."
     )
     assert md_escape("plain text") == "plain text"
+
+
+def test_a_rate_is_shown_with_its_percent_sign():
+    # Stored as a number (the checks compute with it); shown the way it is printed.
+    assert display_value("gst_rate", "9") == "9%"
+    assert display_value("gst_rate", "9.00") == "9%"  # a reviewer's correction is stored as 9.00
+    assert display_value("gst_rate", "8.50") == "8.5%"
+    assert display_value("gst_rate", "10") == "10%"
+
+
+def test_other_values_are_shown_as_stored():
+    assert display_value("total", "1090.00") == "1090.00"
+    assert display_value("gst_rate", None) is None
+    assert display_value("gst_rate", "not a number") == "not a number"
+
+
+def test_a_typed_rate_is_stored_one_way():
+    # The reviewer may type 9, 9%, 9.00 or 9.0 %; all are stored as "9" and shown as "9%".
+    for typed in ("9", "9%", "9.00", "9.0 %"):
+        assert normalize_field_value("gst_rate", typed) == "9"
+    assert normalize_field_value("gst_rate", "8.50") == "8.5"
+    assert display_value("gst_rate", normalize_field_value("gst_rate", "10.00")) == "10%"

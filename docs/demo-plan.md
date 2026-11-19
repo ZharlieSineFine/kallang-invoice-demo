@@ -153,6 +153,28 @@ refreshes every 3 s), so both parts show work in progress, not only finished inv
 each folder against the answer key in `data/generated/answer-key/`, and records the replay
 cache.
 
+### Rehearsal and demo day with Airflow (2026-11-19)
+
+The six in `data/live-demo/` are uploaded on stage and run through Airflow with the live model.
+A live run with too little free memory took 33 minutes and froze the Mac (2026-11-19), so:
+
+Rehearse without the model (about 15 s for the six, measured 2026-11-19):
+
+1. `make erase-live STACK=1 KEEP_ANSWERS=1`: takes the six out of the stack's database and
+   keeps their recorded model answers.
+2. `LLM_MODE=replay make up`: the stack replays recorded answers; Ollama loads nothing.
+3. Upload the six on the Upload page (or `make drop-live`, then `make intake`) and watch the
+   Airflow tab. Repeat from step 1 for another rehearsal.
+
+Demo day, with the live model:
+
+1. Quit apps you don't need, restart Docker Desktop, and open Activity Monitor → Memory: the
+   memory pressure graph should be green before you start.
+2. `make erase-live STACK=1`: takes the six out and deletes their recorded answers, so the
+   model reads them fresh on stage.
+3. `make up`: live mode, from `.env`.
+4. Upload the six on stage with the Airflow tab open.
+
 ## 5. How it is built (work breakdown)
 
 1. **Demo page + flow strip + technical toggle** (`app/pages/story.py`, `app/flow.py`,

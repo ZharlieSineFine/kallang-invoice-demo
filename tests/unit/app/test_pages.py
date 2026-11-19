@@ -49,18 +49,34 @@ def _titles(at: AppTest) -> list[str]:
     return [title.value for title in at.title]
 
 
-def test_upload_page_renders_and_links_to_airflow(tmp_path):
-    at = _run(
-        upload,
-        None,
-        inbox=tmp_path,
-        settings=AirflowSettings(),
-    )
+class _FakeReader:
+    """Stands in for the background inbox reader (app.local_intake.InboxReader)."""
+
+    def __init__(self):
+        self.starts = 0
+
+    def start(self) -> bool:
+        self.starts += 1
+        return True
+
+    def progress(self):
+        from app.local_intake import InboxProgress
+
+        return InboxProgress()
+
+
+def test_upload_page_without_airflow_says_the_app_reads_the_inbox(tmp_path):
+    at = _run(upload, None, inbox=tmp_path, settings=AirflowSettings(), reader=_FakeReader())
     assert _titles(at) == ["Upload"]
     assert any("data/inbox" in caption.value for caption in at.caption)
-    assert at.link_button
-    assert at.link_button[0].url.endswith("/dags/invoice_intake/grid")
-    assert any("not configured" in caption.value for caption in at.caption)
+    assert not at.link_button
+    assert any("the app reads the inbox itself" in caption.value for caption in at.caption)
+
+
+def test_upload_page_with_airflow_links_to_the_dag(tmp_path):
+    settings = AirflowSettings(base_url="http://127.0.0.1:8080", configured=True)
+    at = _run(upload, None, inbox=tmp_path, settings=settings, reader=_FakeReader())
+    assert at.link_button[0].url == "http://127.0.0.1:8080/dags/invoice_intake"
 
 
 def test_queue_page_lists_documents_and_opens_review(fake_backend):
@@ -178,7 +194,11 @@ def test_main_navigation_switches_pages(fake_backend):
 def test_pages_have_no_streamlit_exceptions(fake_backend, mismatch_bundle):
     """A cheap guard: every page renders once with the fixture bundles."""
     for page in (upload, queue, review, trace, dashboard, batches):
-        kwargs = {"inbox": None, "settings": AirflowSettings()} if page is upload else {}
+        kwargs = (
+            {"inbox": None, "settings": AirflowSettings(), "reader": _FakeReader()}
+            if page is upload
+            else {}
+        )
         at = _set_doc(
             _run(page, fake_backend, **kwargs),
             mismatch_bundle.document.doc_id,
@@ -188,26 +208,88 @@ def test_pages_have_no_streamlit_exceptions(fake_backend, mismatch_bundle):
 
 
 class _FakeUpload:
-    name = "synthetic-invoice.pdf"
+    def __init__(self, name="synthetic-invoice.pdf", body=b"%PDF-1.7 synthetic invoice"):
+        self.name, self._body, self.file_id = name, body, f"id-{name}"
 
     def getvalue(self) -> bytes:
-        return b"%PDF-1.7 synthetic invoice"
+        return self._body
 
 
-def test_upload_page_saves_the_file_then_shows_the_airflow_fallback(monkeypatch, tmp_path):
+def _uploads(monkeypatch, files):
     import streamlit as st
 
-    monkeypatch.setattr(st, "file_uploader", lambda *args, **kwargs: _FakeUpload())
-    at = _run(
-        upload,
-        None,
-        inbox=tmp_path,
-        settings=AirflowSettings(),
+    def fake_uploader(*args, **kwargs):
+        assert kwargs.get("accept_multiple_files") is True
+        return list(files)
+
+    monkeypatch.setattr(st, "file_uploader", fake_uploader)
+
+
+def test_upload_page_saves_several_files_and_starts_reading(monkeypatch, tmp_path):
+    _uploads(monkeypatch, [_FakeUpload(), _FakeUpload("second.pdf", b"%PDF-1.7 second")])
+    reader = _FakeReader()
+    at = _run(upload, None, inbox=tmp_path, settings=AirflowSettings(), reader=reader)
+    assert sorted(p.name.split("-", 1)[1] for p in tmp_path.iterdir()) == [
+        "second.pdf",
+        "synthetic-invoice.pdf",
+    ]
+    assert any("Saved 2 files" in success.value for success in at.success)
+    assert reader.starts == 1
+
+
+def test_a_file_is_saved_once_even_when_the_page_reruns(monkeypatch, tmp_path):
+    # After a file is read it leaves the inbox; a rerun must not put it back, or it would be
+    # read again and counted as a discarded duplicate.
+    _uploads(monkeypatch, [_FakeUpload()])
+    reader = _FakeReader()
+    at = _run(upload, None, inbox=tmp_path, settings=AirflowSettings(), reader=reader)
+    for path in tmp_path.iterdir():
+        path.unlink()  # read and moved out
+    at.run(timeout=30)
+    assert not list(tmp_path.iterdir())
+    assert reader.starts == 1
+
+
+def test_with_airflow_the_upload_goes_to_the_dag_not_the_app(monkeypatch, tmp_path):
+    import httpx
+
+    class _Refused:
+        def post(self, *args, **kwargs):
+            raise httpx.ConnectError("refused")
+
+    _uploads(monkeypatch, [_FakeUpload()])
+    reader = _FakeReader()
+    settings = AirflowSettings(base_url="http://127.0.0.1:8080", configured=True)
+    at = _run(upload, None, inbox=tmp_path, settings=settings, client=_Refused(), reader=reader)
+    assert reader.starts == 0
+    assert any("Could not start invoice_intake" in warning.value for warning in at.warning)
+
+
+def test_with_airflow_one_run_reads_every_uploaded_file(monkeypatch, tmp_path):
+    class _Accepting:
+        def __init__(self):
+            self.calls = []
+
+        def post(self, url, **kwargs):
+            import httpx
+
+            self.calls.append(kwargs["json"])
+            return httpx.Response(
+                200, json={"dag_run_id": "manual__1"}, request=httpx.Request("POST", url)
+            )
+
+    _uploads(monkeypatch, [_FakeUpload(), _FakeUpload("second.pdf", b"%PDF-1.7 second")])
+    client, reader = _Accepting(), _FakeReader()
+    settings = AirflowSettings(
+        base_url="http://api-server:8080", ui_url="http://127.0.0.1:8080", configured=True
     )
-    saved = list(tmp_path.glob("*synthetic-invoice.pdf"))
-    assert saved and saved[0].read_bytes() == b"%PDF-1.7 synthetic invoice"
-    assert any("Saved" in success.value for success in at.success)
-    assert any("not configured" in warning.value for warning in at.warning)
+    at = _run(upload, None, inbox=tmp_path, settings=settings, client=client, reader=reader)
+    assert reader.starts == 0
+    assert len(client.calls) == 1
+    assert len(client.calls[0]["conf"]["files"]) == 2
+    assert any("invoice_intake started" in success.value for success in at.success)
+    run_link = "http://127.0.0.1:8080/dags/invoice_intake/runs/manual__1"
+    assert run_link in [button.url for button in at.link_button]
 
 
 def test_review_line_item_and_coding_editors_save(monkeypatch, fake_backend, mismatch_bundle):

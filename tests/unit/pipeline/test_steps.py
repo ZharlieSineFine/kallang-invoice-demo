@@ -86,7 +86,8 @@ class FakeRepo:
         self.statuses[record.doc_id] = record.status
 
     def get_document(self, doc_id):
-        return self.documents.get(doc_id)
+        record = self.documents.get(doc_id)
+        return record.model_copy(update={"status": self.statuses[doc_id]}) if record else None
 
     def set_status(self, doc_id, status, reason) -> None:
         self.statuses[doc_id] = status

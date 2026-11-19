@@ -11,6 +11,7 @@ from invoiceflow.rules.base import (
     BaseRule,
     cfg_decimal,
     fmt2,
+    fmt_percent,
     gst_rate_for_date,
     subtotal_includes_gst,
 )
@@ -64,13 +65,14 @@ class R03(BaseRule):
                         scope=Scope.FIELD,
                         field="gst_rate",
                         message=(
-                            f"GST rate {invoice.gst_rate_percent}% does not match the "
-                            f"{expected}% rate for {invoice.invoice_date.isoformat()}"
+                            f"GST rate {fmt_percent(invoice.gst_rate_percent)} does not match "
+                            f"the {fmt_percent(expected)} rate for "
+                            f"{invoice.invoice_date.isoformat()}"
                         ),
                         evidence={
                             "invoice_date": invoice.invoice_date.isoformat(),
-                            "expected": fmt2(expected),
-                            "found": fmt2(invoice.gst_rate_percent),
+                            "expected": fmt_percent(expected),
+                            "found": fmt_percent(invoice.gst_rate_percent),
                         },
                     )
                 )
@@ -104,12 +106,12 @@ class R03(BaseRule):
                         field="gst_amount",
                         message=(
                             f"GST should be {expected_gst:.2f} at "
-                            f"{invoice.gst_rate_percent}%, but the invoice reads "
+                            f"{fmt_percent(invoice.gst_rate_percent)}, but the invoice reads "
                             f"{invoice.gst_amount:.2f}"
                         ),
                         evidence={
                             "subtotal": fmt2(invoice.subtotal),
-                            "rate_percent": fmt2(invoice.gst_rate_percent),
+                            "rate_percent": fmt_percent(invoice.gst_rate_percent),
                             "expected_gst": fmt2(expected_gst),
                             "gst_amount": fmt2(invoice.gst_amount),
                         },

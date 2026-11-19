@@ -179,6 +179,21 @@ def test_the_files_go_too(loaded, tmp_path):
     assert len(removed) >= 6
 
 
+def test_a_rehearsal_erase_keeps_the_recorded_answers(loaded, tmp_path):
+    # `make erase-live KEEP_ANSWERS=1`: the invoices go, so they can be uploaded again, but a
+    # replay rehearsal still finds their model answers.
+    conn, store = loaded
+    plan = plan_erase(conn, _by_file(conn))
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "live.json").write_text(json.dumps({"result": {"doc_id": str(LIVE)}}))
+
+    remove_files(plan, data_root=store.root, cache_dir=None)
+
+    assert not (store.root / plan.bronze_paths[0]).exists()
+    assert (cache / "live.json").exists()
+
+
 def test_after_an_erase_the_same_file_and_number_are_new_again(loaded):
     conn, _ = loaded
     repo = Repo(conn)

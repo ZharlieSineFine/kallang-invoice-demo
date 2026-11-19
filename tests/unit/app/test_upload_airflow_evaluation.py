@@ -53,25 +53,51 @@ def test_airflow_settings_read_env_and_strip_slash():
     )
     assert settings.configured
     assert settings.base_url == "http://airflow:8080"
-    assert settings.grid_url == "http://airflow:8080/dags/invoice_intake/grid"
-    assert settings.runs_url == "http://airflow:8080/api/v1/dags/invoice_intake/dagRuns"
+    # Airflow 3: the DAG page holds the grid; the REST API is /api/v2 (v1 was removed).
+    assert settings.grid_url == "http://airflow:8080/dags/invoice_intake"
+    assert settings.runs_url == "http://airflow:8080/api/v2/dags/invoice_intake/dagRuns"
+
+
+def test_links_use_the_browser_address_and_the_api_uses_the_container_address():
+    # In the full stack the review app reaches Airflow as api-server:8080, which the
+    # presenter's browser cannot resolve; links use AIRFLOW_UI_URL instead.
+    settings = AirflowSettings.from_env(
+        {"AIRFLOW_BASE_URL": "http://api-server:8080", "AIRFLOW_UI_URL": "http://127.0.0.1:8080/"}
+    )
+    assert settings.runs_url.startswith("http://api-server:8080/api/v2/")
+    assert settings.grid_url == "http://127.0.0.1:8080/dags/invoice_intake"
+    assert settings.run_url("manual__2026-11-18T03:00:00+00:00") == (
+        "http://127.0.0.1:8080/dags/invoice_intake/runs/manual__2026-11-18T03%3A00%3A00%2B00%3A00"
+    )
 
 
 def test_airflow_is_not_configured_without_a_base_url():
     settings = AirflowSettings.from_env({})
     assert not settings.configured
-    assert settings.grid_url == "http://127.0.0.1:8080/dags/invoice_intake/grid"
+    assert settings.grid_url == "http://127.0.0.1:8080/dags/invoice_intake"
 
 
 def test_trigger_starts_the_dag():
     client = FakeClient()
     settings = AirflowSettings.from_env({"AIRFLOW_BASE_URL": "http://airflow:8080"})
-    result = trigger_intake(settings, filename="invoice.pdf", sha256="a" * 64, client=client)
+    result = trigger_intake(settings, files=(("invoice.pdf", "a" * 64),), client=client)
     assert result.started
     assert result.run_id == "manual__1"
+    assert result.url == "http://airflow:8080/dags/invoice_intake/runs/manual__1"
     url, kwargs = client.calls[0]
-    assert url.endswith("/api/v1/dags/invoice_intake/dagRuns")
-    assert kwargs["json"]["conf"]["sha256"] == "a" * 64
+    assert url.endswith("/api/v2/dags/invoice_intake/dagRuns")
+    # Airflow 3 requires logical_date in the body; null lets Airflow choose.
+    assert "logical_date" in kwargs["json"] and kwargs["json"]["logical_date"] is None
+    assert kwargs["json"]["conf"]["files"] == [{"name": "invoice.pdf", "sha256": "a" * 64}]
+
+
+def test_one_run_reads_every_file_of_an_upload():
+    client = FakeClient()
+    settings = AirflowSettings(base_url="http://airflow", configured=True)
+    files = (("a.pdf", "a" * 64), ("b.pdf", "b" * 64))
+    trigger_intake(settings, files=files, client=client)
+    assert len(client.calls) == 1
+    assert [f["name"] for f in client.calls[0][1]["json"]["conf"]["files"]] == ["a.pdf", "b.pdf"]
 
 
 def test_trigger_uses_a_bearer_token_without_leaking_it():
@@ -81,32 +107,32 @@ def test_trigger_uses_a_bearer_token_without_leaking_it():
         token="token-value",
         configured=True,
     )
-    result = trigger_intake(settings, filename="x.pdf", sha256="b" * 64, client=client)
+    result = trigger_intake(settings, files=(("x.pdf", "b" * 64),), client=client)
     assert result.started
     assert client.calls[0][1]["headers"]["Authorization"] == "Bearer token-value"
-    assert result.message == "invoice_intake started in Airflow."
+    assert "token-value" not in result.message
 
 
 def test_trigger_falls_back_to_the_link_on_http_error():
     client = FakeClient(response=FakeResponse(401))
     settings = AirflowSettings(base_url="http://airflow", configured=True)
-    result = trigger_intake(settings, filename="x.pdf", sha256="c" * 64, client=client)
+    result = trigger_intake(settings, files=(("x.pdf", "c" * 64),), client=client)
     assert not result.started
     assert "HTTP 401" in result.message
-    assert result.url.endswith("/grid")
+    assert result.url == "http://airflow/dags/invoice_intake"
 
 
 def test_trigger_falls_back_on_connection_error():
     client = FakeClient(error=httpx.ConnectError("refused"))
     settings = AirflowSettings(base_url="http://airflow", configured=True)
-    result = trigger_intake(settings, filename="x.pdf", sha256="d" * 64, client=client)
+    result = trigger_intake(settings, files=(("x.pdf", "d" * 64),), client=client)
     assert not result.started
     assert "ConnectError" in result.message
 
 
 def test_unconfigured_trigger_does_not_post():
     client = FakeClient()
-    result = trigger_intake(AirflowSettings(), filename="x.pdf", sha256="e" * 64, client=client)
+    result = trigger_intake(AirflowSettings(), files=(("x.pdf", "e" * 64),), client=client)
     assert not result.started
     assert client.calls == []
     assert "not configured" in result.message

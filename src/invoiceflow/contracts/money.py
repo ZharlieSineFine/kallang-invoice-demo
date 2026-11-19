@@ -15,3 +15,9 @@ def money(value: Decimal) -> Decimal:
 
 def money_sum(values: Iterable[Decimal]) -> Decimal:
     return money(sum(values, Decimal("0")))
+
+
+def plain_decimal(value: Decimal) -> Decimal:
+    """``9.00`` -> ``9``, ``8.50`` -> ``8.5``, ``10.0`` -> ``10`` (not ``1E+1``): one spelling
+    per number, for values such as a GST rate that are not money."""
+    return Decimal(format(value.normalize(), "f"))

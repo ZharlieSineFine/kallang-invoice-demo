@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from dateutil import parser as date_parser
 
 from invoiceflow.contracts import CodingSource, Confidence, DocStatus, Severity, money
+from invoiceflow.contracts.money import plain_decimal
 from invoiceflow.settings import load_config
 
 MONEY_FIELDS = frozenset(
@@ -73,8 +74,8 @@ def normalize_field_value(name: str, raw: str | None) -> str | None:
         value = parse_decimal(raw)
         return None if value is None else format(value, "f")
     if name in RATE_FIELDS:
-        value = parse_decimal(raw)
-        return None if value is None else format(value, "f")
+        value = parse_decimal(raw)  # 9, 9%, 9.00 and 9.0 % are one rate: stored "9"
+        return None if value is None else format(plain_decimal(value), "f")
     if name in DATE_FIELDS:
         text = raw.strip()
         if not text:
@@ -85,6 +86,18 @@ def normalize_field_value(name: str, raw: str | None) -> str | None:
             raise ValueError(f"not a date: {raw!r}") from exc
     text = raw.strip()
     return text or None
+
+
+def display_value(name: str, value_norm: str | None) -> str | None:
+    """A stored standardized value as people read it. A rate is stored as a plain number,
+    because the checks compute with it (9 means 9%); it is shown with its percent sign."""
+    if value_norm is None or name not in RATE_FIELDS:
+        return value_norm
+    try:
+        rate = Decimal(value_norm)
+    except InvalidOperation:
+        return value_norm
+    return f"{format(plain_decimal(rate), 'f')}%"
 
 
 def format_money(value: Decimal | None, *, currency: str = "S$") -> str:

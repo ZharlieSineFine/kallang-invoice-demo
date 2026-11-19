@@ -108,7 +108,7 @@ Phase 1 targets owned by WS6 (`up`, `down`, `logs`, `drop`, `export`, `snapshot`
 
 `make up` builds and starts the Airflow 3.3.2 stack and is healthy in under 2 minutes. It runs
 one Postgres with two databases (`airflow`, `ap`), the Airflow API server / scheduler /
-dag-processor / triggerer on `LocalExecutor` with the SimpleAuthManager (everyone is admin, so
+dag-processor on `LocalExecutor` (no triggerer: no task defers) with the SimpleAuthManager (everyone is admin, so
 it is local-only), and the review-app placeholder. Everything binds to 127.0.0.1 (Airflow
 8080, review app 8501).
 
@@ -125,9 +125,9 @@ document in the one-slot `llm` pool), `sap_export` (18:00 Singapore time and on 
 silver, and running `sap_export` twice leaves the second batch with zero rows (export-once is
 enforced by `export_rows.doc_id`).
 
-Idle memory from `docker stats` after `make up` (six containers): **≈1.4 GiB** —
-scheduler ~543 MiB, api-server ~277 MiB, triggerer ~263 MiB, dag-processor ~174 MiB, postgres
-~77 MiB, review-app ~55 MiB.
+Idle memory from `docker stats` after `make up` (six containers, before the triggerer was
+removed on 2026-11-19): **≈1.4 GiB** — scheduler ~543 MiB, api-server ~277 MiB, triggerer
+~263 MiB, dag-processor ~174 MiB, postgres ~77 MiB, review-app ~55 MiB.
 
 ## Next
 

@@ -75,6 +75,20 @@ def _row_count(value: int) -> int:
     return max(1, value)
 
 
+_AUDITS = """
+WITH picked AS (
+    SELECT DISTINCT e.doc_id FROM events e
+    JOIN documents d ON d.doc_id = e.doc_id
+    WHERE e.type = 'audit.selected'
+), latest AS (
+    SELECT DISTINCT ON (e.doc_id) e.doc_id, e.payload FROM events e
+    JOIN picked p ON p.doc_id = e.doc_id
+    WHERE e.type = 'audit.completed'
+    ORDER BY e.doc_id, e.ts DESC, e.event_id DESC
+)
+"""
+
+
 class Repo:
     """Postgres repository. Pass an open ``psycopg.Connection``; the caller owns commits."""
 
@@ -620,6 +634,35 @@ class Repo:
                 "INSERT INTO events (actor, doc_id, type, payload) VALUES (%s, %s, %s, %s)",
                 (actor, doc_id, event_type, Jsonb(payload)),
             )
+
+    def auto_passed_count(self) -> int:
+        """Invoices intake auto-passed, still counted once they are exported."""
+        row = self._one(
+            """
+            SELECT count(DISTINCT e.doc_id) FROM events e
+            JOIN documents d ON d.doc_id = e.doc_id
+            WHERE e.type = 'intake.completed' AND e.payload->>'status' = %s
+            """,
+            (DocStatus.AUTO_PASSED.value,),
+        )
+        return int(row[0])
+
+    def audit_counts(self) -> tuple[int, int, int, tuple[tuple[str, int], ...]]:
+        """The random audit (CR-012): picked, checked, with an error, and the fields found
+        wrong. A person's latest result per invoice counts. Demo Step 8 and the weekly
+        audit_monitor report both read this."""
+        picked, checked, with_error = self._one(
+            _AUDITS + "SELECT (SELECT count(*) FROM picked), (SELECT count(*) FROM latest),"
+            " (SELECT count(*) FROM latest WHERE payload->>'result' = 'error')"
+        )
+        rows = self._all(
+            _AUDITS + "SELECT f.field, count(*) FROM latest,"
+            " jsonb_array_elements_text(latest.payload->'fields') AS f(field)"
+            " WHERE latest.payload->>'result' = 'error'"
+            " GROUP BY f.field ORDER BY count(*) DESC, f.field"
+        )
+        fields = tuple((str(field), int(count)) for field, count in rows)
+        return int(picked), int(checked), int(with_error), fields
 
     # ----------------------------------------------------------------- helpers
     def _one(self, sql: str, params: tuple[Any, ...] = ()):

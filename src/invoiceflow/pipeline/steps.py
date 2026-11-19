@@ -131,7 +131,8 @@ def list_inbox(inbox: Path | None = None) -> tuple[Path, ...]:
     box = inbox or inbox_dir()
     if not box.is_dir():
         return ()
-    files = (p for p in box.iterdir() if p.is_file())
+    # Hidden files (macOS .DS_Store when the folder is opened in Finder) are not invoices.
+    files = (p for p in box.iterdir() if p.is_file() and not p.name.startswith("."))
     return tuple(sorted(files, key=lambda p: (p.stat().st_mtime, p.name)))
 
 
@@ -478,14 +479,6 @@ def export_approved(
         {"batch_id": batch_id, "row_count": batch.row_count, "problems": list(problems)},
     )
     return ExportSummary(batch=batch, doc_ids=doc_ids, problems=problems)
-
-
-def evaluate(*, repo) -> dict[str, int]:
-    """Stub evaluation report: counts by status. WS8 replaces this with accuracy scoring."""
-    counts: dict[str, int] = {}
-    for status in DocStatus:
-        counts[status.value] = len(repo.list_documents((status,)))
-    return counts
 
 
 # ---------------------------------------------------------------------- helpers

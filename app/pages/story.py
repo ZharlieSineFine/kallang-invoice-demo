@@ -25,7 +25,7 @@ from app.csv_trace import render_csv_trace
 from app.duplicates import render_discarded_copies
 from app.export_action import render_export_action
 from app.flow import render_flow_strip
-from app.formatting import format_time
+from app.formatting import display_value, format_time
 from app.hidden_text import hidden_markers
 from app.inbox import render_grid
 from app.models import DiscardedCopy, DocumentBundle, DocumentSummary
@@ -261,7 +261,7 @@ def _understand(ctx: Context) -> str:
                 {
                     "field": field.name,
                     "printed": field.value_raw,
-                    "standardized": field.value_norm,
+                    "standardized": display_value(field.name, field.value_norm),
                     "match": field.match_type.value,
                 }
                 for field in bundle.fields

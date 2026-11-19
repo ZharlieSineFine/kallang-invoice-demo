@@ -14,11 +14,10 @@ import streamlit as st
 from app import ui
 from app.backend import Backend
 from app.models import AuditSummary, DocumentBundle
+from invoiceflow.evaluate.audit_monitor import counts_line, rate_line
 
 AUDIT_LABEL = "Random audit sample"
 MONITOR_TITLE = "Monitoring auto-passed invoices"
-MIN_FOR_ESTIMATE = 30  # the rule of three needs about this many checks to say anything
-_CONFIDENCE_FACTOR = 3  # rule of three: 0 errors in n checks -> rate < 3/n at 95%
 
 REVIEW_NOTE = (
     "This invoice passed every check and was auto-passed. It was also picked at random for "
@@ -42,25 +41,8 @@ def monitor_text(percent: Decimal | None) -> str:
 
 
 def monitor_lines(summary: AuditSummary) -> tuple[str, str]:
-    counts = (
-        f"Picked: {summary.picked} · Checked by a person: {summary.checked} · "
-        f"With an error: {summary.with_error}"
-    )
-    if summary.with_error:
-        share = 100 * summary.with_error / summary.checked
-        fields = ", ".join(f"{name} ({count})" for name, count in summary.error_fields)
-        return counts, (
-            f"{summary.with_error} of {summary.checked} checked had an error ({share:.1f}%). "
-            f"Fields: {fields}."
-        )
-    if summary.checked < MIN_FOR_ESTIMATE:
-        return counts, (
-            f"Too few checked to estimate a rate yet (needs {MIN_FOR_ESTIMATE} or more)."
-        )
-    bound = 100 * _CONFIDENCE_FACTOR / summary.checked
-    return counts, (
-        f"With 95% confidence, fewer than {bound:.1f}% of auto-passed invoices have an error."
-    )
+    """The counts and the rate sentence, worded as in the weekly audit_monitor report."""
+    return counts_line(summary), rate_line(summary)
 
 
 def render_audit_monitor(summary: AuditSummary) -> None:

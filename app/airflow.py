@@ -1,13 +1,17 @@
-"""Trigger ``invoice_intake`` through the Airflow REST API, with a link fallback.
+"""Start ``invoice_intake`` through the Airflow 3 REST API (``/api/v2``), with a link fallback.
 
 Settings come from the environment and ``.env`` (``app.airflow`` never holds a secret).
-When the trigger is not configured or the request fails, the Upload page shows the grid
-link instead; the upload itself has already been saved to ``data/inbox/``.
+``AIRFLOW_BASE_URL`` is where the app reaches Airflow (``http://api-server:8080`` inside the
+full stack); ``AIRFLOW_UI_URL`` is where the presenter's browser does (defaults to the base
+URL). With ``simple_auth_manager_all_admins`` Airflow adds a token to every request itself,
+so the full stack needs no login. When the trigger is not configured or the request fails,
+the Upload page shows the link instead; the upload has already been saved to ``data/inbox/``.
 """
 
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
@@ -23,6 +27,7 @@ DEFAULT_DAG_ID = "invoice_intake"
 @dataclass(frozen=True)
 class AirflowSettings:
     base_url: str = DEFAULT_BASE_URL
+    ui_url: str | None = None  # the browser's address for Airflow; None means base_url
     dag_id: str = DEFAULT_DAG_ID
     username: str | None = None
     password: str | None = None
@@ -36,6 +41,7 @@ class AirflowSettings:
         base = (values.get("AIRFLOW_BASE_URL") or "").strip().rstrip("/")
         return cls(
             base_url=base or DEFAULT_BASE_URL,
+            ui_url=(values.get("AIRFLOW_UI_URL") or "").strip().rstrip("/") or None,
             dag_id=(values.get("AIRFLOW_DAG_ID") or DEFAULT_DAG_ID).strip(),
             username=(values.get("AIRFLOW_USERNAME") or "").strip() or None,
             password=values.get("AIRFLOW_PASSWORD") or None,
@@ -45,11 +51,15 @@ class AirflowSettings:
 
     @property
     def grid_url(self) -> str:
-        return f"{self.base_url}/dags/{quote(self.dag_id)}/grid"
+        """The DAG's page in the Airflow 3 UI; its left side is the grid of runs."""
+        return f"{self.ui_url or self.base_url}/dags/{quote(self.dag_id)}"
+
+    def run_url(self, run_id: str) -> str:
+        return f"{self.grid_url}/runs/{quote(run_id, safe='')}"
 
     @property
     def runs_url(self) -> str:
-        return f"{self.base_url}/api/v1/dags/{quote(self.dag_id)}/dagRuns"
+        return f"{self.base_url}/api/v2/dags/{quote(self.dag_id)}/dagRuns"
 
 
 @dataclass(frozen=True)
@@ -71,10 +81,14 @@ def _auth(settings: AirflowSettings):
 def trigger_intake(
     settings: AirflowSettings,
     *,
-    filename: str,
-    sha256: str,
+    files: Sequence[tuple[str, str]],
     client: Any | None = None,
 ) -> TriggerResult:
+    """Start one run for the files of one upload, given as (inbox file name, SHA-256).
+
+    The run reads the whole inbox, so one run covers every file; the names in ``conf`` show
+    on the run's page in Airflow as the reason it started.
+    """
     url = settings.grid_url
     if not settings.configured:
         return TriggerResult(
@@ -86,7 +100,13 @@ def trigger_intake(
             url=url,
         )
     headers, auth = _auth(settings)
-    payload = {"conf": {"file_name": filename, "sha256": sha256, "source": "upload"}}
+    payload = {
+        "logical_date": None,  # required by Airflow 3; null lets Airflow choose
+        "conf": {
+            "files": [{"name": name, "sha256": sha256} for name, sha256 in files],
+            "source": "upload",
+        },
+    }
     try:
         if client is None:
             with httpx.Client(timeout=5.0) as http:
@@ -99,7 +119,7 @@ def trigger_intake(
         return TriggerResult(
             started=True,
             message="invoice_intake started in Airflow.",
-            url=url,
+            url=settings.run_url(str(run_id)) if run_id else url,
             run_id=str(run_id) if run_id else None,
         )
     except (httpx.HTTPError, ValueError, TypeError) as exc:

@@ -10,30 +10,17 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from invoiceflow.pipeline.steps import build_pipeline, drain_inbox, inbox_dir, intake_in_steps
-from invoiceflow.settings import data_dir, load_config, singapore_today
-from invoiceflow.storage import LocalBlobStore
-from invoiceflow.store.repo import repo_transaction
+from invoiceflow.pipeline.local_intake import local_processor
+from invoiceflow.pipeline.steps import drain_inbox, inbox_dir
 
 
 def main() -> int:
-    load_config("rules")  # also reads .env, so the database URL is ready
-    pipeline = build_pipeline()
-    store = LocalBlobStore(data_dir())
-    today = singapore_today()
+    read = local_processor()
 
     def process(path: Path) -> str:
         started = time.monotonic()
         print(f"{path.name:<40} reading…", flush=True)
-        result = intake_in_steps(
-            path,
-            transaction=repo_transaction,
-            store=store,
-            pipeline=pipeline,
-            today=today,
-            run_id="local-intake",
-            source="upload",
-        )
+        result = read(path)
         outcome = "skipped (seen before)" if result.skipped else result.status.value
         print(f"{path.name:<40} {outcome}  {time.monotonic() - started:.0f}s", flush=True)
         return outcome

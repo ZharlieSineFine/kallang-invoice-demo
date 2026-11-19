@@ -204,3 +204,20 @@ The integrator decides, applies the change on `main`, updates the contract tests
   audit: GSH-2026-9004 and KSS-2026-8101. Three clean invoices of S$5,000+ were added to show the
   limit (now in `data/generated/invoices/`, the set is 57): each goes to NEEDS_REVIEW. In the live set it picks PCE-2026-9606 only. The evaluation
   scores findings, not statuses, so its figures are unchanged. No migration.
+- **Addendum (user, 2026-11-19): the weekly audit monitor.** The `audit` block gains
+  `error_limit_percent: "2"`. The `evaluate` DAG (a placeholder that counted statuses) is
+  replaced by `audit_monitor`: every Monday 08:00 SGT, or by hand, it writes
+  `reports/monitor_<date>.json` (auto-passed, picked, checked, with an error, the error rate or
+  its rule-of-three upper limit from 30 clean checks, the fields found wrong) and marks it
+  `over_limit` when the rate is above the limit (strictly: 1 in 50 is not over). Code:
+  `invoiceflow.evaluate.audit_monitor`, `Repo.audit_counts` and `Repo.auto_passed_count`
+  (auto-passed counted from `intake.completed` events, so exported ones still count). Demo
+  Step 8 reads the same counts and wording. `steps.evaluate` is removed. No migration.
+- **Addendum (user, 2026-11-19): one spelling for a GST rate (option A).** `gst_rate_percent`
+  stays a percent number ("9" means 9%; the user chose this over storing 0.09), but it now has
+  one spelling: `normalize_percent` and a reviewer's correction both strip trailing zeros
+  (`contracts.money.plain_decimal`: "9.00" -> "9", "8.50" -> "8.5"). R03 writes rates in its
+  messages and evidence as "9%" (`rules.base.fmt_percent`; keys `expected`, `found`,
+  `rate_percent`; money keys keep two decimals). A correction typed "9.00" is saved and logged
+  as "9%". Migration `002_rate_evidence_percent` rewrites older R03 evidence. The model's
+  `gst_rate` text and every other contract are unchanged.

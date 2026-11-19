@@ -47,3 +47,11 @@ def test_percent_parsing():
     assert normalize_percent("GST") is None
     assert normalize_percent("9,00%") is None
     assert normalize_percent(None) is None
+
+
+def test_a_percent_has_one_spelling():
+    # "9%", "9.0%" and "9.00 %" are one rate, so they are stored the same way (2026-11-19).
+    for printed in ("9%", "9.0%", "9.00 %"):
+        assert format(normalize_percent(printed), "f") == "9"
+    assert format(normalize_percent("10.0%"), "f") == "10"
+    assert format(normalize_percent("8.50%"), "f") == "8.5"

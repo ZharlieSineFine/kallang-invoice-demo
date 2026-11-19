@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from invoiceflow.settings import config_path, load_config, repo_root
+from invoiceflow.settings import company_timezone, config_path, load_config, repo_root
 
 RULE_IDS = [f"R{n:02d}" for n in range(1, 13)]
 
@@ -78,6 +78,11 @@ class TestSapMapping:
         assert {"VendorNo", "Reference", "GLAccount", "CostCenter", "TaxCode"} <= required
         for c in cols:
             assert c["source"].startswith(self.ALLOWED), c
+
+
+def test_company_timezone_comes_from_config():
+    # The DAG schedules are read in this zone, so "0 18 * * *" means 18:00 in Singapore.
+    assert company_timezone() == load_config("company")["timezone"] == "Asia/Singapore"
 
 
 def test_no_secrets_in_config():

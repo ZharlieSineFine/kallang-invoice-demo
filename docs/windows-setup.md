@@ -161,8 +161,8 @@ a pull that changes the invoices or the pipeline, rerun step 6.
 ## The live demo, and running it again
 
 `make demo-ready` (with `LLM_MODE=replay`) loads the 57. The 6 invoices in
-`data/live-demo/` are never loaded by it: upload them during the demo (Upload page, then
-`make intake-local`, or `make drop-live` and `make intake` on the full stack). PCE-2026-9606
+`data/live-demo/` are never loaded by it: upload them during the demo on the Upload page (several at once): without
+Airflow the app reads them itself straight away; on the full stack Airflow does. PCE-2026-9606
 auto-passes and carries the "Random audit sample" label. Afterward, `make erase-live` removes
 those 6 again and keeps the 57, so the demo can be run again.
 `make erase-live DRY=1` only shows what it would remove.

@@ -22,6 +22,7 @@ from invoiceflow.contracts import (
     Stage,
     ValueSource,
 )
+from invoiceflow.evaluate.audit_monitor import AuditSummary  # noqa: F401 - re-exported
 
 
 @dataclass(frozen=True)
@@ -165,17 +166,6 @@ class DocumentSummary:
         number = self.invoice_number or "no invoice number"
         vendor = self.vendor_name or self.supplier_name or "unknown vendor"
         return f"{number} — {vendor} ({self.status.value})"
-
-
-@dataclass(frozen=True)
-class AuditSummary:
-    """The random audit of auto-passed invoices (CR-012), counted from the audit events."""
-
-    percent: Decimal | None  # the configured share; None when no audit is configured
-    picked: int = 0
-    checked: int = 0
-    with_error: int = 0
-    error_fields: tuple[tuple[str, int], ...] = ()  # (field, audits that found it wrong)
 
 
 @dataclass(frozen=True)

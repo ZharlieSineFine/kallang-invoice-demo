@@ -92,6 +92,89 @@ rehearsal prep. All data is synthetic.
   answers; a batch that included one is removed and its other invoices go back to ready) and
   keeps the 54. The audit log is append-only, so their history stays there. `make drop-live`
   copies the six into the inbox; `make intake-local` processes the inbox without Airflow.
+- Upload page (2026-11-18): several files at once, each saved once per session (a rerun used to
+  resave a file after it was read). Without `AIRFLOW_BASE_URL` the app reads the inbox itself:
+  `app/local_intake.py` runs `python -m invoiceflow.pipeline.local_intake` as a child process
+  (pdfium is not thread-safe, so no PDF work in the Streamlit process) and shows progress.
+  The light setup has no Airflow at all.
+- Airflow trigger (2026-11-18, user chose to show Airflow in the demo): `docker-compose.yaml`
+  gives only the review app `AIRFLOW_BASE_URL=http://api-server:8080` (container address) and
+  `AIRFLOW_UI_URL=http://127.0.0.1:8080` (browser links), so in the full stack only Airflow
+  reads the inbox. `app/airflow.py` uses `/api/v2` (Airflow 3 answers `/api/v1` with "removed"),
+  sends `logical_date: null` (required), and starts ONE `invoice_intake` run per upload
+  (`conf.files` lists them). No login: `simple_auth_manager_all_admins` adds a token to every
+  request. Links: `/dags/<id>` (the grid; Airflow 3 has no `/grid` page) and
+  `/dags/<id>/runs/<run_id>`. Verified 2026-11-18 from a review-app container against the
+  rebuilt image (run queued, conf shown, link opens it). The image bakes `src/` in, so code
+  changes need a rebuild; `make up` passes `--build`.
+- DAG schedules run in `company_timezone()` (`config/company.yaml`, 2026-11-18). Airflow reads
+  a cron in the start date's zone; with a UTC start date `sap_export` ran at 02:00 SGT.
+- Late exports skipped (user, 2026-11-18): with catchup off Airflow still starts the latest
+  missed slot (`next_dagrun_info` takes the max of the previous cron time and the start date;
+  `run_immediately` only covers a DAG's first run), so any `make up` after a missed 18:00
+  exported every ready invoice. `sap_export` now skips a scheduled run starting more than 30
+  min after its slot (`pipeline/schedule.missed_slot`); manual runs always run. Pass
+  `dag_run.run_type` itself: inside a task its str() is "DagRunType.SCHEDULED" (that bug let
+  a 16-hour-late run export on the first try). Verified 2026-11-19 on a fresh stack: the
+  startup run for 2026-11-18 18:00 was skipped, with the reason in its log.
+- Stage boxes (user, 2026-11-18): `invoice_intake` is `register_files → invoice[n]: parse →
+  extract (pool llm, 2 retries) → check → summarize`; each mapped box is labeled with the file
+  name (`map_index_template`) and logs one plain line (pages and text layer/OCR, model and
+  time, findings and status). Steps in `pipeline/staged.py`; each stage saves its result in
+  `data/work/<doc_id>/`, XCom carries IDs and the inbox path. Check reads prior invoices when
+  it runs (all files are registered first); register catches a byte-identical copy within
+  the run (else `receive_document` would "resume" it); summarize removes the placeholder of
+  an invoice that failed after its retries (its file stays in the inbox). Parse and check
+  run one at a time (`max_active_tis_per_dagrun=1`), so invoices are checked in arrival order
+  (the scheduler orders ready boxes by priority, run, map index). The light setup still uses
+  `intake_in_steps`; both give the same outcome (`test_staged_intake.py`). Verified
+  2026-11-19 on the real scheduler in replay mode: clean + 1,080/1,090 + a copy -> AUTO_PASSED,
+  NEEDS_REVIEW, copy discarded, source `upload`, inbox and `data/work` empty.
+- Two compose projects (user, 2026-11-18): `docker-compose.yaml` is project
+  `kallang-invoice-demo-stack`, `compose.dev.yaml` stays `kallang-invoice-demo`. Sharing the
+  name made `make up` replace the dev container and `make down` remove it (happened once on
+  2026-11-18; volume kept, 56 documents intact). They now run side by side (5433 and 5434).
+  The old stack volumes `kallang-invoice-demo_airflow-logs` and
+  `kallang-invoice-demo_postgres-db-volume` are unused; the user decides whether to remove them.
+- Audit monitor (user, 2026-11-19; CR-012 addendum): the `evaluate` DAG is now
+  `dags/audit_monitor.py` (`audit_monitor`, Mondays 08:00 SGT and by hand). It writes
+  `reports/monitor_<date>.json` (git-ignored) from `Repo.audit_counts` and
+  `Repo.auto_passed_count`, marked `over_limit` above `audit.error_limit_percent` ("2",
+  `config/rules.yaml`). `invoiceflow.evaluate.audit_monitor` holds `AuditSummary` (re-exported
+  by `app.models`), the rule of three, and the wording Demo Step 8 also shows
+  (`app.audit.monitor_lines` delegates). The Dashboard's accuracy still comes from the answer
+  keys via `make demo-data`; the monitor is how accuracy is watched without answer keys.
+- Rates (user's option A, 2026-11-19): `gst_rate` is stored as one plain number, "9" for
+  9% (`gst_rate_percent`; R03, coding, and recheck compute with it), never "9.00": the
+  parser and a reviewer's correction both go through `contracts.money.plain_decimal`. People
+  only see "9%": Demo Step 4 (`app.formatting.display_value`), a correction's saved text and
+  review log (typed "9.00" is saved as "9%"), and R03 evidence and messages
+  (`rules.base.fmt_percent`). Migration `002_rate_evidence_percent` rewrote the old R03
+  evidence ("9.00" -> "9%") in both databases. The user declined storing 0.09.
+- Hot-patched containers (2026-11-19, during the user's live rehearsal): the stack image
+  predates `invoiceflow/evaluate/audit_monitor.py` and the new `Repo` reads, so those two
+  files were `docker cp`'d into the running review-app, dag-processor, and scheduler
+  containers instead of a rebuild. Replaced by the rebuilt image the same day (`make up`,
+  2026-11-19 15:54).
+- DAG imports (2026-11-19): the three DAG files import only `airflow`, `pendulum`,
+  `invoiceflow.settings` (and `pipeline.schedule` in `sap_export`) at the top; each task
+  imports the pipeline when it runs. Airflow parses the file again at every task start with a
+  30 s limit, and with the whole pipeline imported at the top the boxes hit "DagBag import
+  timeout" and went to up_for_reschedule.
+- Slow live rehearsal (2026-11-19, 11:14 to 11:48 SGT, six invoices, 33 minutes): Ollama's
+  gemma4:12b plus the 7.7 GB Docker VM did not fit in the Mac's 16 GB. Task starts timed out
+  from 11:18, nothing ran for about 19 minutes, the Docker VM logged 8 out-of-memory kills
+  (11:31 to 11:36, so Airflow's containers restarted), and Docker Desktop restarted at 11:46.
+  After the restart the last four invoices took about 2 minutes. A Docker restart leaves the
+  dev Postgres stopped (exit 255): `docker-compose -f compose.dev.yaml up -d --wait`.
+- Light theme (2026-11-19): `.streamlit/config.toml` sets `[theme] base = "light"`. Without
+  it Streamlit follows the browser or macOS appearance, and this Mac is in dark mode. The
+  image installs Streamlit 1.67.0 (pip, not `uv.lock`), the host venv has 1.66.1; their
+  default primary colors differ (#C53948 and #FF4B4B), both red. The Next button has been
+  `type="primary"` since 2740f7b.
+- The six live-demo copies from the user's Upload test (2026-11-18) were moved from
+  `data/inbox` to `data/inbox-hold/` (2026-11-19) so the scheduler could not read them; they
+  are copies of `data/live-demo/`.
 - Value limit and random audit (CR-012, user chose 10% and S$5,000, 2026-11-17): a clean
   invoice at or above `routing.auto_pass_limit_sgd` goes to a person. No demo invoice reaches
   S$5,000, so the 54 keep 31 auto-passed (the user wants 31 shown, 2 of them audited). Intake picks 10% of
@@ -105,7 +188,19 @@ rehearsal prep. All data is synthetic.
   the copy's name, time and SHA-256 (from the `intake.duplicate_file` event) beside the kept
   original's, a link to it in Review, a download, and the `shasum` / `certutil` commands.
   The user declined an in-app drop-a-file checker (2026-11-17).
-- `uv run pytest -m "not ollama"`: 1135 passed (2026-11-17), about 2.5 minutes. The 4 ruff
+- Lag fixes (user approved 2026-11-19): no triggerer service (`make up` has
+  `--remove-orphans`), `AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT` 120 and the DAG processor's
+  limit 180, and `LLM_MODE: ${LLM_MODE:-live}` in the compose env, so `LLM_MODE=replay make
+  up` rehearses without the model. `make erase-live` takes `STACK=1` (the stack's database,
+  via `store.connection.use_stack_database`, shared with `demo-data STACK=1`) and
+  `KEEP_ANSWERS=1` (keeps `data/llm_cache` entries). Replay rehearsal of the six: 15.4 s,
+  same outcomes as the live run (4 AUTO_PASSED, 1 NEEDS_REVIEW, 1 ON_HOLD). Steps in
+  `docs/demo-plan.md` ("Rehearsal and demo day with Airflow"). The six's recorded answers in
+  `data/llm_cache` are untracked: do not commit them; `make erase-live STACK=1` deletes them
+  before the demo. The stack was left in live mode with the six erased (2026-11-19).
+- Main buttons are blue (`primaryColor = "#1565c0"` in `.streamlit/config.toml`, user's
+  choice 2026-11-19), not Streamlit's red.
+- `uv run pytest -m "not ollama"`: 1189 passed (2026-11-19), about 2.5 minutes. The 4 ruff
   errors in `scripts/demo_boxes.py` (2026-11-04) are not fixed.
 
 ## Read these first (in order)
@@ -126,7 +221,7 @@ LLM_MODE=replay make skeleton   # same, no model calls (serves data/llm_cache)
 make db-dev && make fixtures    # Postgres 16 on 5433 + load the golden documents
 make e2e             # inbox -> silver -> export, replay mode, rollback transaction
 uv run streamlit run app/main.py   # review app on http://localhost:8501
-make up              # full Airflow stack (8080) + review app (8501); make down to stop
+make up              # full Airflow stack (8080) + review app (8501; stop a host Streamlit first); make down to stop
 make data                # rebuild: invoices/ (50, full run) + live-demo/ (4) + answer-key/, named by invoice number
 make demo-data RESET=1   # rehearsal: the 50, then the 4, through the live model (~27 min), scored per folder
 make demo-data RESET=1 STACK=1   # same, into the full stack's Postgres on 127.0.0.1:5434
@@ -175,9 +270,8 @@ needs `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` on macOS. Dev Postgres:
 2. Phase 2 gates per `docs/fanout/MERGE-RUNBOOK.md`: `make bench`/`eval-bench`, model-choice
    note, reviewers, rehearsal, snapshot/restore.
 3. Wire the remaining make targets (`warm`, `bench`, `eval`, `eval-bench`, `gate`).
-4. Demo gap: no in-app export button (export runs through Airflow).
-5. Before loading with `STACK=1`, empty `data/inbox`: the stack's intake DAG picks up any
+4. Before loading with `STACK=1`, empty `data/inbox`: the stack's intake DAG picks up any
    file there while the load runs.
-6. Intake order matters: the inbox is read oldest file first (file time, then name), so a
+5. Intake order matters: the inbox is read oldest file first (file time, then name), so a
    re-send such as `SAV-2026-1001 (2).pdf` is checked after its original. `make drop-all`
    uses `cp -p` to keep the arrival times `make data` stamps; a plain copy would reset them.

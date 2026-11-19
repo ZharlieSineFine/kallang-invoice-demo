@@ -14,9 +14,7 @@ database that has documents unless ``--reset`` is given.
 from __future__ import annotations
 
 import argparse
-import os
 import time
-from urllib.parse import urlsplit, urlunsplit
 
 import psycopg
 
@@ -34,22 +32,10 @@ from invoiceflow.pipeline.demo_data import (
 from invoiceflow.pipeline.steps import build_pipeline, intake_in_steps
 from invoiceflow.settings import data_dir, load_config, repo_root, singapore_today
 from invoiceflow.storage import LocalBlobStore
-from invoiceflow.store.connection import connect, database_url
+from invoiceflow.store.connection import connect, use_stack_database
 from invoiceflow.store.fixtures import truncate
 from invoiceflow.store.migrate import apply_migrations
 from invoiceflow.store.repo import Repo, repo_transaction
-
-STACK_PORT_ENV = "AP_STACK_DB_PORT"
-DEFAULT_STACK_PORT = "5434"
-
-
-def _use_full_stack_database() -> None:
-    """Point at the full stack's Postgres, which `make up` publishes on its own port."""
-    url = urlsplit(database_url())
-    credentials = url.netloc.rpartition("@")[0]
-    port = os.environ.get(STACK_PORT_ENV, DEFAULT_STACK_PORT)
-    netloc = f"{credentials}@127.0.0.1:{port}"
-    os.environ["AP_DATABASE_URL"] = urlunsplit(url._replace(netloc=netloc))
 
 
 def _prepare_database(pipeline, *, reset: bool) -> None:
@@ -136,7 +122,7 @@ def main() -> int:
 
     load_config("rules")  # also reads .env, so the environment is ready for the URL below
     if args.stack:
-        _use_full_stack_database()
+        use_stack_database()
     root = data_dir() / "generated"
     docs = load_manifest(root)
     pipeline = build_pipeline()

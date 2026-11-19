@@ -19,6 +19,8 @@ DEFAULT_PORT = "5433"
 DEFAULT_USER = "ap"
 DEFAULT_PASSWORD = "change-me"
 DEFAULT_NAME = "ap"
+STACK_PORT_ENV = "AP_STACK_DB_PORT"
+DEFAULT_STACK_PORT = "5434"  # where `make up` publishes the stack's Postgres on the Mac
 
 
 def database_url() -> str:
@@ -33,6 +35,21 @@ def database_url() -> str:
     port = os.environ.get("AP_DB_PORT", DEFAULT_PORT)
     name = os.environ.get("AP_DB_NAME", DEFAULT_NAME)
     return f"postgresql://{quote(user, safe='')}:{quote(password, safe='')}@{host}:{port}/{name}"
+
+
+def stack_database_url(url: str) -> str:
+    """``url`` with its host and port moved to the full stack's Postgres on the Mac."""
+    parts = urlsplit(url)
+    credentials = parts.netloc.rpartition("@")[0]
+    port = os.environ.get(STACK_PORT_ENV, DEFAULT_STACK_PORT)
+    return urlunsplit(parts._replace(netloc=f"{credentials}@{DEFAULT_HOST}:{port}"))
+
+
+def use_stack_database() -> str:
+    """Point ``connect`` at the full stack's database instead of the dev one (``STACK=1``)."""
+    url = stack_database_url(database_url())
+    os.environ["AP_DATABASE_URL"] = url
+    return url
 
 
 def safe_url(url: str) -> str:

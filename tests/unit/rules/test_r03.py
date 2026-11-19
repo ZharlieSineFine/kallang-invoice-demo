@@ -121,3 +121,22 @@ def test_r03_flags_wrong_gst_inside_an_inclusive_total(clean_ctx, rules_config):
     flagged = [finding for finding in findings if finding.field == "gst_amount"]
     assert flagged
     assert flagged[0].evidence["expected_gst"] == "78.44"
+
+
+def test_r03_shows_rates_with_a_percent_sign(clean_ctx, rules_config):
+    # The finding card prints evidence as stored; a rate reads "8%", never "8.00" (2026-11-19).
+    invoice = clean_ctx.invoice.model_copy(update={"gst_rate_percent": Decimal("8.00")})
+    ctx = clean_ctx.model_copy(update={"invoice": invoice})
+    rate = next(f for f in R03(rules_config).check(ctx) if f.field == "gst_rate")
+    assert rate.evidence["expected"] == "9%"
+    assert rate.evidence["found"] == "8%"
+    assert "8%" in rate.message
+    assert "8.00" not in rate.message
+
+
+def test_r03_amount_evidence_keeps_money_but_shows_the_rate_as_a_percent(clean_ctx, rules_config):
+    invoice = clean_ctx.invoice.model_copy(update={"gst_amount": Decimal("90.00")})
+    ctx = clean_ctx.model_copy(update={"invoice": invoice})
+    amount = next(f for f in R03(rules_config).check(ctx) if f.field == "gst_amount")
+    assert amount.evidence["rate_percent"] == "9%"
+    assert amount.evidence["gst_amount"] == "90.00"

@@ -25,6 +25,7 @@ from invoiceflow.contracts import (
     Scope,
     Severity,
 )
+from invoiceflow.contracts.money import plain_decimal
 from invoiceflow.rules.version import rule_version
 
 # Documents that are filed, never paid: the router sends them to NOT_INVOICE (build plan).
@@ -41,6 +42,11 @@ def cfg_decimal(mapping: Mapping[str, Any], key: str) -> Decimal:
 def fmt2(value: Decimal) -> str:
     """Format a Decimal to two places with no separators, e.g. ``1080.00``."""
     return f"{value:.2f}"
+
+
+def fmt_percent(value: Decimal) -> str:
+    """A rate as people read it: ``9%``, ``8.5%``; never ``9.00``."""
+    return f"{format(plain_decimal(value), 'f')}%"
 
 
 def money_sgd(value: Decimal) -> str:

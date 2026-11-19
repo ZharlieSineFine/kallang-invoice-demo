@@ -203,8 +203,10 @@ def _cached_for(path: Path, doc_ids: set[str]) -> bool:
     return str(result.get("doc_id")) in doc_ids
 
 
-def remove_files(plan: ErasePlan, *, data_root: Path, cache_dir: Path) -> tuple[Path, ...]:
-    """Delete what the erased invoices left in ``data_root`` and the model-answer cache."""
+def remove_files(plan: ErasePlan, *, data_root: Path, cache_dir: Path | None) -> tuple[Path, ...]:
+    """Delete what the erased invoices left in ``data_root`` and the model-answer cache.
+
+    ``cache_dir=None`` keeps their recorded answers, for a replay rehearsal of the same set."""
     removed: list[Path] = []
     for relative in plan.bronze_paths:
         _remove(data_root / relative, removed)
@@ -218,7 +220,7 @@ def remove_files(plan: ErasePlan, *, data_root: Path, cache_dir: Path) -> tuple[
             if path.is_file() and _sha256(path) in plan.match_sha256s:
                 _remove(path, removed)
     wanted = {str(doc_id) for doc_id in plan.doc_ids}
-    if wanted and cache_dir.is_dir():
+    if wanted and cache_dir is not None and cache_dir.is_dir():
         for path in sorted(cache_dir.glob("*.json")):
             if _cached_for(path, wanted):
                 _remove(path, removed)

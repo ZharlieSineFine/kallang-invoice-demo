@@ -11,6 +11,7 @@ from app.backend import CodingUpdate
 from app.boxes import load_page_text, page_boxes, text_in_bbox
 from app.ui import resolve_path
 from invoiceflow.contracts import DocStatus, Finding, NormalizedLineItem, Scope, Severity
+from invoiceflow.settings import repo_root
 
 pytestmark = pytest.mark.db
 
@@ -53,6 +54,55 @@ def test_a_correction_never_clears_a_hold(conn, backend, docs):
     assert "R08" not in {finding.rule_id for finding in released.findings}
     approved = backend.approve(doc.doc_id, "integration.reviewer", "checked")
     assert approved.status is DocStatus.APPROVED
+
+
+def test_a_typed_gst_rate_is_saved_and_shown_as_a_percent(conn, backend, docs):
+    # Typed "8.00": stored as the number "8" and shown as "8%" (user's option A, 2026-11-19).
+    doc = _mismatch(docs)
+    backend.correct(doc.doc_id, "gst_rate", "8.00", "integration.reviewer")
+    row = backend.document(doc.doc_id).field("gst_rate")
+    assert row.value_norm == "8"
+    assert row.value_raw == "8%"
+
+
+def test_the_rate_evidence_migration_rewrites_old_findings(conn, docs):
+    doc = _mismatch(docs)
+    old = (
+        Finding(
+            rule_id="R03",
+            rule_version="test",
+            severity=Severity.FLAG,
+            scope=Scope.FIELD,
+            field="gst_rate",
+            message="GST rate 8% does not match the 9% rate for 2026-10-18",
+            evidence={"invoice_date": "2026-10-18", "expected": "9.00", "found": "8.00"},
+        ),
+        Finding(
+            rule_id="R03",
+            rule_version="test",
+            severity=Severity.FLAG,
+            scope=Scope.FIELD,
+            field="gst_amount",
+            message="GST should be 90.00 at 9%, but the invoice reads 91.00",
+            evidence={"subtotal": "1000.00", "rate_percent": "10.00", "gst_amount": "91.00"},
+        ),
+    )
+    repo.save_findings(conn, doc.doc_id, "integration-old-evidence", old)
+    sql = (repo_root() / "db" / "migrations" / "002_rate_evidence_percent.sql").read_text()
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        cur.execute(sql)  # running it twice changes nothing more
+        cur.execute(
+            "SELECT field, evidence FROM findings WHERE run_id = %s ORDER BY field",
+            ("integration-old-evidence",),
+        )
+        rows = dict(cur.fetchall())
+    assert rows["gst_rate"] == {"invoice_date": "2026-10-18", "expected": "9%", "found": "8%"}
+    assert rows["gst_amount"] == {
+        "subtotal": "1000.00",
+        "rate_percent": "10%",
+        "gst_amount": "91.00",
+    }
 
 
 def test_released_hold_on_a_clean_invoice_still_waits_for_a_person(conn, backend, docs):
@@ -520,3 +570,20 @@ def test_only_a_picked_invoice_can_be_audited(conn, backend):
     repo.log_event(conn, "pipeline", "audit.selected", doc.doc_id, {"sample_percent": "10"})
     with pytest.raises(ValueError, match="Choose the fields"):
         backend.record_audit(doc.doc_id, "integration.reviewer", True)
+
+
+def test_the_weekly_monitor_counts_what_step_8_shows(conn, backend):
+    from invoiceflow.store.repo import Repo
+
+    store = Repo(conn)
+    doc = _auto_passed(backend)
+    before = store.auto_passed_count()
+    repo.log_event(conn, "pipeline", "intake.completed", doc.doc_id, {"status": "AUTO_PASSED"})
+    repo.log_event(conn, "pipeline", "audit.selected", doc.doc_id, {"sample_percent": "10"})
+    backend.record_audit(doc.doc_id, "integration.reviewer", True, ("total",))
+
+    assert store.auto_passed_count() == before + 1
+    assert store.audit_counts() == (1, 1, 1, (("total", 1),))
+    step_8 = backend.audit_summary()
+    counts = (step_8.picked, step_8.checked, step_8.with_error, step_8.error_fields)
+    assert counts == store.audit_counts()

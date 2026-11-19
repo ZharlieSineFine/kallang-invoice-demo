@@ -78,6 +78,11 @@ def golden_dir() -> Path:
     return repo_root() / "tests" / "fixtures" / "golden"
 
 
+def company_timezone() -> str:
+    """Kallang's time zone name (``config/company.yaml``); the DAGs schedule in it."""
+    return str(load_config("company").get("timezone", "Asia/Singapore"))
+
+
 def singapore_today() -> date:
     """Today in Kallang's timezone, so date checks do not depend on the host or container."""
     return datetime.now(ZoneInfo("Asia/Singapore")).date()

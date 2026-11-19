@@ -20,7 +20,7 @@ from app import queries, repo
 from app.coding_refresh import coding_changed, keep_reviewer_choices
 from app.evaluation import latest_evaluation
 from app.fields import printed_value
-from app.formatting import normalize_field_value
+from app.formatting import RATE_FIELDS, display_value, normalize_field_value
 from app.models import (
     AuditSummary,
     BatchSummary,
@@ -445,6 +445,8 @@ class PostgresBackend:
             normalized = normalize_field_value(field, raw_value)
             if normalized is None:
                 raise ValueError(f"{field} cannot be empty")
+            # A rate typed as 9, 9.00 or 9 % is saved, logged and shown as "9%".
+            typed = display_value(field, normalized) if field in RATE_FIELDS else raw_value
             if row is not None and normalized == row.value_norm:
                 return ReviewOutcome(
                     doc_id=doc_id,
@@ -456,7 +458,7 @@ class PostgresBackend:
                 conn,
                 doc_id,
                 name=field,
-                value_raw=raw_value,
+                value_raw=typed,
                 value_norm=normalized,
                 page_no=row.page_no if row is not None else None,
                 bbox=row.bbox if row is not None else None,
@@ -472,14 +474,14 @@ class PostgresBackend:
                 action=ReviewAction.CORRECT,
                 field=field,
                 old_value=old_value,
-                new_value=raw_value,
+                new_value=typed,
             )
             repo.log_event(
                 conn,
                 reviewer,
                 "review.corrected",
                 doc_id,
-                {"field": field, "old": old_value, "new": raw_value},
+                {"field": field, "old": old_value, "new": typed},
             )
             self._refresh_coding(conn, doc_id, reviewer)
             outcome = self._rerun(conn, doc_id, reviewer, resolved_fields=frozenset({field}))

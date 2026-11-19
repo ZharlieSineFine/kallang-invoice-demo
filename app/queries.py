@@ -58,7 +58,9 @@ from invoiceflow.contracts import (
     Vendor,
     VenueAlias,
 )
+from invoiceflow.evaluate.audit_monitor import read_summary
 from invoiceflow.settings import load_config
+from invoiceflow.store.repo import Repo
 
 _SEVERITY_BY_RANK = {
     None: None,
@@ -774,41 +776,9 @@ def discarded_copies(conn: Connection) -> tuple[DiscardedCopy, ...]:
 
 # The random audit (CR-012): invoices picked at intake that are still stored, and each one's
 # latest audit result (a person may record it again; the latest counts).
-_AUDITS = """
-WITH picked AS (
-    SELECT DISTINCT e.doc_id FROM events e
-    JOIN documents d ON d.doc_id = e.doc_id
-    WHERE e.type = 'audit.selected'
-), latest AS (
-    SELECT DISTINCT ON (e.doc_id) e.doc_id, e.payload FROM events e
-    JOIN picked p ON p.doc_id = e.doc_id
-    WHERE e.type = 'audit.completed'
-    ORDER BY e.doc_id, e.ts DESC, e.event_id DESC
-)
-"""
-
-
 def audit_summary(conn: Connection, percent: Decimal | None) -> AuditSummary:
-    with conn.cursor() as cur:
-        cur.execute(
-            _AUDITS + "SELECT (SELECT count(*) FROM picked), (SELECT count(*) FROM latest),"
-            " (SELECT count(*) FROM latest WHERE payload->>'result' = 'error')"
-        )
-        picked, checked, with_error = cur.fetchone()
-        cur.execute(
-            _AUDITS + "SELECT f.field, count(*) FROM latest,"
-            " jsonb_array_elements_text(latest.payload->'fields') AS f(field)"
-            " WHERE latest.payload->>'result' = 'error'"
-            " GROUP BY f.field ORDER BY count(*) DESC, f.field"
-        )
-        fields = tuple((str(field), int(count)) for field, count in cur.fetchall())
-    return AuditSummary(
-        percent=percent,
-        picked=int(picked),
-        checked=int(checked),
-        with_error=int(with_error),
-        error_fields=fields,
-    )
+    """Demo Step 8's numbers; the weekly ``audit_monitor`` report reads the same counts."""
+    return read_summary(Repo(conn), percent)
 
 
 def latest_document_time(conn: Connection) -> datetime | None:

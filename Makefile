@@ -47,8 +47,8 @@ setup: ## install dependencies and create .env from the example
 doctor: ## check the tools and ports the full stack needs
 	@bash scripts/doctor.sh
 
-up: ## start the full stack and wait until healthy
-	$(COMPOSE_FULL) up -d --build --wait --wait-timeout 120
+up: ## start the full stack and wait until healthy (LLM_MODE=replay make up: recorded answers, no model)
+	$(COMPOSE_FULL) up -d --build --remove-orphans --wait --wait-timeout 120
 	@echo "full stack is up: Airflow on http://127.0.0.1:8080, review on http://127.0.0.1:8501"
 
 down: ## stop the full stack
@@ -106,8 +106,8 @@ demo-add: ## load only the generated invoices not in the database yet (keeps rev
 live-set: ## (re)build the 6 live-demo invoices in data/live-demo (never loaded by demo-data)
 	@$(UV) run python -m generator.live_set
 
-erase-live: ## remove the live-demo invoices (data/live-demo, or FOLDER=...) from the database and data/, keeping the 57; DRY=1 only shows
-	@$(UV) run python scripts/erase_live.py $(if $(FOLDER),--folder $(FOLDER)) $(if $(DRY),--dry-run)
+erase-live: ## remove the live-demo invoices (data/live-demo, or FOLDER=...) from the database and data/, keeping the 57; DRY=1 only shows, STACK=1 targets the full stack, KEEP_ANSWERS=1 keeps their recorded answers for replay rehearsals
+	@$(UV) run python scripts/erase_live.py $(if $(FOLDER),--folder $(FOLDER)) $(if $(DRY),--dry-run) $(if $(STACK),--stack) $(if $(KEEP_ANSWERS),--keep-answers)
 
 drop: ## copy a golden fixture into data/inbox (WS1 live docs replace this)
 	@mkdir -p data/inbox

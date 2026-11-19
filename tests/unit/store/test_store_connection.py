@@ -2,7 +2,12 @@
 
 import pytest
 
-from invoiceflow.store.connection import database_url, safe_url
+from invoiceflow.store.connection import (
+    database_url,
+    safe_url,
+    stack_database_url,
+    use_stack_database,
+)
 
 
 class TestDatabaseUrl:
@@ -44,3 +49,25 @@ class TestSafeUrl:
 
     def test_no_password_is_unchanged(self):
         assert safe_url("postgresql://127.0.0.1:5433/ap") == "postgresql://127.0.0.1:5433/ap"
+
+
+class TestStackDatabaseUrl:
+    """`make up` publishes the stack's Postgres on the Mac at 127.0.0.1:5434."""
+
+    def test_same_credentials_and_database_on_the_stack_port(self, monkeypatch):
+        monkeypatch.delenv("AP_STACK_DB_PORT", raising=False)
+        url = stack_database_url("postgresql://ap:p%40ss@postgres:5432/ap")
+        assert url == "postgresql://ap:p%40ss@127.0.0.1:5434/ap"
+
+    def test_the_port_can_be_moved(self, monkeypatch):
+        monkeypatch.setenv("AP_STACK_DB_PORT", "6000")
+        assert stack_database_url("postgresql://ap:x@127.0.0.1:5433/ap") == (
+            "postgresql://ap:x@127.0.0.1:6000/ap"
+        )
+
+    def test_use_stack_database_points_connect_at_it(self, monkeypatch):
+        monkeypatch.setattr("invoiceflow.store.connection.load_env_file", lambda: {})
+        monkeypatch.delenv("AP_STACK_DB_PORT", raising=False)
+        monkeypatch.setenv("AP_DATABASE_URL", "postgresql://ap:x@127.0.0.1:5433/ap")
+        assert use_stack_database() == "postgresql://ap:x@127.0.0.1:5434/ap"
+        assert database_url() == "postgresql://ap:x@127.0.0.1:5434/ap"

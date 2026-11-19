@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-from invoiceflow.contracts.money import money
+from invoiceflow.contracts.money import money, plain_decimal
 from invoiceflow.normalize.text import clean_text
 
 _CURRENCY_PREFIX = re.compile(
@@ -76,7 +76,8 @@ def normalize_amount(value: str | None) -> Decimal | None:
 
 
 def normalize_percent(value: str | None) -> Decimal | None:
-    """Parse ``9%`` or ``9.00 %`` as ``Decimal('9')``; other text is not a percentage."""
+    """Parse ``9%`` or ``9.00 %`` as ``Decimal('9')``, one spelling for one rate; other text
+    is not a percentage."""
     text = clean_text(value)
     if not text or "%" not in text:
         return None
@@ -88,6 +89,6 @@ def normalize_percent(value: str | None) -> Decimal | None:
     if not _NUMBER.fullmatch(number):
         return None
     try:
-        return Decimal(number)
+        return plain_decimal(Decimal(number))
     except InvalidOperation:
         return None

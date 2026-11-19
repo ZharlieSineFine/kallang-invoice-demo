@@ -18,6 +18,7 @@ routing:
 audit:
   sample_percent: "10"
   seed: "kallang-demo-10"   # chosen so the live set's PCE-2026-9606 is picked, the other five not
+  error_limit_percent: "2"  # audit_monitor marks its weekly report above this (more than 1 in 50)
 
 severities:                  # INFO | FLAG | HOLD | MANUAL
   R01: FLAG    # value not found on the page
