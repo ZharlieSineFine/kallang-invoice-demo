@@ -1,11 +1,13 @@
-# Postgres alone, so WS6 and WS7 have a real database before the full stack exists.
-# The full Airflow stack is WS6's docker-compose.yaml.
-name: kallang-invoice-demo
+# The light setup's database: Postgres alone, for the tests and for running the review app
+# on the Mac without Airflow. The full Airflow stack is docker-compose.yaml.
+# Named kallang-invoice-light on 2026-11-20 (was kallang-invoice-demo, container
+# invoiceflow-postgres-dev); its data was copied from kallang-invoice-demo_postgres-dev-data.
+name: kallang-invoice-light
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: invoiceflow-postgres-dev
+    container_name: kallang-invoice-light-db
     environment:
       POSTGRES_USER: ${AP_DB_USER:-ap}
       POSTGRES_PASSWORD: ${AP_DB_PASSWORD:-change-me}
@@ -19,7 +21,7 @@ services:
       retries: 30
     shm_size: 128mb
     volumes:
-      - postgres-dev-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
 
 volumes:
-  postgres-dev-data:
+  db-data:

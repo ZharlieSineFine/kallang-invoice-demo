@@ -10,9 +10,7 @@ from uuid import UUID
 import pytest
 
 from invoiceflow.contracts import DocStatus
-from invoiceflow.storage import LocalBlobStore
 from invoiceflow.store.erase import EraseTarget, apply_erase, plan_erase, remove_files
-from invoiceflow.store.fixtures import load_fixtures
 from invoiceflow.store.repo import Repo
 
 LIVE = UUID("93fe9312-fe79-50bb-b5e7-d18e83dfaff2")  # golden clean, SAV-2026-0412
@@ -31,13 +29,6 @@ def _sha(conn, doc_id):
         "SELECT b.sha256 FROM bronze_files b JOIN documents d USING (file_id) WHERE d.doc_id = %s",
         doc_id,
     )
-
-
-@pytest.fixture()
-def loaded(migrated, tmp_path):
-    store = LocalBlobStore(tmp_path)
-    load_fixtures(migrated, store)
-    return migrated, store
 
 
 def _by_file(conn):

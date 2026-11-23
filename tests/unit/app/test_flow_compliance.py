@@ -117,3 +117,22 @@ def test_card_html_escapes_and_keeps_dollars_out_of_markdown_math():
     assert "S$1,000" in html
     assert 'href="https://www.iras.gov.sg' in html
     assert "color:#" in html
+
+
+def test_not_invoices_are_counted_apart_at_check():
+    # A statement or a résumé is not a problem to fix: it is counted on its own, not flagged.
+    docs = [
+        _doc(1, DocStatus.NEEDS_REVIEW, Severity.FLAG),
+        _doc(2, DocStatus.NOT_INVOICE, Severity.FLAG),
+        _doc(3, DocStatus.NOT_INVOICE),
+    ]
+    outcomes = {outcome.name: outcome for outcome in batch_outcomes(docs)}
+    assert outcomes["Check"].summary == "1 flagged, 2 not invoices"
+    assert outcomes["Check"].tone is StageTone.FLAGGED
+
+
+def test_one_not_invoice_among_clean_invoices():
+    docs = [_doc(1, DocStatus.AUTO_PASSED), _doc(2, DocStatus.NOT_INVOICE, Severity.FLAG)]
+    outcomes = {outcome.name: outcome for outcome in batch_outcomes(docs)}
+    assert outcomes["Check"].summary == "1 not an invoice"
+    assert outcomes["Check"].tone is StageTone.PASSED

@@ -2,8 +2,9 @@
 
 The CSV uses the 16-column layout in ``config/sap_mapping.yaml`` and lands in
 ``data/gold/<batch_id>/`` with its manifest. It is the same ``export_approved`` that the
-review app's "Run the SAP export" button calls. Each invoice is exported once: the run marks
-every document EXPORTED, so the next run writes zero rows.
+review app's "Run the SAP export" button calls. This run sends only invoices not exported
+before, so a second run writes zero rows. A person can send an exported invoice again from the
+app's "Send again" list (2026-11-20); every send is kept in the batch history.
 
 A scheduled run that starts more than 30 minutes after its 18:00 slot is skipped
 (``pipeline.schedule.missed_slot``): Airflow starts the latest missed slot as soon as the stack

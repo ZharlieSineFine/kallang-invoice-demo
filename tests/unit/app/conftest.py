@@ -225,9 +225,10 @@ class FakeBackend:
         return TraceData(bundle=bundle, finding_history=bundle.findings, runs=runs)
 
     def dashboard(self):
-        docs = [bundle.document for bundle in self.bundles.values()]
+        every = [bundle.document for bundle in self.bundles.values()]
+        docs = [doc for doc in every if doc.status is not DocStatus.NOT_INVOICE]
         return DashboardData(
-            total_documents=len(docs),
+            total_invoices=len(docs),
             auto_passed=sum(d.status is DocStatus.AUTO_PASSED for d in docs),
             needs_review=sum(d.status is DocStatus.NEEDS_REVIEW for d in docs),
             approved=sum(d.status is DocStatus.APPROVED for d in docs),
@@ -279,14 +280,41 @@ class FakeBackend:
     def export_status(self):
         return {"exported": 1, "approved_not_exported": self.ready}
 
-    def run_export(self):
-        self.calls.append(("run_export", ()))
-        invoices, self.ready = self.ready, 0
+    history: tuple = ()  # ExportedInvoice rows: invoices sent to SAP before
+
+    def export_history(self):
+        return self.history
+
+    def run_export(self, resend=()):
+        resend = tuple(dict.fromkeys(resend))
+        self.calls.append(("run_export", (resend,)))
+        resent = tuple(item.label for item in self.history if item.doc_id in resend)
+        invoices, self.ready = self.ready + len(resent), 0
         return ExportOutcome(
-            batch_id="B-NEW", invoices=invoices, row_count=invoices, problems=self.export_problems
+            batch_id="B-NEW",
+            invoices=invoices,
+            row_count=invoices,
+            problems=self.export_problems,
+            resent=resent,
         )
 
     # writes ----------------------------------------------------------------
+    def delete_documents(self, doc_ids, reviewer):
+        from app.models import PROCESSING_STATUSES, DeleteOutcome
+
+        self.calls.append(("delete_documents", (tuple(doc_ids), reviewer)))
+        found = [self.bundles[doc_id] for doc_id in doc_ids if doc_id in self.bundles]
+        if not found:
+            raise LookupError("Those documents are already gone.")
+        if any(bundle.document.status in PROCESSING_STATUSES for bundle in found):
+            raise ValueError("still being read")
+        for bundle in found:
+            del self.bundles[bundle.document.doc_id]
+        return DeleteOutcome(
+            deleted=tuple(b.document.invoice_number or b.document.file_name or "?" for b in found),
+            exported=sum(b.document.status is DocStatus.EXPORTED for b in found),
+        )
+
     def _store(self, bundle: DocumentBundle, **updates) -> DocumentBundle:
         changed = replace(bundle, **updates)
         self.bundles[bundle.document.doc_id] = changed
@@ -348,6 +376,7 @@ class FakeBackend:
             message=f"Checks rerun: {result.status.value}",
             findings=findings,
             run_id="fake-run",
+            checks=f"Checks rerun: {result.status.value}",
         )
 
     def confirm(self, doc_id, field, reviewer):

@@ -1,4 +1,4 @@
-"""The "Check the discarded copy" panel, shared by Demo Step 1 and the Queue page.
+"""The discarded-copy proof, in the Discarded list on Demo Step 1 and the Queue page.
 
 Intake discards a file only when its bytes match a file it already stores, so the evidence
 is the fingerprint (SHA-256). The panel puts the copy's fingerprint beside the original's
@@ -48,7 +48,7 @@ def check_commands(copy: DiscardedCopy) -> tuple[str, str]:
     return f'shasum -a 256 "{name}"', f'certutil -hashfile "{name}" SHA256'
 
 
-def _open_review(doc_id: UUID) -> None:
+def open_review(doc_id: UUID) -> None:
     """Runs before widgets are instantiated, so it may legally flip the page key."""
     st.session_state["selected_doc_id"] = doc_id
     st.session_state["page"] = "Review"
@@ -68,7 +68,7 @@ def _original_actions(copy: DiscardedCopy, key: str) -> None:
     if st.button(
         "Open the original in Review",
         key=f"{key}_open",
-        on_click=_open_review,
+        on_click=open_review,
         args=(original.doc_id,),
     ):
         st.rerun()
@@ -86,9 +86,14 @@ def _original_actions(copy: DiscardedCopy, key: str) -> None:
     )
 
 
-def _check_yourself(copy: DiscardedCopy) -> None:
+def _check_yourself(copy: DiscardedCopy, key: str) -> None:
+    # Off by default: the commands are for someone who wants to verify, and they pushed the
+    # Not invoices list far down the Discarded section (user's request, 2026-11-20). A
+    # switch, because Streamlit cannot fold a section inside the Discarded fold.
+    if not st.toggle("Check it yourself: show the fingerprint commands", key=f"{key}_check"):
+        return
     mac, windows = check_commands(copy)
-    st.markdown("**Check it yourself.** In the folder that holds the copy, run:")
+    st.markdown("In the folder that holds the copy, run:")
     st.caption("Mac (Terminal)")
     st.code(mac, language="bash")
     st.caption("Windows (Command Prompt)")
@@ -101,21 +106,18 @@ def _render_copy(copy: DiscardedCopy, key: str) -> None:
     st.table(pd.DataFrame(comparison_rows(copy), index=list(ROW_LABELS)))
     _verdict(copy)
     _original_actions(copy, key)
-    _check_yourself(copy)
+    _check_yourself(copy, key)
 
 
-def render_discarded_copies(copies: Sequence[DiscardedCopy], *, key: str) -> None:
-    if not copies:
-        return
-    noun = "copy" if len(copies) == 1 else "copies"
-    with st.expander(f"Check the discarded {noun} ({len(copies)})"):
-        st.caption(
-            "Intake discards a file only when every byte matches a file it already holds. "
-            "The fingerprint is worked out from every byte, so identical fingerprints mean "
-            "identical files. A re-scanned or re-saved invoice is not discarded; the "
-            "duplicate-number check puts it on hold for a person instead."
-        )
-        for index, copy in enumerate(copies):
-            if index:
-                st.divider()
-            _render_copy(copy, f"{key}_{index}")
+def render_copies(copies: Sequence[DiscardedCopy], *, key: str) -> None:
+    """Each discarded copy beside its kept original, with the proof that they match."""
+    st.caption(
+        "Intake discards a file only when every byte matches a file it already holds. "
+        "The fingerprint is worked out from every byte, so identical fingerprints mean "
+        "identical files. A re-scanned or re-saved invoice is not discarded; the "
+        "duplicate-number check puts it on hold for a person instead."
+    )
+    for index, copy in enumerate(copies):
+        if index:
+            st.divider()
+        _render_copy(copy, f"{key}_{index}")

@@ -150,7 +150,9 @@ def test_release_hold_requires_a_comment(on_hold_backend, mismatch_bundle):
     at = _set_doc(_run(review, on_hold_backend), doc_id)
     at.run(timeout=30)
     at.get_by_key("btn_release").click().run(timeout=30)
-    assert any("comment" in error.value for error in at.error)
+    assert any(
+        'data-tone="error"' in item.value and "comment" in item.value for item in at.markdown
+    )
     at.get_by_key("hold_comment").set_value("Checked with finance.").run()
     at.get_by_key("btn_release").click().run(timeout=30)
     assert any(call[0] == "release_hold" for call in on_hold_backend.calls)
@@ -170,7 +172,7 @@ def test_dashboard_page_labels_the_evaluation_synthetic(fake_backend, evaluation
     assert _titles(at) == ["Dashboard"]
     markdown = "\n".join(item.value for item in at.markdown)
     assert ":violet-badge[SYNTHETIC EVALUATION]" in markdown
-    assert any(metric.label == "Documents processed" for metric in at.metric)
+    assert any(metric.label == "Invoices" for metric in at.metric)
 
 
 def test_dashboard_page_says_when_no_evaluation_exists(fake_backend):
@@ -303,7 +305,8 @@ def test_review_line_item_and_coding_editors_save(monkeypatch, fake_backend, mis
             edited.loc[edited.index[0], "cost_center"] = "KG1200"
             edited.loc[edited.index[0], "tax_code"] = "ZP"
         else:
-            edited.loc[edited["line_no"] == 4, "amount"] = 90.0
+            # A consistent fix: 1 x 90.00 = 90.00, or the line check flags it (2026-11-20).
+            edited.loc[edited["line_no"] == 4, ["unit_price", "amount"]] = 90.0
         return pd.DataFrame(edited)
 
     monkeypatch.setattr(st, "data_editor", fake_editor)

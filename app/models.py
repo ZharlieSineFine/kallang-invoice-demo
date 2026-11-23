@@ -215,10 +215,59 @@ class ReviewOutcome:
     message: str
     findings: tuple[FindingRow, ...] = ()
     run_id: str | None = None
+    checks: str = ""  # what rerunning the checks found, when they were rerun
+    changed: bool = True  # False when nothing was saved, e.g. the value was already there
 
     @property
     def blocked(self) -> bool:
         return bool(self.findings)
+
+
+@dataclass(frozen=True)
+class ExportedInvoice:
+    """An invoice sent to SAP before, with every batch it went out in, oldest first."""
+
+    doc_id: UUID
+    invoice_number: str | None
+    vendor: str | None
+    total: Decimal | None
+    batches: tuple[str, ...]
+    last_sent: datetime | None = None
+
+    @property
+    def label(self) -> str:
+        return self.invoice_number or "a document with no invoice number"
+
+
+@dataclass(frozen=True)
+class DeleteOutcome:
+    """What the Queue's Delete removed, named the way the Queue shows each document."""
+
+    deleted: tuple[str, ...]  # invoice number, or the file name when none was read
+    exported: int = 0  # how many of them were already in SAP
+
+    @property
+    def warn(self) -> bool:
+        return self.exported > 0
+
+    @property
+    def sap_note(self) -> str:
+        """What SAP still has; empty when none of them had been exported."""
+        if self.exported == 1 and len(self.deleted) == 1:
+            return "It had been exported, so SAP still has it."
+        if self.exported == 1:
+            return "1 of them had been exported, so SAP still has it."
+        if self.exported:
+            return f"{self.exported} of them had been exported, so SAP still has them."
+        return ""
+
+    @property
+    def message(self) -> str:
+        if len(self.deleted) == 1:
+            text = f"Deleted {self.deleted[0]}."
+        else:
+            text = f"Deleted {len(self.deleted)} documents: {', '.join(self.deleted)}."
+        return f"{text} {self.sap_note}" if self.sap_note else text
 
 
 @dataclass(frozen=True)
@@ -247,7 +296,7 @@ class EvaluationSummary:
 
 @dataclass(frozen=True)
 class DashboardData:
-    total_documents: int = 0
+    total_invoices: int = 0  # non-invoices are discarded, so they are not counted
     auto_passed: int = 0
     needs_review: int = 0
     approved: int = 0

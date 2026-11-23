@@ -13,6 +13,7 @@ from html import escape
 
 import streamlit as st
 
+from app.counts import IntakeCounts, intake_counts, is_invoice
 from app.models import DocumentSummary
 from invoiceflow.contracts import DocStatus, Severity
 
@@ -63,14 +64,20 @@ def _extract(docs: Sequence[DocumentSummary]) -> StageOutcome:
 
 
 def _check(docs: Sequence[DocumentSummary]) -> StageOutcome:
-    held = sum(doc.highest_severity is Severity.HOLD for doc in docs)
-    flagged = sum(doc.highest_severity in {Severity.FLAG, Severity.MANUAL} for doc in docs)
+    # A non-invoice (a statement, a résumé) is set aside, not a problem to fix.
+    others = [doc for doc in docs if not is_invoice(doc)]
+    invoices = [doc for doc in docs if is_invoice(doc)]
+    held = sum(doc.highest_severity is Severity.HOLD for doc in invoices)
+    flagged = sum(doc.highest_severity in {Severity.FLAG, Severity.MANUAL} for doc in invoices)
     parts = [f"{held} held"] * bool(held) + [f"{flagged} flagged"] * bool(flagged)
+    if others:
+        parts.append("1 not an invoice" if len(others) == 1 else f"{len(others)} not invoices")
+    summary = ", ".join(parts) or "all clear"
     if held:
-        return StageOutcome("Check", StageTone.HELD, ", ".join(parts))
+        return StageOutcome("Check", StageTone.HELD, summary)
     if flagged:
-        return StageOutcome("Check", StageTone.FLAGGED, ", ".join(parts))
-    return StageOutcome("Check", StageTone.PASSED, "all clear")
+        return StageOutcome("Check", StageTone.FLAGGED, summary)
+    return StageOutcome("Check", StageTone.PASSED, summary)
 
 
 def _review(docs: Sequence[DocumentSummary]) -> StageOutcome:
@@ -88,19 +95,21 @@ def _export(docs: Sequence[DocumentSummary]) -> StageOutcome:
     return StageOutcome("Export", StageTone.IDLE, f"{ready} ready")
 
 
-def _intake(kept: int, discarded: int) -> StageOutcome:
-    """A byte-identical copy of a stored file arrived too, but intake discarded it."""
-    summary = f"{kept + discarded} received" + (f", {discarded} discarded" if discarded else "")
+def _intake(counts: IntakeCounts) -> StageOutcome:
+    """Discarded matches the Queue's Discarded list: the copies plus the non-invoices."""
+    discarded = counts.discarded
+    summary = f"{counts.received} received" + (f", {discarded} discarded" if discarded else "")
     return StageOutcome("Intake", StageTone.PASSED, summary)
 
 
-def batch_outcomes(docs: Sequence[DocumentSummary], discarded: int = 0) -> tuple[StageOutcome, ...]:
+def batch_outcomes(docs: Sequence[DocumentSummary], copies: int = 0) -> tuple[StageOutcome, ...]:
+    """``copies``: byte-identical copies intake discarded, which were never stored."""
     if not docs:
         return tuple(StageOutcome(name, StageTone.IDLE, "no documents") for name in STAGES)
     # A document the model is still reading has been received, but has no outcome yet.
     done = [doc for doc in docs if not doc.is_processing]
     return (
-        _intake(len(docs), discarded),
+        _intake(intake_counts(docs, copies)),
         _read(done, len(docs) - len(done)),
         _extract(done),
         _check(done),
@@ -129,7 +138,7 @@ def flow_strip_html(outcomes: Sequence[StageOutcome], current: str | None = None
 
 
 def render_flow_strip(
-    docs: Sequence[DocumentSummary], current: str | None = None, *, discarded: int = 0
+    docs: Sequence[DocumentSummary], current: str | None = None, *, copies: int = 0
 ) -> None:
-    outcomes = batch_outcomes(docs, discarded)
+    outcomes = batch_outcomes(docs, copies)
     st.markdown(flow_strip_html(outcomes, current), unsafe_allow_html=True)

@@ -4,9 +4,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
 
-import psycopg
-import pytest
-
 from invoiceflow.contracts import (
     BronzeFile,
     CodingLine,
@@ -167,8 +164,12 @@ def test_export_once_is_enforced(migrated):
     repo.record_export(batch, (doc_id,))
     assert repo.approved_not_exported() == ()
 
-    with pytest.raises(psycopg.errors.UniqueViolation):
-        repo.record_export(batch, (doc_id,))
+    # Sent again in a later batch (2026-11-20): allowed, and both sends are kept.
+    repo.record_export(batch.model_copy(update={"batch_id": "export-2"}), (doc_id,))
+    assert set(repo.previously_exported()) == {doc_id}
+    with migrated.cursor() as cur:
+        cur.execute("SELECT count(*) FROM export_rows WHERE doc_id = %s", (doc_id,))
+        assert cur.fetchone()[0] == 2
 
 
 def test_prior_invoices_returns_file_sha(migrated):

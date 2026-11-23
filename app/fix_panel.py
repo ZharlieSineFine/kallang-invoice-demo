@@ -21,6 +21,7 @@ from app.fields import line_field, printed_value, with_line_value
 from app.formatting import format_money
 from app.hidden_text import render_hidden_text
 from app.models import DocumentBundle, FindingRow
+from app.notice import Act, failed_notice
 from invoiceflow.contracts import DocStatus, Severity
 
 FIELD_KEY = "review_field"
@@ -78,20 +79,42 @@ def render_findings(bundle: DocumentBundle, options: Sequence[str], selected: st
 
 
 def _save_correction(
-    backend: Backend, bundle: DocumentBundle, field: str, value: str, reviewer: str
+    backend: Backend,
+    bundle: DocumentBundle,
+    field: str,
+    change: tuple[str, str],
+    reviewer: str,
 ) -> None:
     doc_id = bundle.document.doc_id
+    at = fix_place(doc_id)
+    before, value = change
+    act = Act(
+        f"Corrected {field} on",
+        f"save the correction to {field} on",
+        doc=bundle.document,
+        by=reviewer,
+        change=f"{field}: {before or '—'} → {value}.",
+    )
     line = line_field(field)
     if line is None:
-        ui.run_action(backend.correct, doc_id, field, value, reviewer)
+        ui.run_action(backend.correct, doc_id, field, value, reviewer, act=act, at=at)
         return
     try:
         items = with_line_value(bundle.line_items, line, value)
     except ValueError as exc:
-        ui.flash(str(exc), "error")
+        ui.flash(failed_notice(act, exc), at=at)
         st.rerun()
         return
-    ui.run_action(backend.edit_line_items, doc_id, items, reviewer)
+    ui.run_action(backend.edit_line_items, doc_id, items, reviewer, act=act, at=at)
+
+
+_APPROVED_NEXT = "It goes into the next SAP export for payment."
+_REJECTED_NEXT = "The invoice is closed: it is never exported or paid."
+
+
+def fix_place(doc_id: UUID) -> str:
+    """Where the fix panel's results show: under Save correction and Correct as printed."""
+    return f"fix:{doc_id}"
 
 
 def _rules(findings: Sequence[FindingRow]) -> str:
@@ -135,30 +158,49 @@ def render_fix_panel(
 
     save, save_note = st.columns([1, 2])
     if save.button("Save correction", key="btn_correct", type="primary", width="stretch"):
-        _save_correction(backend, bundle, field, value, reviewer)
+        _save_correction(backend, bundle, field, (printed, value), reviewer)
     save_note.caption("The system misread it. Use my value and rerun the checks.")
 
     accept, accept_note = st.columns([1, 2])
     if accept.button("Correct as printed", key="btn_confirm", width="stretch"):
-        ui.run_action(backend.confirm, bundle.document.doc_id, field, reviewer)
+        ui.run_action(
+            backend.confirm,
+            bundle.document.doc_id,
+            field,
+            reviewer,
+            act=Act(
+                f"Accepted {field} as printed on",
+                f"accept {field} as printed on",
+                doc=bundle.document,
+                by=reviewer,
+            ),
+            at=fix_place(bundle.document.doc_id),
+        )
     accept_note.caption(
         "I checked the invoice image and this value is right; this clears the flag. "
         "Your name is recorded."
         if flags
         else "I checked the invoice image and this value is right. Your name is recorded."
     )
+    ui.show_result(fix_place(bundle.document.doc_id))
 
 
 def render_decision(backend: Backend, bundle: DocumentBundle, reviewer: str) -> None:
     doc_id: UUID = bundle.document.doc_id
     st.subheader("Decision on the whole invoice")
     approve, reject = st.columns(2)
+    comment = st.session_state.get("approve_comment")
+    at = f"decision:{doc_id}"
+    doc = bundle.document
     if approve.button("Approve", key="btn_approve", type="primary", width="stretch"):
-        ui.run_action(backend.approve, doc_id, reviewer, st.session_state.get("approve_comment"))
+        act = Act("Approved", "approve", doc=doc, by=reviewer, next_step=_APPROVED_NEXT)
+        ui.run_action(backend.approve, doc_id, reviewer, comment, act=act, at=at)
     approve.caption("Pay it: the invoice goes into the next SAP export.")
     if reject.button("Reject", key="btn_reject", width="stretch"):
-        ui.run_action(backend.reject, doc_id, reviewer, st.session_state.get("approve_comment"))
+        act = Act("Rejected", "reject", doc=doc, by=reviewer, next_step=_REJECTED_NEXT)
+        ui.run_action(backend.reject, doc_id, reviewer, comment, act=act, at=at)
     reject.caption("Don't pay it: the invoice is closed and never exported.")
+    ui.show_result(at)
     st.text_area(
         "Comment (optional, saved with Approve or Reject)",
         key="approve_comment",
@@ -178,4 +220,8 @@ def render_decision(backend: Backend, bundle: DocumentBundle, reviewer: str) -> 
         placeholder="Why can this hold be released?",
     )
     if st.button("Release hold", key="btn_release"):
-        ui.run_action(backend.release_hold, doc_id, reviewer, comment)
+        act = Act("Released the hold on", "release the hold on", doc=doc, by=reviewer)
+        ui.run_action(
+            backend.release_hold, doc_id, reviewer, comment, act=act, at=f"release:{doc_id}"
+        )
+    ui.show_result(f"release:{doc_id}")

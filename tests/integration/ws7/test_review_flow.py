@@ -163,7 +163,8 @@ def test_edit_line_items_is_versioned_and_reruns_checks(conn, backend, docs):
             quantity=item.quantity,
             unit=item.unit,
             days=item.days,
-            unit_price=item.unit_price,
+            # 1 x 90.00: a consistent fix, or the line check flags it (2026-11-20).
+            unit_price=Decimal("90.00") if item.line_no == 4 else item.unit_price,
             amount=Decimal("90.00") if item.line_no == 4 else item.amount,
         )
         for item in bundle.line_items
@@ -243,9 +244,18 @@ def test_release_hold_requires_a_comment(conn, backend, docs):
     assert bundle.reviews[0].comment == "Checked with finance."
 
 
+def test_the_dashboard_counts_only_invoices(conn, backend, docs):
+    # A non-invoice is listed under Discarded, so the Dashboard leaves it out of its counts
+    # too and the pages agree (2026-11-20).
+    repo.set_status(conn, _mismatch(docs).doc_id, DocStatus.NOT_INVOICE, "a statement")
+    data = backend.dashboard()
+    assert data.total_invoices == 1
+    assert data.auto_pass_rate == 100.0
+
+
 def test_trace_and_dashboard_read_current_runs(conn, backend, docs):
     before = backend.dashboard()
-    assert before.total_documents == 2
+    assert before.total_invoices == 2
     assert before.auto_pass_rate == 50.0
     assert before.findings_by_check[0].rule_id == "R02"
     assert before.corrections_by_field == ()
@@ -444,6 +454,23 @@ def test_the_app_runs_the_sap_export_once(backend, monkeypatch, tmp_path):
     second = backend.run_export()
     assert second.invoices == 0
     assert "Nothing new" in second.message
+
+
+def test_an_exported_invoice_can_be_sent_again_and_its_history_kept(backend, monkeypatch, tmp_path):
+    # The user's request (2026-11-20): approved invoices can be exported again at any time.
+    monkeypatch.setenv("INVOICEFLOW_DATA", str(tmp_path))
+    first = backend.run_export()
+    (sent,) = backend.export_history()
+    assert sent.batches == (first.batch_id,)
+
+    again = backend.run_export(resend=(sent.doc_id,))
+
+    assert again.invoices == 1
+    assert again.resent == (sent.label,)
+    assert sent.label in again.message
+    (after,) = backend.export_history()
+    assert after.batches == (first.batch_id, again.batch_id)
+    assert backend.export_status() == {"exported": 1, "approved_not_exported": 0}
 
 
 def _with_line_four(bundle, amount: str):

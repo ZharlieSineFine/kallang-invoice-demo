@@ -7,7 +7,8 @@
 # Based on the official apache/airflow 3.3.2 docker-compose.yaml, with redis, the Celery
 # worker, and flower removed. Celery settings are gone too; the executor is LocalExecutor.
 
-# Its own project name: compose.dev.yaml is project `kallang-invoice-demo` with a `postgres`
+# Its own project name: compose.dev.yaml (now project `kallang-invoice-light`) was project
+# `kallang-invoice-demo` with a `postgres`
 # service too, so sharing the name made `make up` replace the dev database container and
 # `make down` remove it. Now both can run side by side (dev on 5433, the stack on 5434).
 name: kallang-invoice-demo-stack

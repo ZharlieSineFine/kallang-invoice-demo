@@ -1,5 +1,5 @@
-"""The "Check the discarded copy" panel: lets a person confirm a discarded file really is
-an exact copy of a stored one, on Demo Step 1 and on the Queue page."""
+"""The discarded-copy proof: lets a person confirm a discarded file really is an exact copy
+of a stored one. It sits in the Discarded list on Demo Step 1 and on the Queue page."""
 
 from __future__ import annotations
 
@@ -53,8 +53,12 @@ def test_the_commands_name_the_copy_and_both_systems(copy):
 def test_step_1_shows_the_panel_with_the_proof(fake_backend, copy):
     fake_backend.copies = (copy,)
     at = _run(story, fake_backend)
-    assert [e.label for e in at.expander] == ["Check the discarded copy (1)"]
+    # Step 1 lists the copies under Discarded, as the Queue does (2026-11-20).
+    assert [e.label for e in at.expander] == ["Discarded (1)"]
     assert "the two files are identical, byte for byte" in _texts(at)
+    # The commands are folded away until asked for (user's request, 2026-11-20).
+    assert 'shasum -a 256 "invoice (2).pdf"' not in _texts(at)
+    at.toggle(key="story_copy_0_check").set_value(True).run(timeout=30)
     assert SHA in _texts(at)  # the full value, to compare with the command's output
     assert 'shasum -a 256 "invoice (2).pdf"' in _texts(at)
     assert "story_copy_0_download" in [b.key for b in at.get("download_button")]
@@ -92,5 +96,6 @@ def test_no_panel_without_a_discarded_copy(fake_backend):
 def test_the_queue_page_has_the_same_panel(fake_backend, copy):
     fake_backend.copies = (copy,)
     at = _run(queue, fake_backend)
-    assert "Check the discarded copy (1)" in [e.label for e in at.expander]
+    # On the Queue the copies sit in the Discarded list, next to the non-invoices (2026-11-20).
+    assert "Discarded (1)" in [e.label for e in at.expander]
     assert "queue_copy_0_open" in [b.key for b in at.button]

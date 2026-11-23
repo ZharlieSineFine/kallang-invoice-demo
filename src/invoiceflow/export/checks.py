@@ -1,13 +1,13 @@
 """Batch checks that must all pass before a CSV is written.
 
-Every check is pure. The database "already exported" check takes the set of previously
-exported ``doc_id``s as a parameter; the caller obtains it from ``export_rows``.
+Every check is pure. There is no "already exported" check: an invoice can be sent to SAP
+again whenever a person chooses (user's request, 2026-11-20), and ``export_rows`` keeps every
+send. Within one batch, ``_unique_vendor_reference`` still stops an invoice appearing twice.
 """
 
 from __future__ import annotations
 
 from decimal import Decimal
-from uuid import UUID
 
 from invoiceflow.contracts import CodingMaster, money, money_sum
 from invoiceflow.export.mapping import SapMapping, empty_required
@@ -30,8 +30,6 @@ def check_batch(
     rows: tuple[tuple[str, ...], ...],
     documents: tuple[ExportDocument, ...],
     master: CodingMaster,
-    *,
-    previously_exported: frozenset[UUID] = frozenset(),
 ) -> tuple[str, ...]:
     """Run every batch check and return the problems (empty means the batch is clean)."""
     problems: list[str] = []
@@ -40,7 +38,6 @@ def check_batch(
     problems.extend(_reconcile_invoices(documents))
     problems.extend(_batch_totals(documents))
     problems.extend(_master_exists(documents, master))
-    problems.extend(_not_exported_before(documents, previously_exported))
     return tuple(problems)
 
 
@@ -123,13 +120,3 @@ def _master_exists(documents: tuple[ExportDocument, ...], master: CodingMaster) 
                     f"unknown tax code {line.tax_code!r}"
                 )
     return problems
-
-
-def _not_exported_before(
-    documents: tuple[ExportDocument, ...], previously_exported: frozenset[UUID]
-) -> list[str]:
-    return [
-        f"document {doc.doc_id} was exported before"
-        for doc in documents
-        if doc.doc_id in previously_exported
-    ]

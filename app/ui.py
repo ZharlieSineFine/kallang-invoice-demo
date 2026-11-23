@@ -14,6 +14,8 @@ from PIL import Image
 from app.backend import PostgresBackend
 from app.boxes import load_page_text
 from app.models import DocumentBundle, FindingRow, PageRow
+from app.notice import Act, Notice, done_notice, failed_notice
+from app.notice_view import card_html, popup_html
 from invoiceflow.contracts import PageText
 from invoiceflow.settings import data_dir, repo_root
 
@@ -22,32 +24,48 @@ def get_backend() -> PostgresBackend:
     return PostgresBackend()
 
 
-def flash(message: str, kind: str = "success") -> None:
-    st.session_state["_ws7_flash"] = (kind, message)
+# An action's result shows twice, so nobody scrolls back up to read it (2026-11-20): as a
+# colored pop-up in the corner, once, and as a colored card next to the buttons that were
+# pressed (``at``), until the next action. A result with no ``at`` shows at the top of the
+# page instead, once. ``app.notice`` decides the words and color; ``app.notice_view`` draws.
+_POPUP_KEY = "_ws7_toast"
+_RESULT_KEY = "_ws7_result"
+
+
+def flash(notice: Notice, *, at: str | None = None) -> None:
+    st.session_state[_POPUP_KEY] = notice
+    st.session_state[_RESULT_KEY] = (notice, at)
 
 
 def show_flash() -> None:
-    item = st.session_state.pop("_ws7_flash", None)
-    if not item:
-        return
-    kind, message = item
-    getattr(st, kind, st.info)(message)
+    """Call it at the top of a page: the pop-up, and a result that has no place of its own."""
+    popup = st.session_state.pop(_POPUP_KEY, None)
+    if popup is not None:
+        st.markdown(popup_html(popup), unsafe_allow_html=True)
+    result = st.session_state.get(_RESULT_KEY)
+    if result and result[1] is None:
+        del st.session_state[_RESULT_KEY]
+        st.markdown(card_html(result[0]), unsafe_allow_html=True)
 
 
-def run_action[T](action: Callable[..., T], *args: Any, **kwargs: Any) -> T | None:
-    """Run a review write, flash the outcome, and rerun so every panel refreshes."""
+def show_result(at: str) -> None:
+    """Call it right under the buttons that pass ``at`` to ``run_action`` or ``flash``."""
+    result = st.session_state.get(_RESULT_KEY)
+    if result and result[1] == at:
+        st.markdown(card_html(result[0]), unsafe_allow_html=True)
+
+
+def run_action[T](
+    action: Callable[..., T], *args: Any, act: Act, at: str | None = None
+) -> T | None:
+    """Run a write, flash what it did (next to ``at``), and rerun so every panel refreshes."""
     try:
-        outcome = action(*args, **kwargs)
+        outcome = action(*args)
     except (ValueError, LookupError) as exc:
-        flash(str(exc), "error")
+        flash(failed_notice(act, exc), at=at)
         st.rerun()
         return None
-    message = getattr(outcome, "message", "Saved")
-    status = getattr(outcome, "status", None)
-    kind = "warning" if getattr(outcome, "blocked", False) else "success"
-    if status is not None and getattr(status, "value", "") in {"NEEDS_REVIEW", "ON_HOLD"}:
-        kind = "warning"
-    flash(message, kind)
+    flash(done_notice(act, outcome), at=at)
     st.rerun()
     return outcome
 

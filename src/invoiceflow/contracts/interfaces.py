@@ -182,6 +182,8 @@ class Repository(Protocol):
 
     def approved_not_exported(self) -> tuple[UUID, ...]: ...
 
+    def previously_exported(self) -> tuple[UUID, ...]: ...
+
     def record_export(
         self,
         batch: ExportBatch,

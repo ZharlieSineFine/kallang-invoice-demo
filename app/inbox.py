@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from html import escape
 from io import BytesIO
@@ -18,6 +18,7 @@ from app.audit import AUDIT_LABEL
 from app.models import DocumentSummary
 from invoiceflow.contracts import DocStatus, DocType
 from invoiceflow.parse.images import render_pdf_page
+from invoiceflow.rules.router import limit_in_reason
 from invoiceflow.settings import data_dir
 
 _THUMBNAIL_WIDTH = 360
@@ -92,6 +93,17 @@ def _processing_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard
     )
 
 
+def _reasons(doc: DocumentSummary) -> tuple[str, ...]:
+    """Why it waits for a person: its open rules, or, with none, the value limit (CR-012)."""
+    if doc.open_rules:
+        return doc.open_rules
+    limit = limit_in_reason(doc.status_reason)
+    if limit is None:
+        return ()
+    amount = f"{limit:,.0f}" if limit == limit.to_integral_value() else f"{limit:,.2f}"
+    return (f"S${amount} or more",)
+
+
 def inbox_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
     if doc.is_processing:
         return _processing_card(doc, labels)
@@ -107,7 +119,7 @@ def inbox_card(doc: DocumentSummary, labels: dict[UUID, str]) -> InboxCard:
         amount=ui.money_metric(doc.total),
         tone=_TONES.get(doc.status, "other"),
         outcome=doc.status.value.replace("_", " ").capitalize(),
-        rules=doc.open_rules,
+        rules=_reasons(doc),
         audit=doc.is_audit_sample,
     )
 
@@ -161,11 +173,17 @@ def _open_document(doc_id: UUID) -> None:
     st.session_state["page"] = "Review"
 
 
-def render_grid(docs: Sequence[DocumentSummary], *, columns: int = 5) -> None:
+def render_grid(
+    docs: Sequence[DocumentSummary],
+    *,
+    columns: int = 5,
+    actions: Callable[[DocumentSummary], None] | None = None,
+) -> None:
+    """One card per document. ``actions`` adds buttons under a finished card's Open."""
     labels = load_type_labels()
-    cards = [inbox_card(doc, labels) for doc in docs]
     grid = st.columns(columns)
-    for index, card in enumerate(cards):
+    for index, doc in enumerate(docs):
+        card = inbox_card(doc, labels)
         with grid[index % columns].container(border=True):
             image = _thumbnail(card.image_path)
             if image is not None:
@@ -183,3 +201,5 @@ def render_grid(docs: Sequence[DocumentSummary], *, columns: int = 5) -> None:
                 width="stretch",
             ):
                 st.rerun()
+            if actions is not None:
+                actions(doc)

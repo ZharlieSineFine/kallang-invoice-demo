@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
@@ -30,6 +31,15 @@ def limit_reason(limit: Decimal) -> str:
         f"At or above the S${limit:,.2f} auto-pass limit: every check passed, "
         "but an invoice this large needs a person."
     )
+
+
+_LIMIT_REASON = re.compile(r"At or above the S\$([\d,]+\.\d{2}) auto-pass limit")
+
+
+def limit_in_reason(reason: str | None) -> Decimal | None:
+    """The limit named in a reason ``limit_reason`` wrote, or None for any other reason."""
+    match = _LIMIT_REASON.search(reason or "")
+    return Decimal(match.group(1).replace(",", "")) if match else None
 
 
 def _sgd_amount(invoice: NormalizedInvoice) -> Decimal | None:

@@ -11,6 +11,7 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID, uuid4
 
@@ -22,12 +23,15 @@ from app.evaluation import latest_evaluation
 from app.fields import printed_value
 from app.formatting import RATE_FIELDS, display_value, normalize_field_value
 from app.models import (
+    PROCESSING_STATUSES,
     AuditSummary,
     BatchSummary,
     CodingRow,
+    DeleteOutcome,
     DiscardedCopy,
     DocumentBundle,
     DocumentSummary,
+    ExportedInvoice,
     FindingRow,
     ReviewOutcome,
     TraceData,
@@ -91,13 +95,17 @@ class Backend(Protocol):
 
     def discarded_copies(self) -> tuple[DiscardedCopy, ...]: ...
 
-    def run_export(self) -> ExportOutcome: ...
+    def export_history(self) -> tuple[ExportedInvoice, ...]: ...
+
+    def run_export(self, resend: Sequence[UUID] = ()) -> ExportOutcome: ...
 
     def audit_summary(self) -> AuditSummary: ...
 
     def record_audit(
         self, doc_id: UUID, reviewer: str, found_error: bool, fields: Sequence[str] = ()
     ) -> AuditOutcome: ...
+
+    def delete_documents(self, doc_ids: Sequence[UUID], reviewer: str) -> DeleteOutcome: ...
 
 
 @dataclass(frozen=True)
@@ -119,10 +127,19 @@ class ExportOutcome:
     invoices: int
     row_count: int
     problems: tuple[str, ...] = ()
+    resent: tuple[str, ...] = ()  # invoice numbers of the ones sent to SAP before
 
     @property
     def blocked(self) -> bool:
         return bool(self.problems) or self.invoices == 0
+
+    @property
+    def resent_note(self) -> str:
+        """Which of them SAP already had, e.g. "1 was sent before: SAV-2026-0412"."""
+        if not self.resent:
+            return ""
+        verb = "was" if len(self.resent) == 1 else "were"
+        return f"{len(self.resent)} {verb} sent before: {', '.join(self.resent)}."
 
     @property
     def message(self) -> str:
@@ -132,8 +149,10 @@ class ExportOutcome:
             noun = "invoice" if self.invoices == 1 else "invoices"
             written = (
                 f"Exported {self.invoices} {noun} ({self.row_count} CSV rows) in batch "
-                f"{self.batch_id}. Each invoice exports once."
+                f"{self.batch_id}."
             )
+            if self.resent:
+                written = f"{written} {self.resent_note}"
         if not self.problems:
             return written
         return f"{written} Held back: " + "; ".join(self.problems)
@@ -182,10 +201,16 @@ class PostgresBackend:
         *,
         rules_config: dict[str, Any] | None = None,
         reports_dir=None,
+        files_root: Path | None = None,
+        cache_dir: Path | None = None,
     ) -> None:
         self._conn = conn
         self._rules_config = rules_config or load_config("rules")
         self._reports_dir = reports_dir
+        # Where Delete removes files: data/ and the recorded model answers, unless a test
+        # passes scratch folders.
+        self._files_root = files_root
+        self._cache_dir = cache_dir
 
     # ------------------------------------------------------------------ plumbing
     @contextmanager
@@ -246,6 +271,10 @@ class PostgresBackend:
         with self._read() as conn:
             return queries.discarded_copies(conn)
 
+    def export_history(self) -> tuple[ExportedInvoice, ...]:
+        with self._read() as conn:
+            return queries.export_history(conn)
+
     def audit_summary(self) -> AuditSummary:
         sample = AuditSample.from_config(self._rules_config)
         with self._read() as conn:
@@ -268,20 +297,54 @@ class PostgresBackend:
             repo.log_event(conn, reviewer, "audit.completed", doc_id, payload)
         return AuditOutcome(_AUDIT_MESSAGES[result])
 
-    def run_export(self) -> ExportOutcome:
-        """The same export the Airflow ``sap_export`` DAG runs, from the app."""
+    def delete_documents(self, doc_ids: Sequence[UUID], reviewer: str) -> DeleteOutcome:
+        """The Queue's Delete: the documents, their files and recorded answers go; the log
+        keeps a ``document.deleted`` event each. An exported invoice's SAP batch stays."""
+        from invoiceflow.extract import load_model_config
+        from invoiceflow.settings import data_dir
+        from invoiceflow.store.delete import apply_delete, plan_delete, remove_deleted_files
+
+        with self._write() as conn:
+            plan = plan_delete(conn, doc_ids)
+            if not plan:
+                raise LookupError("Those documents are already gone.")
+            busy = [item.label for item in plan if item.status in PROCESSING_STATUSES]
+            if busy:
+                raise ValueError(
+                    f"{', '.join(busy)} is still being read. Delete it once it has an outcome."
+                )
+            apply_delete(conn, plan, actor=reviewer)
+        remove_deleted_files(
+            plan,
+            data_root=self._files_root or data_dir(),
+            cache_dir=self._cache_dir or load_model_config().cache_dir,
+        )
+        return DeleteOutcome(
+            deleted=tuple(item.label for item in plan),
+            exported=sum(item.was_exported for item in plan),
+        )
+
+    def run_export(self, resend: Sequence[UUID] = ()) -> ExportOutcome:
+        """The same export the Airflow ``sap_export`` DAG runs, from the app.
+
+        ``resend``: invoices sent before that the person ticked to send again (2026-11-20).
+        """
         from invoiceflow.pipeline.steps import export_approved
         from invoiceflow.settings import data_dir
         from invoiceflow.storage import LocalBlobStore
         from invoiceflow.store.repo import Repo
 
         with self._write() as conn:
-            summary = export_approved(repo=Repo(conn), store=LocalBlobStore(data_dir()))
+            summary = export_approved(
+                repo=Repo(conn), store=LocalBlobStore(data_dir()), resend=tuple(resend)
+            )
+            names = {item.doc_id: item.label for item in queries.export_history(conn)}
         return ExportOutcome(
             batch_id=summary.batch.batch_id,
             invoices=len(summary.doc_ids),
             row_count=summary.batch.row_count,
             problems=summary.problems,
+            resent=tuple(names.get(doc_id, str(doc_id)) for doc_id in summary.resent),
         )
 
     # ------------------------------------------------------------------- writes
@@ -349,16 +412,18 @@ class PostgresBackend:
         )
         findings = tuple(_finding_row(f, run_id) for f in result.findings)
         open_rules = ", ".join(f.rule_id for f in result.findings)
+        checks = (
+            "Checks rerun: nothing open. Approve the invoice to send it to export."
+            if is_clean
+            else f"Checks rerun: {status.value}" + (f" ({open_rules})" if open_rules else "")
+        )
         return ReviewOutcome(
             doc_id=doc_id,
             status=status,
-            message=(
-                "Checks rerun: nothing open. Approve the invoice to send it to export."
-                if is_clean
-                else f"Checks rerun: {status.value}" + (f" ({open_rules})" if open_rules else "")
-            ),
+            message=checks,
             findings=findings,
             run_id=run_id,
+            checks=checks,
         )
 
     def _refresh_coding(self, conn: Connection, doc_id: UUID, reviewer: str) -> None:
@@ -432,6 +497,7 @@ class PostgresBackend:
                 message=f"Accepted {field} as printed; its flag is cleared. {outcome.message}",
                 findings=outcome.findings,
                 run_id=outcome.run_id,
+                checks=outcome.checks,
             )
 
     def correct(self, doc_id: UUID, field: str, raw_value: str, reviewer: str) -> ReviewOutcome:
@@ -453,6 +519,7 @@ class PostgresBackend:
                     status=bundle.document.status,
                     message=f"{field} already has that value",
                     findings=bundle.findings,
+                    changed=False,
                 )
             repo.save_field_value(
                 conn,
@@ -491,6 +558,7 @@ class PostgresBackend:
                 message=f"Corrected {field}. {outcome.message}",
                 findings=outcome.findings,
                 run_id=outcome.run_id,
+                checks=outcome.checks,
             )
 
     def edit_line_items(
@@ -528,6 +596,7 @@ class PostgresBackend:
                 message=f"Saved {len(items)} line item(s). {outcome.message}",
                 findings=outcome.findings,
                 run_id=outcome.run_id,
+                checks=outcome.checks,
             )
 
     def recode(self, doc_id: UUID, updates: Sequence[CodingUpdate], reviewer: str) -> ReviewOutcome:
@@ -587,6 +656,7 @@ class PostgresBackend:
                 message=f"Recoded {len(changed)} line(s) as reviewer. {outcome.message}",
                 findings=outcome.findings,
                 run_id=outcome.run_id,
+                checks=outcome.checks,
             )
 
     def approve(self, doc_id: UUID, reviewer: str, comment: str | None = None) -> ReviewOutcome:
@@ -655,6 +725,7 @@ class PostgresBackend:
                     message="Hold released; the invoice still needs review. " + outcome.message,
                     findings=outcome.findings,
                     run_id=outcome.run_id,
+                    checks="The invoice still needs review. " + outcome.checks,
                 )
             return outcome
 

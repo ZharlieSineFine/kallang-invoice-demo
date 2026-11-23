@@ -12,6 +12,7 @@ from invoiceflow.rules.base import (
     money_sgd,
     subtotal_includes_gst,
 )
+from invoiceflow.rules.line_hint import Figures, line_message
 
 
 class R02(BaseRule):
@@ -26,6 +27,17 @@ class R02(BaseRule):
         lines_tol = cfg_decimal(tolerances, "lines_vs_subtotal")
         total_tol = cfg_decimal(tolerances, "subtotal_plus_gst")
         findings: list[Finding] = []
+        figures = Figures(
+            line_amounts=tuple(i.amount for i in invoice.line_items if i.amount is not None),
+            subtotal=invoice.subtotal,
+            gst_amount=invoice.gst_amount,
+            total=invoice.total,
+            gst_rate=invoice.gst_rate_percent,
+            gst_inclusive=invoice.gst_inclusive,
+            lines_tolerance=lines_tol,
+            total_tolerance=total_tol,
+            gst_tolerance=cfg_decimal(tolerances, "gst_amount"),
+        )
 
         # quantity x unit_price (x days for rental lines) equals the line amount.
         for idx, item in enumerate(invoice.line_items):
@@ -39,9 +51,14 @@ class R02(BaseRule):
                         severity=None,
                         scope=Scope.FIELD,
                         field=f"line_items[{idx}].amount",
-                        message=(
-                            f"Line {idx + 1} works out to {money_sgd(expected)}, "
-                            f"but the amount reads {money_sgd(item.amount)}."
+                        message=line_message(
+                            idx,
+                            quantity=item.quantity,
+                            unit_price=item.unit_price,
+                            days=item.days,
+                            expected=expected,
+                            amount=item.amount,
+                            figures=figures,
                         ),
                         evidence={
                             "line_no": str(idx + 1),

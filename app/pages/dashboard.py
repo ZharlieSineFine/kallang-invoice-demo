@@ -30,10 +30,10 @@ def render(backend: Backend | None = None) -> None:
     st.title("Dashboard")
     ui.show_flash()
     data = backend.dashboard()
-    render_flow_strip(backend.list_documents(), discarded=backend.discarded_duplicates())
+    render_flow_strip(backend.list_documents(), copies=backend.discarded_duplicates())
 
     cols = st.columns(4)
-    cols[0].metric("Documents processed", data.total_documents)
+    cols[0].metric("Invoices", data.total_invoices)  # the same count as the Queue
     cols[1].metric("Auto-pass rate", f"{data.auto_pass_rate:.1f}%")
     cols[2].metric("Holds", data.hold_count)
     cols[3].metric(

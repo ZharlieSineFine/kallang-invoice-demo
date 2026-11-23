@@ -15,7 +15,7 @@ from uuid import UUID
 from psycopg import Connection
 from psycopg.rows import dict_row
 
-from app.formatting import percent
+from app.formatting import parse_decimal, percent
 from app.models import (
     AuditSummary,
     BatchSummary,
@@ -27,6 +27,7 @@ from app.models import (
     DocumentBundle,
     DocumentSummary,
     EventRow,
+    ExportedInvoice,
     ExtractionInfo,
     FieldRow,
     FindingRow,
@@ -555,7 +556,7 @@ def _counts(conn: Connection) -> dict[str, int]:
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT count(*) AS total,
+            SELECT count(*) FILTER (WHERE status <> 'NOT_INVOICE') AS total,
                    count(*) FILTER (WHERE status = 'AUTO_PASSED') AS auto_passed,
                    count(*) FILTER (WHERE status = 'NEEDS_REVIEW') AS needs_review,
                    count(*) FILTER (WHERE status = 'APPROVED') AS approved,
@@ -668,7 +669,7 @@ def total_value(conn: Connection) -> Decimal:
 def dashboard(conn: Connection, latest_evaluation=None) -> DashboardData:
     counts = _counts(conn)
     return DashboardData(
-        total_documents=counts["total"],
+        total_invoices=counts["total"],  # what the Queue counts as invoices too
         auto_passed=counts["auto_passed"],
         needs_review=counts["needs_review"],
         approved=counts["approved"],
@@ -718,7 +719,8 @@ def batches(conn: Connection) -> tuple[BatchSummary, ...]:
 
 def export_status(conn: Connection) -> dict[str, int]:
     with conn.cursor() as cur:
-        cur.execute("SELECT count(*) FROM export_rows")
+        # An invoice sent again has a row per batch; count it once (2026-11-20).
+        cur.execute("SELECT count(DISTINCT doc_id) FROM export_rows")
         exported = int(cur.fetchone()[0])
         cur.execute(
             """
@@ -729,6 +731,44 @@ def export_status(conn: Connection) -> dict[str, int]:
         )
         ready = int(cur.fetchone()[0])
     return {"exported": exported, "approved_not_exported": ready}
+
+
+_HISTORY_SQL = """
+SELECT d.doc_id,
+       (SELECT value_norm FROM fields f WHERE f.doc_id = d.doc_id
+          AND f.name = 'invoice_number' AND f.is_current LIMIT 1) AS invoice_number,
+       COALESCE(v.name, (SELECT value_norm FROM fields f WHERE f.doc_id = d.doc_id
+          AND f.name = 'supplier_name' AND f.is_current LIMIT 1)) AS vendor,
+       (SELECT value_norm FROM fields f WHERE f.doc_id = d.doc_id
+          AND f.name = 'total' AND f.is_current LIMIT 1) AS total,
+       array_agg(r.batch_id ORDER BY b.created_at, r.batch_id) AS batches,
+       max(b.created_at) AS last_sent
+FROM documents d
+JOIN export_rows r ON r.doc_id = d.doc_id
+JOIN export_batches b ON b.batch_id = r.batch_id
+LEFT JOIN vendors v ON v.vendor_id = d.vendor_id
+WHERE d.status IN ('APPROVED', 'AUTO_PASSED', 'EXPORTED')
+GROUP BY d.doc_id, v.name
+ORDER BY max(b.created_at) DESC, invoice_number
+"""
+
+
+def export_history(conn: Connection) -> tuple[ExportedInvoice, ...]:
+    """Invoices sent to SAP before that can be sent again, last sent first (2026-11-20)."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(_HISTORY_SQL)
+        rows = cur.fetchall()
+    return tuple(
+        ExportedInvoice(
+            doc_id=row["doc_id"],
+            invoice_number=row["invoice_number"],
+            vendor=row["vendor"],
+            total=parse_decimal(row["total"]),
+            batches=tuple(row["batches"]),
+            last_sent=row["last_sent"],
+        )
+        for row in rows
+    )
 
 
 # Discard events whose matching file is still stored, so erasing the live-demo set leaves
@@ -800,6 +840,7 @@ __all__ = [
     "discarded_duplicates",
     "document_bundle",
     "events",
+    "export_history",
     "export_status",
     "extraction",
     "fields",

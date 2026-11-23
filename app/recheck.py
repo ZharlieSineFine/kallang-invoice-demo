@@ -8,10 +8,16 @@ routes them with the configured severities.
 
 It is deliberately small: WS5 owns the full R01-R12 rule set. Every caller goes through
 ``recheck()`` so swapping in the real pipeline function is one change.
+
+Since 2026-11-20 it also recomputes each line's quantity x unit price (x days) and the GST
+amount against the rate (user's report on KSS-2026-8202: after three corrections the rerun
+said "nothing open" while the GST was still 9% of the old subtotal). Both mirror R02 and
+R03 in ``invoiceflow.rules`` and use the same tolerances.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
@@ -30,9 +36,14 @@ from invoiceflow.contracts import (
     money,
 )
 from invoiceflow.normalize.normalizer import gst_inclusive_from_note
+from invoiceflow.rules.base import fmt_percent
+from invoiceflow.rules.line_hint import Figures, line_message
 
-# The (rule, field) pairs recompute_findings() decides afresh on every recheck.
+# The (rule, field) pairs recompute_findings() decides afresh on every recheck. Each line's
+# arithmetic (R02 on line_items[i].amount) and the GST amount (R03 on gst_amount, the
+# finding with an expected_gst) are recomputed too: see _is_recomputed.
 _RECOMPUTED = {("R02", "subtotal"), ("R02", "total"), ("R03", "total")}
+_LINE_AMOUNT = re.compile(r"^line_items\[\d+\]\.amount$")
 
 _SEVERITY_ORDER = {
     Severity.INFO: 0,
@@ -52,6 +63,16 @@ RULE_VERSION = "app-recheck-v1"
 
 
 @dataclass(frozen=True)
+class LineMath:
+    """What a line's arithmetic check reads: quantity x unit price (x days) = amount."""
+
+    quantity: Decimal | None
+    unit_price: Decimal | None
+    days: Decimal | None
+    amount: Decimal | None
+
+
+@dataclass(frozen=True)
 class RecheckInput:
     """The current values a review-time check may read."""
 
@@ -63,6 +84,8 @@ class RecheckInput:
     line_amounts: tuple[Decimal, ...] = ()
     rules_config: Mapping[str, Any] = field(default_factory=dict)
     gst_inclusive: bool = False
+    gst_rate: Decimal | None = None  # percent, e.g. 9
+    lines: tuple[LineMath, ...] = ()
 
     @classmethod
     def from_bundle(cls, bundle: DocumentBundle, rules_config: Mapping[str, Any]) -> RecheckInput:
@@ -80,6 +103,11 @@ class RecheckInput:
             line_amounts=amounts,
             rules_config=rules_config,
             gst_inclusive=gst_inclusive_from_note(_field_text(bundle, "gst_inclusive_note")),
+            gst_rate=value("gst_rate"),
+            lines=tuple(
+                LineMath(item.quantity, item.unit_price, item.days, item.amount)
+                for item in bundle.line_items
+            ),
         )
 
 
@@ -116,10 +144,91 @@ def _finding(rule_id: str, severity: Severity, field_name: str, message: str, **
     )
 
 
+def _line_findings(state: RecheckInput) -> list[Finding]:
+    """R02: quantity x unit price (x days for rental lines) equals each line's amount."""
+    config = state.rules_config
+    tolerance = _tolerance(config, "line_amount", "0.01")
+    figures = Figures(
+        line_amounts=state.line_amounts,
+        subtotal=state.subtotal,
+        gst_amount=state.gst_amount,
+        total=state.total,
+        gst_rate=state.gst_rate,
+        gst_inclusive=state.gst_inclusive,
+        lines_tolerance=_tolerance(config, "lines_vs_subtotal", "0.05"),
+        total_tolerance=_tolerance(config, "subtotal_plus_gst", "0.01"),
+        gst_tolerance=_tolerance(config, "gst_amount", "0.05"),
+    )
+    findings = []
+    for index, line in enumerate(state.lines):
+        if line.quantity is None or line.unit_price is None or line.amount is None:
+            continue
+        factor = line.days if line.days is not None else Decimal("1")
+        expected = money(line.quantity * line.unit_price * factor)
+        if abs(expected - line.amount) > tolerance:
+            findings.append(
+                _finding(
+                    "R02",
+                    _severity(state.rules_config, "R02", Severity.FLAG),
+                    f"line_items[{index}].amount",
+                    line_message(
+                        index,
+                        quantity=line.quantity,
+                        unit_price=line.unit_price,
+                        days=line.days,
+                        expected=expected,
+                        amount=line.amount,
+                        figures=figures,
+                    ),
+                    line_no=str(index + 1),
+                    expected=f"{expected:.2f}",
+                    amount=f"{line.amount:.2f}",
+                )
+            )
+    return findings
+
+
+def _gst_findings(state: RecheckInput) -> list[Finding]:
+    """R03: the GST amount is the rate applied to the subtotal, allowing rounding."""
+    if state.subtotal is None or state.gst_amount is None or state.gst_rate is None:
+        return []
+    tolerance = _tolerance(state.rules_config, "gst_amount", "0.05")
+    rate = state.gst_rate
+    inside_total = (
+        state.gst_inclusive
+        and state.total is not None
+        and abs(state.subtotal - state.total) <= tolerance
+    )
+    if inside_total:
+        expected = money(state.total * rate / (Decimal("100") + rate))
+        basis = f"inside the S${state.total:,.2f} total"
+    else:
+        expected = money(state.subtotal * rate / Decimal("100"))
+        basis = f"of the S${state.subtotal:,.2f} subtotal"
+    if abs(state.gst_amount - expected) <= tolerance:
+        return []
+    message = (
+        f"GST at {fmt_percent(rate)} {basis} is S${expected:,.2f}, "
+        f"but the GST reads S${state.gst_amount:,.2f}."
+    )
+    return [
+        _finding(
+            "R03",
+            _severity(state.rules_config, "R03", Severity.FLAG),
+            "gst_amount",
+            message,
+            subtotal=f"{state.subtotal:.2f}",
+            rate_percent=fmt_percent(rate),
+            expected_gst=f"{expected:.2f}",
+            gst_amount=f"{state.gst_amount:.2f}",
+        )
+    ]
+
+
 def recompute_findings(state: RecheckInput) -> tuple[Finding, ...]:
     """Arithmetic checks that can change when a reviewer edits a value."""
     config = state.rules_config
-    findings: list[Finding] = []
+    findings: list[Finding] = _line_findings(state)
     if state.subtotal is not None and state.line_amounts:
         lines_sum = money(sum(state.line_amounts, Decimal("0")))
         tolerance = _tolerance(config, "lines_vs_subtotal", "0.05")
@@ -156,6 +265,7 @@ def recompute_findings(state: RecheckInput) -> tuple[Finding, ...]:
                     total=f"{state.total:.2f}",
                 )
             )
+    findings.extend(_gst_findings(state))
     return tuple(findings)
 
 
@@ -197,6 +307,15 @@ def accepted_fields(reviews: Sequence[ReviewRow]) -> frozenset[str]:
     return frozenset(name for name, action in latest.items() if action is ReviewAction.CONFIRM)
 
 
+def _is_recomputed(row: FindingRow) -> bool:
+    """Whether recompute_findings() works this finding out again, so it is not kept twice."""
+    if (row.rule_id, row.field) in _RECOMPUTED:
+        return True
+    if row.rule_id == "R02" and _LINE_AMOUNT.match(row.field or ""):
+        return True
+    return row.rule_id == "R03" and row.field == "gst_amount" and "expected_gst" in row.evidence
+
+
 def carried_findings(
     previous: Sequence[FindingRow],
     *,
@@ -221,7 +340,7 @@ def carried_findings(
             stage=row.stage,
         )
         for row in previous
-        if (row.rule_id, row.field) not in _RECOMPUTED
+        if not _is_recomputed(row)
         and not _resolved(row, resolved_fields)
         and not (release_holds and row.severity is Severity.HOLD)
     )

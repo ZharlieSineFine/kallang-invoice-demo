@@ -71,3 +71,18 @@ def test_r02_still_flags_a_gst_exclusive_invoice_with_the_same_numbers(clean_ctx
 def test_r02_still_flags_an_inclusive_invoice_whose_total_differs(clean_ctx, rules_config):
     findings = R02(rules_config).check(_inclusive(clean_ctx, total=Decimal("1200.00")))
     assert "total" in [finding.field for finding in findings]
+
+
+def test_a_misread_quantity_points_at_the_line_when_the_totals_agree(clean_ctx, rules_config):
+    # KSS-2026-8202 (2026-11-20): the amount, subtotal, GST and total are as printed, but the
+    # model misread the quantity. The flag says to check the quantity and unit price first.
+    first = clean_ctx.invoice.line_items[0]
+    misread = first.model_copy(update={"quantity": first.quantity * 6})
+    invoice = clean_ctx.invoice.model_copy(
+        update={"line_items": (misread, *clean_ctx.invoice.line_items[1:])}
+    )
+    findings = R02(rules_config).check(clean_ctx.model_copy(update={"invoice": invoice}))
+    (line,) = findings
+    assert line.field == "line_items[0].amount"
+    assert " \u00d7 " in line.message
+    assert line.message.endswith("check this line's quantity and unit price on the page first.")

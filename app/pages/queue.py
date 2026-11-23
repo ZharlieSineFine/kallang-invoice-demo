@@ -1,7 +1,9 @@
 """The document queue: every document, its status, value, and open findings.
 
 The page body refreshes itself every few seconds, so a document the pipeline is reading shows
-up as a "Processing…" card and turns into its outcome without a reload.
+up as a "Processing…" card and turns into its outcome without a reload. Each finished
+document can be deleted, alone or ticked with others (``app.queue_delete``); non-invoices
+and discarded copies are listed under Discarded (``app.discarded``), not with the invoices.
 """
 
 from __future__ import annotations
@@ -14,10 +16,12 @@ import streamlit as st
 from app import ui
 from app.audit import AUDIT_LABEL
 from app.backend import Backend
-from app.duplicates import render_discarded_copies
+from app.counts import intake_counts, is_invoice
+from app.discarded import render_discarded
 from app.flow import render_flow_strip
 from app.formatting import format_time
 from app.inbox import render_grid
+from app.queue_delete import RESULT_AT, document_actions, render_confirm, selection_bar
 from invoiceflow.contracts import DocStatus
 
 QUEUE_REFRESH_SECONDS = 3
@@ -30,7 +34,6 @@ _STATUS_ORDER = [
     DocStatus.APPROVED,
     DocStatus.REJECTED,
     DocStatus.EXPORTED,
-    DocStatus.NOT_INVOICE,
 ]
 
 
@@ -63,6 +66,8 @@ def render(backend: Backend | None = None) -> None:
     backend = backend or ui.get_backend()
     st.title("Queue")
     ui.show_flash()
+    # Outside the refreshing part of the page, or a refresh would close the dialog.
+    render_confirm(backend, [doc for doc in backend.list_documents() if not doc.is_processing])
     _live_queue(backend)
 
 
@@ -74,19 +79,22 @@ def _live_queue(backend: Backend) -> None:
         return
 
     copies = backend.discarded_copies()
-    render_flow_strip(all_docs, discarded=len(copies))
-    render_discarded_copies(copies, key="queue_copy")
+    finished = [doc for doc in all_docs if not doc.is_processing]
+    not_invoices = [doc for doc in finished if not is_invoice(doc)]
+    render_flow_strip(all_docs, copies=len(copies))
+    render_discarded(copies, not_invoices, key="queue_copy", actions=document_actions)
     processing = [doc for doc in all_docs if doc.is_processing]
     if processing:
         st.subheader("Being read now")
         render_grid(processing)
-    docs = [doc for doc in all_docs if not doc.is_processing]
-    if not docs:
+    invoices = [doc for doc in finished if is_invoice(doc)]
+    if not invoices:
+        ui.show_result(RESULT_AT)
         return
-    _finished_queue(docs, len(all_docs))
+    _finished_queue(invoices, finished, intake_counts(all_docs, len(copies)).invoices)
 
 
-def _finished_queue(docs, received: int) -> None:
+def _finished_queue(docs, finished, invoice_count: int) -> None:
     options = [status for status in _STATUS_ORDER if any(d.status is status for d in docs)]
     chosen = st.multiselect(
         "Statuses",
@@ -98,15 +106,19 @@ def _finished_queue(docs, received: int) -> None:
     filtered = [doc for doc in docs if doc.status in chosen]
 
     cols = st.columns(4)
-    cols[0].metric("Documents", received)
+    cols[0].metric("Invoices", invoice_count)  # the same count as the Dashboard
     cols[1].metric("Needs review", sum(d.status is DocStatus.NEEDS_REVIEW for d in docs))
     cols[2].metric("On hold", sum(d.status is DocStatus.ON_HOLD for d in docs))
     cols[3].metric("Approved", sum(d.status is DocStatus.APPROVED for d in docs))
 
     if not filtered:
         st.info("No documents match those statuses.")
+        ui.show_result(RESULT_AT)
         return
-    render_grid(filtered)
+    selection_bar(filtered, finished, place="top")
+    ui.show_result(RESULT_AT)
+    render_grid(filtered, actions=document_actions)
+    selection_bar(filtered, finished, place="bottom")
     st.dataframe(_frame(filtered), hide_index=True, width="stretch")
 
     chosen_doc = ui.document_picker(filtered, key="queue_document")

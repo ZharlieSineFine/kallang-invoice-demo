@@ -315,7 +315,10 @@ def test_inbox_sentence_accounts_for_every_document(fake_backend, clean_bundle, 
         clean_bundle, document=replace(clean_bundle.document, status=DocStatus.NOT_INVOICE)
     )
     at = _run(story, fake_backend)
-    assert "2 documents arrived: 1 needs a person, 1 not an invoice." in _text(at)
+    assert (
+        "2 documents arrived and 1 was discarded (1 not an invoice). "
+        "The other 1 is an invoice: 1 needs a person." in _text(at)
+    )
 
 
 def test_a_discarded_duplicate_counts_as_arrived(fake_backend, clean_bundle, mismatch_bundle):
@@ -326,14 +329,15 @@ def test_a_discarded_duplicate_counts_as_arrived(fake_backend, clean_bundle, mis
     )
     at = _run(story, fake_backend)
     assert (
-        "3 documents arrived: 1 passed or approved, 1 needs a person, "
-        "1 duplicate invoice discarded." in _text(at)
+        "3 documents arrived and 1 was discarded (1 copy of a file already in). "
+        "The other 2 are invoices: 1 passed or approved, 1 needs a person." in _text(at)
     )
     assert 'data-stage="Intake"' in _text(at)
     assert "3 received, 1 discarded" in _text(at)
 
 
 def test_the_sentence_matches_the_user_example():
+    from app.counts import intake_counts
     from app.models import DocumentSummary
     from app.pages.story import _inbox_sentence
 
@@ -348,9 +352,22 @@ def test_the_sentence_matches_the_user_example():
         for status, count in counts.items()
         for _ in range(count)
     ]
-    assert _inbox_sentence(docs, discarded=1) == (
-        "50 documents arrived: 28 passed or approved, 11 need a person, 9 on hold, "
-        "1 not an invoice, 1 duplicate invoice discarded."
+    assert _inbox_sentence(docs, intake_counts(docs, copies=1)) == (
+        "50 documents arrived and 2 were discarded (1 copy of a file already in, "
+        "1 not an invoice). The other 48 are invoices: 28 passed or approved, "
+        "11 need a person, 9 on hold."
+    )
+
+
+def test_the_sentence_counts_invoices_still_being_read():
+    from app.counts import intake_counts
+    from app.models import DocumentSummary
+    from app.pages.story import _inbox_sentence
+
+    finished = [DocumentSummary(doc_id=uuid4(), status=DocStatus.AUTO_PASSED)]
+    reading = [DocumentSummary(doc_id=uuid4(), status=DocStatus.RECEIVED)] * 2
+    assert _inbox_sentence(finished, intake_counts(finished + reading, copies=0)) == (
+        "3 documents arrived: 1 passed or approved, 2 still being read."
     )
 
 
@@ -364,7 +381,8 @@ def test_story_prefers_the_clearest_example_of_a_rule(clean_bundle, mismatch_bun
 def test_export_sentence_uses_the_right_plural(fake_backend, tmp_path):
     at = _run(story, _with_batch(fake_backend, tmp_path))
     _advance(at, 6)
-    assert "holds 1 row," in _text(at)
+    assert "holds 1 row." in _text(at)
+    assert "can be sent again from here" in _text(at)  # re-export allowed (2026-11-20)
     assert "1 other run found nothing new to export" in _text(at)
 
 

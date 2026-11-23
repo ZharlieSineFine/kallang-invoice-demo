@@ -117,6 +117,8 @@ def plan_erase(conn: Connection, target: EraseTarget) -> ErasePlan:
             list(doc_ids),
         )
     )
+    # The other invoices in those batches go back to ready, unless another batch still holds
+    # them: an invoice can be sent again (2026-11-20), and then it is still in SAP.
     others = _rows(
         conn,
         """
@@ -124,10 +126,14 @@ def plan_erase(conn: Connection, target: EraseTarget) -> ErasePlan:
                EXISTS (SELECT 1 FROM reviews v WHERE v.doc_id = r.doc_id AND v.action = 'APPROVE')
         FROM export_rows r
         WHERE r.batch_id = ANY(%s) AND NOT (r.doc_id = ANY(%s))
-        ORDER BY r.batch_id, r.first_row_no
+          AND NOT EXISTS (SELECT 1 FROM export_rows o
+                          WHERE o.doc_id = r.doc_id AND NOT (o.batch_id = ANY(%s)))
+        GROUP BY r.doc_id
+        ORDER BY min(r.batch_id), min(r.first_row_no)
         """,
         list(batch_ids),
         list(doc_ids),
+        list(batch_ids),
     )
     sha256s = tuple(str(row[2]).strip() for row in docs)
     return ErasePlan(

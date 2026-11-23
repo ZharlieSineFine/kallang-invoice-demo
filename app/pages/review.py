@@ -13,7 +13,7 @@ import streamlit as st
 from app import ui
 from app.audit import render_audit
 from app.backend import Backend, CodingUpdate
-from app.boxes import crop_region, draw_boxes, page_boxes
+from app.boxes import draw_boxes, page_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
 from app.fix_panel import (
     FIELD_KEY,
@@ -31,6 +31,8 @@ from app.formatting import (
 )
 from app.hidden_text import hidden_markers
 from app.models import DocumentBundle
+from app.notice import Act, Notice, Tone, doc_label, subject_line
+from app.page_viewer import ZOOM_SCALE, large_view_button, render_large_view, zoom_image
 from invoiceflow.contracts import (
     HEADER_FIELDS,
     NormalizedLineItem,
@@ -61,6 +63,9 @@ def _field_options(bundle: DocumentBundle) -> list[str]:
     return options
 
 
+_LARGE_VIEW = "review_page_large"
+
+
 def _selected_box(boxes, selected: str | None):
     return next((box for box in boxes if box.field == selected), None)
 
@@ -87,15 +92,22 @@ def _draw(bundle: DocumentBundle, selected: str | None) -> None:
     if image is None:
         st.warning(f"No page image at {page.image_path or '—'}")
         return
+    drawn = draw_boxes(image, boxes, selected=selected)
     st.image(
-        draw_boxes(image, boxes, selected=selected),
+        drawn,
         caption=f"Page {page_no} — green passed, amber fuzzy, red flagged, blue selected",
         width="stretch",
     )
+    # Scans are hard to read at this size (2026-11-20): a large view and an enlarged zoom.
+    shown = (str(bundle.document.doc_id), page_no)
+    large_view_button(_LARGE_VIEW, shown)
+    title = f"{bundle.document.invoice_number or 'This document'} · page {page_no}"
+    render_large_view(drawn, key=_LARGE_VIEW, page=shown, title=title)
     box = _selected_box(boxes, selected)
     if box is not None:
-        crop = image.crop(crop_region(box.bbox, image.width, image.height))
-        st.image(crop, caption=f"Zoom: {box.label}", width=min(560, crop.width))
+        zoom = zoom_image(image, box.bbox)
+        st.image(zoom, width=zoom.width)
+        st.caption(f"Zoom: {box.label} · shown {ZOOM_SCALE:g}x, contrast boosted for reading")
     elif selected:
         st.caption(f"No box is stored for `{selected}` on page {page_no}.")
 
@@ -191,7 +203,13 @@ def _render_line_items(
     )
     if st.button("Save line items", key="btn_save_lines"):
         items = _items_from_frame(edited)
-        ui.run_action(backend.edit_line_items, doc_id, items, reviewer)
+        act = Act(
+            "Saved the line items on", "save the line items on", doc=bundle.document, by=reviewer
+        )
+        ui.run_action(
+            backend.edit_line_items, doc_id, items, reviewer, act=act, at=f"lines:{doc_id}"
+        )
+    ui.show_result(f"lines:{doc_id}")
 
 
 def _coding_frame(bundle: DocumentBundle) -> pd.DataFrame:
@@ -254,9 +272,17 @@ def _render_coding(backend: Backend, bundle: DocumentBundle, doc_id: UUID, revie
             ):
                 updates.append(candidate)
         if not updates:
-            ui.flash("No coding changes to save.", "info")
+            nothing = Notice(
+                Tone.INFO,
+                f"Nothing changed on {doc_label(bundle.document)}",
+                subject_line(bundle.document),
+                "No coding changes to save.",
+            )
+            ui.flash(nothing, at=f"coding:{doc_id}")
             st.rerun()
-        ui.run_action(backend.recode, doc_id, updates, reviewer)
+        act = Act("Saved the coding on", "save the coding on", doc=bundle.document, by=reviewer)
+        ui.run_action(backend.recode, doc_id, updates, reviewer, act=act, at=f"coding:{doc_id}")
+    ui.show_result(f"coding:{doc_id}")
 
 
 def _render_reviews(bundle: DocumentBundle) -> None:

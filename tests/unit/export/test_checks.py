@@ -10,9 +10,9 @@ from invoiceflow.export.exporter import build_rows
 EXPORT_DATE = date(2026, 11, 4)
 
 
-def _check(mapping, master, docs, previously_exported=frozenset()):
+def _check(mapping, master, docs):
     rows = build_rows(mapping, docs, EXPORT_DATE)
-    return check_batch(mapping, rows, docs, master, previously_exported=previously_exported)
+    return check_batch(mapping, rows, docs, master)
 
 
 def test_clean_batch_has_no_problems(mapping, golden, clean_doc):
@@ -63,16 +63,6 @@ def test_unknown_tax_code_blocks_batch(mapping, golden, clean_doc):
     doc = replace(clean_doc, coding_lines=(line,))
     problems = _check(mapping, golden.master.coding, (doc,))
     assert any("unknown tax code 'ZZ'" in p for p in problems)
-
-
-def test_already_exported_blocks_batch(mapping, golden, clean_doc):
-    problems = _check(
-        mapping,
-        golden.master.coding,
-        (clean_doc,),
-        previously_exported=frozenset({clean_doc.doc_id}),
-    )
-    assert any("was exported before" in p for p in problems)
 
 
 def test_batch_error_aggregates_problems():

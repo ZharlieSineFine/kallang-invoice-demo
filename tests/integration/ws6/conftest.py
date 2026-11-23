@@ -3,8 +3,9 @@
 import psycopg
 import pytest
 
+from invoiceflow.storage import LocalBlobStore
 from invoiceflow.store.connection import connect, database_url, safe_url
-from invoiceflow.store.fixtures import truncate
+from invoiceflow.store.fixtures import load_fixtures, truncate
 from invoiceflow.store.migrate import apply_migrations
 
 pytestmark = pytest.mark.db
@@ -27,6 +28,14 @@ def migrated(conn):
         apply_migrations(conn)
         truncate(conn)
         yield conn
+
+
+@pytest.fixture()
+def loaded(migrated, tmp_path):
+    """The two golden invoices, their files in a scratch folder (erase and delete tests)."""
+    store = LocalBlobStore(tmp_path)
+    load_fixtures(migrated, store)
+    return migrated, store
 
 
 @pytest.fixture(autouse=True)

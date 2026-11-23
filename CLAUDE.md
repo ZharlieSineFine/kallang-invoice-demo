@@ -135,7 +135,12 @@ rehearsal prep. All data is synthetic.
   name made `make up` replace the dev container and `make down` remove it (happened once on
   2026-11-18; volume kept, 56 documents intact). They now run side by side (5433 and 5434).
   The old stack volumes `kallang-invoice-demo_airflow-logs` and
-  `kallang-invoice-demo_postgres-db-volume` are unused; the user decides whether to remove them.
+  `kallang-invoice-demo_postgres-db-volume` were unused; deleted at the user's request (2026-11-20).
+- Light setup's database renamed (2026-11-20, user's request): compose.dev.yaml is project
+  `kallang-invoice-light`, container `kallang-invoice-light-db`, volume
+  `kallang-invoice-light_db-data` (data copied from `kallang-invoice-demo_postgres-dev-data`,
+  since deleted with the ws6 volumes, 2026-11-20). Same port 5433 and `make db-dev` / `make down-dev`.
+  `docs/fanout/*.md` still say `invoiceflow-postgres-dev`; they are the 2026-11-04 briefs.
 - Audit monitor (user, 2026-11-19; CR-012 addendum): the `evaluate` DAG is now
   `dags/audit_monitor.py` (`audit_monitor`, Mondays 08:00 SGT and by hand). It writes
   `reports/monitor_<date>.json` (git-ignored) from `Repo.audit_counts` and
@@ -183,9 +188,8 @@ rehearsal prep. All data is synthetic.
   exports as usual, and carries "Random audit sample" (`app/audit.py`: inbox card, Queue
   column, Review label and audit buttons, Demo Step 8 "Monitoring auto-passed invoices").
   Changing the seed or the live set means rechecking `test_the_audit_seed_picks_only_the_sixth`.
-- Discarded duplicates: Demo Step 1 and the Queue page count a byte-identical copy as
-  "duplicate invoice discarded" and offer "Check the discarded copy" (`app/duplicates.py`):
-  the copy's name, time and SHA-256 (from the `intake.duplicate_file` event) beside the kept
+- Discarded duplicates: Demo Step 1 and the Queue page list a byte-identical copy under
+  Discarded, with its proof (`app/duplicates.py`): the copy's name, time and SHA-256 (from the `intake.duplicate_file` event) beside the kept
   original's, a link to it in Review, a download, and the `shasum` / `certutil` commands.
   The user declined an in-app drop-a-file checker (2026-11-17).
 - Lag fixes (user approved 2026-11-19): no triggerer service (`make up` has
@@ -200,8 +204,75 @@ rehearsal prep. All data is synthetic.
   before the demo. The stack was left in live mode with the six erased (2026-11-19).
 - Main buttons are blue (`primaryColor = "#1565c0"` in `.streamlit/config.toml`, user's
   choice 2026-11-19), not Streamlit's red.
-- `uv run pytest -m "not ollama"`: 1189 passed (2026-11-19), about 2.5 minutes. The 4 ruff
-  errors in `scripts/demo_boxes.py` (2026-11-04) are not fixed.
+- Queue delete (user's design, 2026-11-20): every finished document has Select and Delete
+  (on its card, or its row under Discarded), and bars above and below the cards delete the
+  ticked ones (`app/queue_delete.py`). An `st.dialog` asks first; it opens from `render`,
+  outside the 3 s refreshing fragment, or a refresh closes it. An EXPORTED invoice can be
+  deleted after a warning that SAP keeps it (user chose a warning over blocking). Backend
+  `delete_documents` -> `invoiceflow.store.delete`: rows, stored file, parsed/silver files and
+  recorded answer go; one `document.deleted` event each; unlike erase-live, the SAP batch,
+  its CSV and its other invoices stay (only the deleted invoice's `export_rows` row goes).
+  `PostgresBackend(files_root=, cache_dir=)` lets tests delete from scratch folders.
+- Discarded list (`app/discarded.py`) on the Queue and Demo step 1: byte-identical copies
+  and NOT_INVOICE documents, which no longer appear in the cards, table, status filter or
+  counts. Every page counts from `app/counts.py` (user's report, 2026-11-20: the strip said
+  "1 discarded" while the Queue listed 3): received = stored documents + copies; discarded =
+  copies + non-invoices; invoices = the rest. The flow strip's Intake box, Demo step 1's
+  sentence, the Queue's and Dashboard's "Invoices" metric (`DashboardData.total_invoices`,
+  SQL excludes NOT_INVOICE) all agree. `render_flow_strip(..., copies=n)` takes the copies.
+- Action results (user's design, 2026-11-20): every button passes an `Act` (what was done,
+  to which invoice, by whom) to `ui.run_action`; `app/notice.py` turns the result into a
+  `Notice`, `app/notice_view.py` draws it as a colored card under the buttons
+  (`ui.show_result(place)`, stays until the next action) and an HTML pop-up at the top right
+  (fades after about 7 s, errors 14 s; `pointer-events:none`). It names the invoice, vendor
+  and total, says what happens next, records reviewer and time, and tags the new status.
+  Color means "it worked" (the user's choice): green worked, even a reject; amber worked but
+  a check is still open (or an exported invoice was deleted); red not done; blue nothing
+  changed. `ReviewOutcome.checks` (what the rerun found) and `.changed` feed it. Review
+  places: fix, decision, release, lines, coding, audit; also export and the Queue's top bar.
+- Cards name the value limit (2026-11-20): an invoice sent to a person only by its size (no
+  open rule) shows "Needs review · S$5,000 or more", read back from the router's reason
+  (`rules.router.limit_in_reason`; `app.inbox._reasons`).
+- Review-time recheck (`app/recheck.py`) also recomputes each line's quantity x unit price
+  (x days) and the GST amount against `gst_rate` (2026-11-20; user's report on
+  KSS-2026-8202, where the model read quantity 720 for the printed 120, three corrections
+  followed the flags, and the rerun said "nothing open" with GST still 9% of the old
+  subtotal). Intake's R02 line and R03 GST-arithmetic findings are recomputed, not carried
+  (`_is_recomputed`). The stack's KSS-2026-8202 was reset on 2026-11-23 (deleted with its
+  recorded answer kept, then `LLM_MODE=replay ... demo_data.py --add-new --stack`): no
+  reviews, and its R02 flag now carries the line hint. Its event log still lists the old
+  corrections and a `document.deleted` event (events are append-only).
+- Line flag says where to look (user approved 2026-11-20): `invoiceflow/rules/line_hint.py`,
+  shared by R02 and the recheck, shows the arithmetic ("(720 × 19.00)") and, when the
+  printed amounts, subtotal, GST and total agree with each other, adds "check this line's
+  quantity and unit price on the page first". Write "×" as `\u00d7` in source (ruff RUF001).
+  Stored findings keep the text they were written with; only new intakes and reruns get it.
+- Discarded copies: the shasum/certutil commands sit behind a switch, off by default.
+- Re-export (user's request, 2026-11-20: "do not block future export attempts"; CR-013):
+  migration `003_export_history` drops `export_rows` UNIQUE (doc_id), so each send is its own
+  row and the history keeps every one. `export_approved(resend=(doc_id, ...))` adds invoices
+  sent before (`Repo.previously_exported`) to the run; their status stays EXPORTED and
+  `ExportSummary.resent` names them. A run without `resend` (the scheduled `sap_export` DAG)
+  still sends only invoices never sent, so nothing goes twice on its own. Demo Step 7 and
+  Batches show "Send again (N sent before)" under the export button (`app/export_action.py`,
+  a multiselect from `queries.export_history`); the button counts both ("3 ready + 2 sent
+  again") and the confirmation names the ones sent again. Delete lists every batch the
+  invoice went out in; erase-live sends an invoice back to APPROVED or AUTO_PASSED only when
+  no other batch still holds it.
+- Readable scans on Review (user's report, 2026-11-20: "very blur"): the stored pages are
+  150 DPI and readable at 2x; Review showed them at about half size. `app/page_viewer.py`
+  enlarges the field zoom 2.5x (capped at 1,800 px) with a contrast boost, and "View page
+  large" opens the whole page in an `st.dialog` with a 100-300% size slider. Display only:
+  the stored image the model and checks read is never changed.
+- The stack's images copy `src/invoiceflow` at build time (`pip install /tmp/invoiceflow`),
+  but `app/` is mounted. A change under `src/invoiceflow` needs `make up` (rebuild, 1-2
+  minutes) or the review app fails to import it (2026-11-20: `invoiceflow.rules.line_hint`
+  crashed the stack app until the rebuild); a change only under `app/` needs just
+  `docker restart kallang-invoice-demo-stack-review-app-1`. Migrations run from the mounted
+  repo: `docker exec kallang-invoice-demo-stack-airflow-scheduler-1 python -m
+  invoiceflow.store.migrate`.
+- `uv run pytest -m "not ollama"`: 1274 passed, 3 deselected (2026-11-23), about 3 minutes.
+  The 4 ruff errors in `scripts/demo_boxes.py` (2026-11-04) are not fixed.
 
 ## Read these first (in order)
 

@@ -145,7 +145,10 @@ where each was routed. It exits non-zero if a status or rule does not match the 
 
 Invariants the database enforces, not the application:
 
-- `export_rows.doc_id` is **unique** — an invoice can be exported only once, even under a retry.
+- `export_rows` has primary key `(batch_id, doc_id)`: an invoice appears at most once per
+  batch. Since CR-013 (migration 003) `doc_id` alone is not unique, so a person can send an
+  invoice again in a later batch and every send is kept. A run sends an invoice again only
+  when it is named in `export_approved(resend=...)`.
 - `events` is append-only (`BEFORE UPDATE OR DELETE` triggers an exception).
 - `fields`, `line_items`, and `coding_lines` keep history: a partial unique index on
   `(doc_id, name)` / `(doc_id, line_no)` where `is_current` means at most one current row.

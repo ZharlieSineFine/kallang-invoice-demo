@@ -7,7 +7,6 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 from psycopg import Connection
 from psycopg.types.json import Jsonb
@@ -124,13 +123,10 @@ def build_batch(
     model: str,
     prompt_version: str,
     rule_version: str,
-    previously_exported: frozenset[UUID] = frozenset(),
 ) -> PreparedBatch:
     """Render and check a batch. Raises :class:`BatchError` when any check fails."""
     rows = build_rows(mapping, documents, export_date)
-    problems = check_batch(
-        mapping, rows, documents, master, previously_exported=previously_exported
-    )
+    problems = check_batch(mapping, rows, documents, master)
     if problems:
         raise BatchError(problems)
 
@@ -190,17 +186,12 @@ def record_export(
     manifest: dict[str, Any],
     row_plans: tuple[ExportRowPlan, ...],
 ) -> None:
-    """Record one batch in a single transaction. Raises if any doc was exported before.
+    """Record one batch in a single transaction.
 
-    ``export_rows.doc_id`` is UNIQUE in the schema, so a second export of the same document
-    is blocked even if two processes race past this pre-check.
+    An invoice sent before gets another ``export_rows`` row for this batch, so every send is
+    kept (user's request, 2026-11-20); the primary key allows one row per invoice per batch.
     """
-    doc_ids = [plan.doc_id for plan in row_plans]
     with conn.transaction(), conn.cursor() as cur:
-        cur.execute("SELECT doc_id FROM export_rows WHERE doc_id = ANY(%s)", (doc_ids,))
-        duplicates = [str(row[0]) for row in cur.fetchall()]
-        if duplicates:
-            raise BatchError((f"document(s) already exported: {', '.join(duplicates)}",))
         cur.execute(
             """
             INSERT INTO export_batches (batch_id, created_at, csv_path, csv_sha256,
@@ -240,7 +231,6 @@ def export_documents(
     model: str,
     prompt_version: str,
     rule_version: str,
-    previously_exported: frozenset[UUID] = frozenset(),
 ) -> ExportResult:
     """End-to-end: check, render, and write a batch to ``out_dir`` (no database writes)."""
     prepared = build_batch(
@@ -252,6 +242,5 @@ def export_documents(
         model=model,
         prompt_version=prompt_version,
         rule_version=rule_version,
-        previously_exported=previously_exported,
     )
     return write_batch(prepared, out_dir, encoding=mapping.encoding)

@@ -9,7 +9,6 @@ import pytest
 from invoiceflow.devdb.connection import connect, database_url, safe_url
 from invoiceflow.devdb.fixtures import load_fixtures
 from invoiceflow.devdb.migrate import apply_migrations
-from invoiceflow.export.checks import BatchError
 from invoiceflow.export.exporter import record_export
 from invoiceflow.export.models import ExportRowPlan
 
@@ -68,19 +67,16 @@ def test_record_export_writes_batch_and_rows(conn, loaded):
         assert manifest["batch_id"] == "b1"
 
 
-def test_record_export_blocks_a_second_export(conn, loaded):
+def test_record_export_allows_a_second_export_and_keeps_both(conn, loaded):
+    # Re-export is allowed (user's request, 2026-11-20); each batch keeps its own row.
     doc_id = _doc_id(loaded, "SAV-2026-0412")
-    record_export(
-        conn,
-        "b1",
-        row_plans=(ExportRowPlan(doc_id=doc_id, first_row_no=1, row_count=1),),
-        **_args(doc_id),
-    )
-
-    with pytest.raises(BatchError, match="already exported"):
+    for batch_id in ("b1", "b2"):
         record_export(
             conn,
-            "b2",
+            batch_id,
             row_plans=(ExportRowPlan(doc_id=doc_id, first_row_no=1, row_count=1),),
-            **_args(doc_id, batch_id="b2"),
+            **_args(doc_id, batch_id=batch_id),
         )
+    with conn.cursor() as cur:
+        cur.execute("SELECT batch_id FROM export_rows WHERE doc_id = %s ORDER BY 1", (doc_id,))
+        assert cur.fetchall() == [("b1",), ("b2",)]

@@ -221,3 +221,34 @@ The integrator decides, applies the change on `main`, updates the contract tests
   `rate_percent`; money keys keep two decimals). A correction typed "9.00" is saved and logged
   as "9%". Migration `002_rate_evidence_percent` rewrites older R03 evidence. The model's
   `gst_rate` text and every other contract are unchanged.
+
+### CR-013 — an exported invoice can be sent to SAP again
+
+- **Workstream:** integrator (Phase 2), touches WS6 (store) and WS8 (export)
+- **Status:** ACCEPTED (user, 2026-11-20: "The user should always have the freedom to export
+  the invoices as long as they are approved, whenever they want. You can keep track of the
+  export history but do not block future export attempts."; chose "New by default + resend")
+- **What changes:**
+  - Schema: migration `003_export_history` drops `export_rows_doc_id_key` (UNIQUE on
+    `doc_id`) and adds the plain index `export_rows_doc_id_idx`. The primary key
+    `(batch_id, doc_id)` stays, so an invoice appears at most once per batch.
+  - `contracts.interfaces.Repository` gains `previously_exported() -> tuple[UUID, ...]`:
+    invoices with an export row whose status is still APPROVED, AUTO_PASSED or EXPORTED.
+  - `pipeline.steps.export_approved(..., resend=())`: ids in `resend` that were sent before
+    join the run; any other id there is ignored. `ExportSummary.resent` lists them, and the
+    `export.completed` event payload records them.
+  - `export.checks.check_batch` and `export.exporter.build_batch` / `export_documents` lose
+    the `previously_exported` parameter and the "already exported" check; `record_export`
+    no longer refuses a second row for the same invoice.
+  - `store.delete` lists every batch an invoice went out in; `store.erase` keeps an invoice
+    EXPORTED while another batch still holds it.
+- **Why:** with UNIQUE (doc_id), an invoice exported once could never be exported again, so
+  after a demo run every earlier invoice was stuck. The user wants export history kept but
+  never a block on a person's choice to send again.
+- **Impact:** a run without `resend` (the scheduled `sap_export` DAG) is unchanged: it sends
+  only invoices never sent, so nothing goes twice unless a person ticks it under "Send again"
+  on Demo Step 7 or Batches. A resent invoice stays EXPORTED. SAP receives a resent invoice
+  again; the picker warns the person to check SAP will not pay it twice. Needs the migration
+  on both databases (applied 2026-11-20). `SCHEMA_VERSION` unchanged: no model changed.
+  `docs/CONTRACTS.md` invariant updated.
+- **Integrator decision:** applied 2026-11-20.

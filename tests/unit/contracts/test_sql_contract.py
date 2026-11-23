@@ -20,7 +20,8 @@ from invoiceflow.contracts import (
 )
 from invoiceflow.settings import repo_root
 
-SQL = (repo_root() / "db" / "migrations" / "001_init.sql").read_text()
+MIGRATIONS = repo_root() / "db" / "migrations"
+SQL = (MIGRATIONS / "001_init.sql").read_text()
 
 ENUM_CHECKS = {
     "ck_documents_status": DocStatus,
@@ -78,8 +79,12 @@ def test_table_exists(table):
     assert re.search(rf"CREATE TABLE (?:IF NOT EXISTS )?{table} \(", SQL), table
 
 
-def test_export_once_is_enforced_by_the_database():
-    assert re.search(r"doc_id\s+uuid NOT NULL UNIQUE REFERENCES documents", SQL)
+def test_an_invoice_can_be_exported_again_but_once_per_batch():
+    # 001 made doc_id unique (one export per invoice); 003 drops that so an invoice can be
+    # sent again (user's request, 2026-11-20). The primary key still allows one row per batch.
+    later = (MIGRATIONS / "003_export_history.sql").read_text(encoding="utf-8")
+    assert "DROP CONSTRAINT IF EXISTS export_rows_doc_id_key" in later
+    assert "PRIMARY KEY (batch_id, doc_id)" in SQL
 
 
 def test_events_are_append_only():

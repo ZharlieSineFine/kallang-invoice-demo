@@ -21,8 +21,9 @@ from app.backend import Backend
 from app.boxes import BoxSpec, draw_boxes, page_boxes, word_boxes
 from app.cleanup import highlight_cleaned, show_cleanups
 from app.compliance import card_for, card_html
+from app.counts import IntakeCounts, intake_counts, is_invoice
 from app.csv_trace import render_csv_trace
-from app.duplicates import render_discarded_copies
+from app.discarded import render_discarded
 from app.export_action import render_export_action
 from app.flow import render_flow_strip
 from app.formatting import display_value, format_time
@@ -53,10 +54,11 @@ class Context:
     backend: Backend
     docs: tuple[DocumentSummary, ...]
     copies: tuple[DiscardedCopy, ...] = ()  # byte-identical copies intake discarded
+    counts: IntakeCounts | None = None  # every document, including any still being read
 
     @property
-    def discarded(self) -> int:
-        return len(self.copies)
+    def intake(self) -> IntakeCounts:
+        return self.counts or intake_counts(self.docs, len(self.copies))
 
 
 @dataclass(frozen=True)
@@ -124,9 +126,11 @@ def _extraction_payload(bundle: DocumentBundle) -> dict:
 
 
 def _inbox(ctx: Context) -> str:
-    render_discarded_copies(ctx.copies, key="story_copy")
-    render_grid(ctx.docs)
-    return _inbox_sentence(ctx.docs, ctx.discarded)
+    # The same Discarded list as the Queue, so both pages show the same documents.
+    not_invoices = [doc for doc in ctx.docs if not is_invoice(doc)]
+    render_discarded(ctx.copies, not_invoices, key="story_copy")
+    render_grid([doc for doc in ctx.docs if is_invoice(doc)])
+    return _inbox_sentence(ctx.docs, ctx.intake)
 
 
 # (one, several): grammar for one document and for more.
@@ -134,20 +138,37 @@ _INBOX_GROUPS = (
     (("passed or approved",) * 2, {DocStatus.AUTO_PASSED, DocStatus.APPROVED, DocStatus.EXPORTED}),
     (("needs a person", "need a person"), {DocStatus.NEEDS_REVIEW, DocStatus.MANUAL_ENTRY}),
     (("on hold",) * 2, {DocStatus.ON_HOLD}),
-    (("not an invoice", "not invoices"), {DocStatus.NOT_INVOICE}),
     (("rejected",) * 2, {DocStatus.REJECTED}),
 )
 
 
-def _inbox_sentence(docs, discarded: int = 0) -> str:
-    counts = [
-        (labels, sum(doc.status in statuses for doc in docs)) for labels, statuses in _INBOX_GROUPS
+def _inbox_sentence(docs, counts: IntakeCounts) -> str:
+    """The flow strip's numbers in words: received, discarded, then what the invoices did.
+
+    ``docs`` are the finished documents; ``counts`` also covers any still being read.
+    """
+    invoices = [doc for doc in docs if is_invoice(doc)]
+    groups = [
+        (labels, sum(doc.status in statuses for doc in invoices))
+        for labels, statuses in _INBOX_GROUPS
     ]
-    counts.append((("duplicate invoice discarded", "duplicate invoices discarded"), discarded))
+    groups.append((("still being read",) * 2, counts.invoices - len(invoices)))
     parts = ", ".join(
-        f"{count} {labels[0] if count == 1 else labels[1]}" for labels, count in counts if count
+        f"{count} {labels[0] if count == 1 else labels[1]}" for labels, count in groups if count
     )
-    return f"{_plural(len(docs) + discarded, 'document')} arrived: {parts}."
+    arrived = f"{_plural(counts.received, 'document')} arrived"
+    if not counts.discarded:
+        return f"{arrived}: {parts}."
+    verb = "was" if counts.discarded == 1 else "were"
+    lead = f"{arrived} and {counts.discarded} {verb} discarded ({counts.breakdown})."
+    if not counts.invoices:
+        return lead
+    rest = (
+        "The other 1 is an invoice"
+        if counts.invoices == 1
+        else (f"The other {counts.invoices} are invoices")
+    )
+    return f"{lead} {rest}: {parts}."
 
 
 def _read(ctx: Context) -> str:
@@ -419,7 +440,10 @@ def _export(ctx: Context) -> str:
     empty = sum(batch.row_count == 0 for batch in batches)
     note = f" {_plural(empty, 'other run')} found nothing new to export." if empty else ""
     rows = _plural(filled.row_count, "row")
-    return f"Batch {filled.batch_id} holds {rows}, and each invoice exports once.{note}"
+    return (
+        f"Batch {filled.batch_id} holds {rows}. Every send is kept, and an invoice sent "
+        f"before can be sent again from here.{note}"
+    )
 
 
 def _percent(value) -> str | None:
@@ -521,12 +545,13 @@ def render(backend: Backend | None = None) -> None:
     index = min(st.session_state.get(_STEP_KEY, 0), len(STEPS) - 1)
     step = STEPS[index]
     copies = backend.discarded_copies()
-    render_flow_strip(docs, step.stage, discarded=len(copies))
+    render_flow_strip(docs, step.stage, copies=len(copies))
     _navigation(index)
     heading = st.empty()
     finished = tuple(doc for doc in docs if not doc.is_processing)
     if not finished:
         st.info("The first document is still being read. Its outcome appears here when done.")
         return
-    outcome = step.render(Context(backend=backend, docs=finished, copies=copies))
+    counts = intake_counts(docs, len(copies))
+    outcome = step.render(Context(backend=backend, docs=finished, copies=copies, counts=counts))
     heading.markdown(_stage_card(step.question, outcome), unsafe_allow_html=True)

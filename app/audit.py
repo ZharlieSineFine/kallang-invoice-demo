@@ -14,6 +14,7 @@ import streamlit as st
 from app import ui
 from app.backend import Backend
 from app.models import AuditSummary, DocumentBundle
+from app.notice import Act
 from invoiceflow.evaluate.audit_monitor import counts_line, rate_line
 
 AUDIT_LABEL = "Random audit sample"
@@ -58,7 +59,11 @@ def _record(backend: Backend, bundle: DocumentBundle, reviewer: str, found_error
     if found_error and not fields:
         st.error("Choose the fields that were wrong, then record the error.")
         return
-    ui.run_action(backend.record_audit, bundle.document.doc_id, reviewer, found_error, fields)
+    doc_id = bundle.document.doc_id
+    act = Act("Recorded the audit of", "record the audit of", doc=bundle.document, by=reviewer)
+    ui.run_action(
+        backend.record_audit, doc_id, reviewer, found_error, fields, act=act, at=f"audit:{doc_id}"
+    )
 
 
 def render_audit(backend: Backend, bundle: DocumentBundle, reviewer: str) -> None:
@@ -82,3 +87,4 @@ def render_audit(backend: Backend, bundle: DocumentBundle, reviewer: str) -> Non
         _record(backend, bundle, reviewer, found_error=False)
     if error.button("Audit found an error", key="audit_error"):
         _record(backend, bundle, reviewer, found_error=True)
+    ui.show_result(f"audit:{doc.doc_id}")

@@ -8,7 +8,7 @@ nothing from Airflow, so they can be called from scripts, tests, or an Azure Fun
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -86,6 +86,7 @@ class ExportSummary:
     batch: ExportBatch
     doc_ids: tuple[UUID, ...]
     problems: tuple[str, ...] = ()  # documents held back, and why; they stay exportable
+    resent: tuple[UUID, ...] = ()  # of doc_ids, the ones sent to SAP before
 
 
 def load_demo_master() -> MasterData:
@@ -405,12 +406,12 @@ def _export_document(repo, doc_id: UUID, master: MasterData) -> ExportDocument:
 
 
 def _exportable(
-    repo, master: MasterData, mapping: SapMapping, export_date: date
+    doc_ids: Sequence[UUID], repo, master: MasterData, mapping: SapMapping, export_date: date
 ) -> tuple[tuple[ExportDocument, ...], tuple[str, ...]]:
     """Keep every document that passes the batch checks; one bad invoice never blocks the rest."""
     accepted: tuple[ExportDocument, ...] = ()
     problems: list[str] = []
-    for doc_id in repo.approved_not_exported():
+    for doc_id in doc_ids:
         try:
             candidate = (*accepted, _export_document(repo, doc_id, master))
         except ValueError as error:
@@ -431,17 +432,23 @@ def export_approved(
     store: LocalBlobStore,
     batch_id: str | None = None,
     export_date: date | None = None,
+    resend: Sequence[UUID] = (),
 ) -> ExportSummary:
     """Write the SAP CSV and manifest for everything ready, and record the batch.
 
-    Running it twice leaves a second batch with zero rows, because the first run flips every
-    exported document to EXPORTED. Documents that fail a batch check stay where they are, and
-    ``ExportSummary.problems`` says why.
+    Ready means passed or approved and never exported. ``resend`` adds invoices sent before
+    that a person chose to send again (user's request, 2026-11-20); any other ID in it is
+    ignored. With no ``resend``, as in the scheduled run, a second run sends nothing, so no
+    invoice goes twice on its own. Every send keeps its own row in the history. Documents
+    that fail a batch check stay where they are, and ``ExportSummary.problems`` says why.
     """
     mapping = load_sap_mapping(load_config("sap_mapping"))
     master = repo.load_master()
     export_date = export_date or singapore_today()
-    documents, problems = _exportable(repo, master, mapping, export_date)
+    sent_before = frozenset(repo.previously_exported()) if resend else frozenset()
+    again = tuple(doc_id for doc_id in dict.fromkeys(resend) if doc_id in sent_before)
+    candidates = tuple(dict.fromkeys((*repo.approved_not_exported(), *again)))
+    documents, problems = _exportable(candidates, repo, master, mapping, export_date)
     batch_id = batch_id or _batch_id()
     model, prompt_version, rule_version = export_versions()
     prepared = build_batch(
@@ -476,9 +483,15 @@ def export_approved(
         ACTOR,
         "export.completed",
         None,
-        {"batch_id": batch_id, "row_count": batch.row_count, "problems": list(problems)},
+        {
+            "batch_id": batch_id,
+            "row_count": batch.row_count,
+            "problems": list(problems),
+            "resent": [str(doc_id) for doc_id in doc_ids if doc_id in sent_before],
+        },
     )
-    return ExportSummary(batch=batch, doc_ids=doc_ids, problems=problems)
+    resent = tuple(doc_id for doc_id in doc_ids if doc_id in sent_before)
+    return ExportSummary(batch=batch, doc_ids=doc_ids, problems=problems, resent=resent)
 
 
 # ---------------------------------------------------------------------- helpers

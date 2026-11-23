@@ -6,7 +6,8 @@ Rules that hold here:
 - ``fields``, ``line_items``, and ``coding_lines`` are append-with-history: saving marks the
   previous current rows ``is_current = false`` and inserts fresh rows. Nothing is updated in
   place.
-- ``export_rows.doc_id`` is unique, so ``record_export`` raises if an invoice is exported twice.
+- An invoice can be exported again (2026-11-20): each batch adds its own ``export_rows`` row,
+  so every send is kept; the primary key allows one row per invoice per batch.
 """
 
 from __future__ import annotations
@@ -580,13 +581,25 @@ class Repo:
         )
         return tuple(row[0] for row in rows)
 
+    def previously_exported(self) -> tuple[UUID, ...]:
+        """Invoices sent to SAP at least once that can be sent again, oldest first."""
+        rows = self._all(
+            """
+            SELECT d.doc_id FROM documents d
+            WHERE d.status IN ('APPROVED', 'AUTO_PASSED', 'EXPORTED')
+              AND EXISTS (SELECT 1 FROM export_rows e WHERE e.doc_id = d.doc_id)
+            ORDER BY d.created_at
+            """
+        )
+        return tuple(row[0] for row in rows)
+
     def record_export(
         self,
         batch: ExportBatch,
         doc_ids: tuple[UUID, ...],
         manifest: Mapping[str, Any] | None = None,
     ) -> None:
-        """One transaction. Raises if any doc_id was exported before (unique doc_id)."""
+        """One transaction. An invoice sent before gets another row for this batch."""
         with self._conn.transaction(), self._conn.cursor() as cur:
             cur.execute(
                 """
