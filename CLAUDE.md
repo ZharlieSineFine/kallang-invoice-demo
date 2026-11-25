@@ -248,6 +248,15 @@ rehearsal prep. All data is synthetic.
   quantity and unit price on the page first". Write "×" as `\u00d7` in source (ruff RUF001).
   Stored findings keep the text they were written with; only new intakes and reruns get it.
 - Discarded copies: the shasum/certutil commands sit behind a switch, off by default.
+- R03 accepts 0% GST (user, 2026-11-24, on HAV-2026-6001): a foreign-currency invoice at
+  0% from a vendor the master marks `is_overseas` (tax code OP, out of scope) gets no rate
+  flag and no "must show the SGD GST amount" flag (`r03._out_of_scope_at_zero`). GST charged
+  by such a vendor, an SGD invoice from one, or 0% from any other vendor is still flagged.
+- The line hint names days when the line has them ("check this line's quantity, unit price
+  and days", `line_hint.DAYS_HINT`). MEL-2026-8003's R02 flag is not a misread: the page
+  prints "2 pcs 120.00 480.00" with no days column, while its answer key says 2 days
+  (template A2 drops the column), so the printed line itself does not add up. Generator
+  issue, not fixed.
 - Re-export (user's request, 2026-11-20: "do not block future export attempts"; CR-013):
   migration `003_export_history` drops `export_rows` UNIQUE (doc_id), so each send is its own
   row and the history keeps every one. `export_approved(resend=(doc_id, ...))` adds invoices

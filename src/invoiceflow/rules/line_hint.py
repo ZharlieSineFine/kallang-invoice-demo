@@ -21,6 +21,10 @@ HINT = (
     "The subtotal, GST and total agree with each other, so check this line's quantity and "
     "unit price on the page first."
 )
+DAYS_HINT = (  # a line with days, e.g. a rental (user, 2026-11-24)
+    "The subtotal, GST and total agree with each other, so check this line's quantity, "
+    "unit price and days on the page first."
+)
 
 
 @dataclass(frozen=True)
@@ -85,4 +89,6 @@ def line_message(
         f"({_arithmetic(quantity, unit_price, days)}), "
         f"but the amount reads {money_sgd(amount)}."
     )
-    return f"{message} {HINT}" if figures_agree(figures) else message
+    if not figures_agree(figures):
+        return message
+    return f"{message} {HINT if days is None else DAYS_HINT}"

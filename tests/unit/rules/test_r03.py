@@ -99,6 +99,52 @@ def test_r03_flags_foreign_currency_without_sgd(clean_ctx, rules_config):
     assert any(f.field == "sgd_total" for f in findings)
 
 
+def _foreign(ctx, *, overseas=True, currency="USD", rate="0", gst="0.00"):
+    """HAV-2026-6001's shape: a USD invoice at 0% from a vendor the master marks overseas
+    (out of scope for Singapore GST, tax code OP), SGD total shown, no SGD GST read."""
+    invoice = ctx.invoice.model_copy(
+        update={
+            "currency": currency,
+            "gst_rate_percent": Decimal(rate),
+            "gst_amount": Decimal(gst),
+            "total": ctx.invoice.subtotal + Decimal(gst),
+            "sgd_total": Decimal("1620.00"),
+            "sgd_gst_amount": None,
+        }
+    )
+    vendor = ctx.vendor.model_copy(update={"is_overseas": overseas})
+    return ctx.model_copy(update={"invoice": invoice, "vendor": vendor})
+
+
+def _gst_fields(ctx, rules_config):
+    return {f.field for f in R03(rules_config).check(ctx)} & {"gst_rate", "sgd_gst_amount"}
+
+
+def test_r03_accepts_zero_gst_on_a_foreign_out_of_scope_invoice(clean_ctx, rules_config):
+    """User, 2026-11-24: accept 0% when the invoice is in a foreign currency and the vendor
+    is marked out of scope. With no GST charged there is no SGD GST amount to show."""
+    assert _gst_fields(_foreign(clean_ctx), rules_config) == set()
+
+
+def test_r03_still_flags_zero_gst_from_a_vendor_not_marked_out_of_scope(clean_ctx, rules_config):
+    assert _gst_fields(_foreign(clean_ctx, overseas=False), rules_config) == {
+        "gst_rate",
+        "sgd_gst_amount",
+    }
+
+
+def test_r03_still_flags_zero_gst_on_an_sgd_invoice_from_an_overseas_vendor(
+    clean_ctx, rules_config
+):
+    assert _gst_fields(_foreign(clean_ctx, currency="SGD"), rules_config) == {"gst_rate"}
+
+
+def test_r03_still_flags_gst_charged_by_an_out_of_scope_vendor(clean_ctx, rules_config):
+    gst = str(clean_ctx.invoice.subtotal * Decimal("0.05"))
+    ctx = _foreign(clean_ctx, rate="5", gst=gst)
+    assert _gst_fields(ctx, rules_config) == {"gst_rate", "sgd_gst_amount"}
+
+
 def _inclusive(ctx, **values):
     defaults = {
         "gst_inclusive": True,

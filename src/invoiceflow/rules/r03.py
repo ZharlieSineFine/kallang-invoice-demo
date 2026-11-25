@@ -20,6 +20,24 @@ from invoiceflow.rules.base import (
 _GST_REG = re.compile(r"^\d{9}[A-Z]$")
 
 _TAX_DOCS = (DocType.TAX_INVOICE, DocType.SIMPLIFIED_TAX_INVOICE)
+_ZERO = Decimal("0")
+
+
+def _out_of_scope_at_zero(ctx: CheckContext) -> bool:
+    """A foreign-currency invoice at 0% from a vendor the master marks overseas, the vendors
+    coded OP (out of scope for Singapore GST). No GST is due, so 0% is right and there is no
+    SGD GST amount to show (user, 2026-11-24, on HAV-2026-6001). Any GST charged is still
+    checked, and so is an SGD invoice from an overseas vendor."""
+    invoice = ctx.invoice
+    return (
+        invoice is not None
+        and ctx.vendor is not None
+        and ctx.vendor.is_overseas
+        and bool(invoice.currency)
+        and invoice.currency.upper() != "SGD"
+        and invoice.gst_rate_percent == _ZERO
+        and invoice.gst_amount in (None, _ZERO)
+    )
 
 
 class R03(BaseRule):
@@ -55,8 +73,12 @@ class R03(BaseRule):
                     )
                 )
 
+        no_gst_due = _out_of_scope_at_zero(ctx)
+
         # 2. Rate matches the invoice date.
-        if invoice.gst_rate_percent is not None and invoice.invoice_date is not None:
+        if no_gst_due:
+            pass  # 0% is right for a foreign invoice from an out-of-scope vendor
+        elif invoice.gst_rate_percent is not None and invoice.invoice_date is not None:
             expected = gst_rate_for_date(self._config, invoice.invoice_date)
             if expected is not None and invoice.gst_rate_percent != expected:
                 findings.append(
@@ -165,7 +187,7 @@ class R03(BaseRule):
                         message="Foreign-currency invoice must show the SGD total",
                     )
                 )
-            if invoice.gst_amount is not None and invoice.sgd_gst_amount is None:
+            if invoice.gst_amount is not None and invoice.sgd_gst_amount is None and not no_gst_due:
                 findings.append(
                     self.finding(
                         severity=None,

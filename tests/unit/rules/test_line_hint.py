@@ -49,6 +49,14 @@ def test_days_are_shown_for_a_rental_line():
     assert "(720 \u00d7 19.00 \u00d7 3 days)" in _message(KALLANG, days=D("3"))
 
 
+def test_the_hint_names_days_when_the_line_has_them():
+    """User, 2026-11-24: a line with days says to check its days too."""
+    assert _message(KALLANG, days=D("3")).endswith(
+        " The subtotal, GST and total agree with each other, so check this line's quantity, "
+        "unit price and days on the page first."
+    )
+
+
 def test_no_hint_when_the_amounts_do_not_add_up_to_the_subtotal():
     figures = Figures(**{**KALLANG.__dict__, "subtotal": D("13680.00")})
     assert HINT not in _message(figures)
